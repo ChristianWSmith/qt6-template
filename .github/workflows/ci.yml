@@ -19,18 +19,18 @@ jobs:
     strategy:
       matrix:
         include:
-            - os: ubuntu-latest
-              compiler_name: linux_gcc_64
-              compiler_dir: gcc_64
-              aqt_platform: linux
+            # - os: ubuntu-latest
+            #   compiler_name: linux_gcc_64
+            #   compiler_dir: gcc_64
+            #   aqt_platform: linux
             - os: windows-latest
               compiler_name: win64_msvc2022_64
               compiler_dir: msvc2022_64
               aqt_platform: windows
-            - os: macos-latest
-              compiler_name: clang_64
-              compiler_dir: macos
-              aqt_platform: mac
+            # - os: macos-latest
+            #   compiler_name: clang_64
+            #   compiler_dir: macos
+            #   aqt_platform: mac
 
     steps:
     - name: Checkout code
@@ -114,6 +114,9 @@ jobs:
         Source: "${{ env.BUILD_DIR }}\\Release\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
         Source: "${{ env.BUILD_DIR }}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
         Source: "${{ env.BUILD_DIR }}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+
+        [Tasks]
+        Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
 
         [Icons]
         Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"
