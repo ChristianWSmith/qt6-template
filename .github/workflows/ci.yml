@@ -8,6 +8,9 @@ on:
 
 env:
   APP_NAME: MyApp
+  APP_ID: com.example.MyApp
+  APP_CATEGORIES: Utility;
+  APP_ICON: path/to/icon.png
   APP_VERSION: 0.1.0
   QT_VERSION: 6.9.1
   PYTHON_VERSION: 3.13
@@ -19,14 +22,14 @@ jobs:
     strategy:
       matrix:
         include:
-            # - os: ubuntu-latest
-            #   compiler_name: linux_gcc_64
-            #   compiler_dir: gcc_64
-            #   aqt_platform: linux
-            - os: windows-latest
-              compiler_name: win64_msvc2022_64
-              compiler_dir: msvc2022_64
-              aqt_platform: windows
+            - os: ubuntu-latest
+              compiler_name: linux_gcc_64
+              compiler_dir: gcc_64
+              aqt_platform: linux
+            # - os: windows-latest
+            #   compiler_name: win64_msvc2022_64
+            #   compiler_dir: msvc2022_64
+            #   aqt_platform: windows
             # - os: macos-latest
             #   compiler_name: clang_64
             #   compiler_dir: macos
@@ -81,7 +84,80 @@ jobs:
         cmake -B ${BUILD_DIR} -DCMAKE_PREFIX_PATH=${QT_DIR} -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build ${BUILD_DIR} --parallel --config Release
 
-    - name: Deploy Qt Dependencies (macOS)
+    - name: Bundle Application (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        export APP_DIR="${{ env.APP_NAME }}.AppDir"
+        export BIN_DIR="${APP_DIR}/usr/bin"
+        export LIB_DIR="${APP_DIR}/usr/lib"
+        export APP_BIN="${BIN_DIR}/${{ env.APP_NAME }}"
+
+        echo "Installing system dependencies..."
+        sudo apt install -y fuse libfuse2 imagemagick patchelf
+
+        echo "Installing appimagetool..."
+        wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O appimagetool
+        chmod +x appimagetool
+
+        echo "Setting up AppDir..."
+        mkdir -p "${BIN_DIR}"
+        mkdir -p "${LIB_DIR}"
+        cp "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}" "${APP_BIN}"
+        chmod +x "${APP_BIN}"
+
+        seen_deps=()
+        deps=()
+
+        gather_deps() {
+          local bin="$1"
+          while IFS= read -r dep; do
+            [[ -z "${dep}" ]] && continue
+
+            if [[ ! -e "${dep}" ]]; then
+              echo "ERROR: Dependency not found or broken symlink: ${dep}" >&2
+              exit 1
+            fi
+
+            for existing in "${seen_deps[@]}"; do
+              [[ "${existing}" == "${dep}" ]] && continue 2
+            done
+
+            seen_deps+=("${dep}")
+            deps+=("${dep}")
+            gather_deps "${dep}"
+          done < <(ldd "${bin}" | awk '/=>/ {print $3}' | grep -v '^(')
+        }
+
+        echo "Gathering dependencies..."
+        gather_deps "${APP_BIN}"
+
+        echo "Copying dependencies..."
+        for dep in "${deps[@]}"; do
+          cp -v "${dep}" "${LIB_DIR}/" || true
+        done
+
+        echo "Patching RPATH..."
+        patchelf --set-rpath '$ORIGIN/../lib' "${APP_BIN}"
+
+        ln -s "usr/bin/${{ env.APP_NAME }}" "${APP_DIR}/AppRun"
+
+        cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
+        [Desktop Entry]
+        Type=Application
+        Version=${{ env.APP_VERSION }}
+        Name=${{ env.APP_NAME }}
+        Exec=${{ env.APP_NAME }}
+        Icon=${{ env.APP_ID }}
+        Categories=${{ env.APP_CATEGORIES }}
+        EOF
+
+        convert "${{ env.APP_ICON }}" "${APP_DIR}/${{ env.APP_ID }}.png"
+
+        rm -rf "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.APP_NAME }}.AppImage"
+        ./appimagetool "${APP_DIR}"
+        mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.APP_NAME }}.AppImage"
+
+    - name: Bundle Application (macOS)
       if: runner.os == 'macOS'
       shell: bash
       run: |
@@ -89,7 +165,7 @@ jobs:
         export APP_PATH="${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app"
         "${QT_BIN}/macdeployqt" "${APP_PATH}"
 
-    - name: Deploy Qt Dependencies and Build Installer (Windows)
+    - name: Bundle Application (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
@@ -130,6 +206,6 @@ jobs:
       with:
         name: ${{ env.APP_NAME }}-${{ matrix.os }}
         path: |
-          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage
           ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app
           ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}Installer.exe
