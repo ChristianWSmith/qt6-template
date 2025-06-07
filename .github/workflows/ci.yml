@@ -8,6 +8,7 @@ on:
 
 env:
   QT_VERSION: 6.9.1
+  BUILD_DIR: build
 
 jobs:
   build:
@@ -56,14 +57,17 @@ jobs:
     - name: Configure and Build
       shell: bash
       run: |
-        export Qt6_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
-        cmake -B build -DCMAKE_PREFIX_PATH=$Qt6_DIR -DQT_DEBUG_FIND_PACKAGE=ON
-        cmake --build build --parallel --config Release
+        export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
+        cmake -B ${{ env.BUILD_DIR }} -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
+        cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
+
+    - name: List build folder
+      run: ls -lR ${{ env.BUILD_DIR }}
 
     - name: Upload Executable
       uses: actions/upload-artifact@v4
       with:
         name: MyApp-${{ matrix.os }}
         path: |
-          build/MyApp
-          build/MyApp.exe
+          ${{ env.BUILD_DIR }}/MyApp
+          ${{ env.BUILD_DIR }}/MyApp.exe
