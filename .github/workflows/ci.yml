@@ -95,7 +95,7 @@ jobs:
       run: |
         export WINDEPLOYQT=$(cygpath -w "${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin/windeployqt.exe")
         export BUILD_DIR=$(cygpath -w "${{ env.BUILD_DIR }}")
-        export EXE_PATH=$(cygpath -w "$BUILD_DIR/${{ env.APP_NAME }}.exe")
+        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/Release/${{ env.APP_NAME }}.exe")
 
         ${WINDEPLOYQT} "${EXE_PATH}"
         
@@ -111,9 +111,9 @@ jobs:
         SolidCompression=yes
 
         [Files]
-        Source: "${{ env.BUILD_DIR }}\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
-        Source: "${{ env.BUILD_DIR }}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-        Source: "${{ env.BUILD_DIR }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+        Source: "${{ env.BUILD_DIR }}\\Release\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
+        Source: "${{ env.BUILD_DIR }}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        Source: "${{ env.BUILD_DIR }}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
         [Icons]
         Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"
