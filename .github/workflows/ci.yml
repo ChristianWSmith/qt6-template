@@ -181,7 +181,7 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        export XDG_DATA_DIRS="\${APPDIR}/:\${XDG_DATA_DIRS}"
+        export XDG_DATA_DIRS="\${APPDIR}/usr/share:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
         exec "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "$@"
         EOF
         chmod +x "${APP_DIR}/AppRun"
