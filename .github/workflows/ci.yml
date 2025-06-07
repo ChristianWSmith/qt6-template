@@ -133,9 +133,19 @@ jobs:
         echo "Gathering dependencies..."
         gather_deps "${APP_BIN}"
 
+        echo "Getting dependency blacklist..."
+        EXCLUDELIST_PATH="${{ runner.temp }}/appimage_excludelist"
+        wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
+        BLACKLIST_REGEX=$(sed 's/^/^/;s/$/$/;' "${EXCLUDELIST_PATH}" | paste -sd'|' -)
+
         echo "Copying dependencies..."
         for dep in "${deps[@]}"; do
-          cp -v "${dep}" "${LIB_DIR}/" || true
+          base=$(basename "${dep}")
+          if [[ ! "${base}" =~ ${BLACKLIST_REGEX} ]]; then
+            cp -v "${dep}" "${LIB_DIR}/" || true
+          else
+            echo "Skipping blacklisted dependency: ${base}"
+          fi
         done
 
         echo "Patching RPATH..."
