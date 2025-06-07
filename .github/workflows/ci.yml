@@ -139,6 +139,7 @@ jobs:
         echo "Patching RPATH..."
         patchelf --set-rpath '$ORIGIN/../lib' "${APP_BIN}"
 
+        echo "Finalizing AppDir..."
         ln -s "usr/bin/${{ env.APP_NAME }}" "${APP_DIR}/AppRun"
 
         cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
@@ -153,7 +154,9 @@ jobs:
 
         convert "${{ env.APP_ICON }}" "${APP_DIR}/${{ env.APP_ID }}.png"
 
-        rm -rf "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.APP_NAME }}.AppImage"
+        echo "Building AppImage..."
+        rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
+        rm -rf "${{ env.APP_NAME }}.AppImage"
         ./appimagetool "${APP_DIR}"
         mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.APP_NAME }}.AppImage"
 
