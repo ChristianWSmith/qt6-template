@@ -143,12 +143,10 @@ jobs:
 
         echo "Finalizing AppDir..."
         ln -s "usr/bin/${{ env.APP_NAME }}" "${APP_DIR}/AppRun"
-        VERSION_MAJOR_MINOR=$(echo "${{ env.APP_VERSION }}" | cut -d. -f1,2)
 
         cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
         [Desktop Entry]
         Type=Application
-        Version=${VERSION_MAJOR_MINOR}
         X-AppVersion=${{ env.APP_VERSION }}
         Name=${{ env.APP_NAME }}
         Exec=${{ env.APP_NAME }}
