@@ -36,16 +36,16 @@ jobs:
       uses: actions/setup-python@v5
 
     - name: Install OpenGL (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
 
     - name: Confirm OpenGL (macOS)
       if: runner.os == 'macOS'
       run: system_profiler SPSoftwareDataType
 
     - name: Configure MSVC environment (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
 
     - name: Install Qt
       shell: bash
