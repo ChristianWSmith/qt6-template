@@ -51,7 +51,7 @@ jobs:
       shell: bash
       run: |
         pip install aqtinstall
-        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O ${{ runner.temp }}/Qt --modules qtbase qtwidgets qttools
+        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O ${{ runner.temp }}/Qt
 
     - name: Configure and Build
       shell: bash
