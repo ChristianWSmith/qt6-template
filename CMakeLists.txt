@@ -34,18 +34,19 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources"
         )
-
         list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns)
-
-        set_target_properties(MyApp PROPERTIES
-            MACOSX_BUNDLE_ICON_FILE app_icon.icns
-        )
     endif()
 
     qt_add_executable(MyApp
         MANUAL_FINALIZATION
         ${APP_SOURCES}
     )
+
+    if(APPLE)
+      set_target_properties(MyApp PROPERTIES
+          MACOSX_BUNDLE_ICON_FILE app_icon.icns
+      )
+    endif()
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
@@ -62,10 +63,6 @@ else()
         )
 
         list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns)
-
-        set_target_properties(MyApp PROPERTIES
-            MACOSX_BUNDLE_ICON_FILE app_icon.icns
-        )
     endif()
 
     if(ANDROID)
@@ -76,6 +73,11 @@ else()
         add_executable(MyApp
             ${APP_SOURCES}
         )
+        if(APPLE)
+          set_target_properties(MyApp PROPERTIES
+              MACOSX_BUNDLE_ICON_FILE app_icon.icns
+          )
+        endif()
     endif()
 
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
