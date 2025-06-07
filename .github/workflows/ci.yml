@@ -27,18 +27,18 @@ jobs:
               aqt_platform: linux
               app_icon: icons/app_icon.png
               qt_modules: qtwaylandcompositor
-            - os: windows-latest
-              compiler_name: win64_msvc2022_64
-              compiler_dir: msvc2022_64
-              aqt_platform: windows
-              app_icon: icons\\app_icon.ico
-              qt_modules:
-            - os: macos-latest
-              compiler_name: clang_64
-              compiler_dir: macos
-              aqt_platform: mac
-              app_icon: icons/app_icon.icns
-              qt_modules:
+            # - os: windows-latest
+            #   compiler_name: win64_msvc2022_64
+            #   compiler_dir: msvc2022_64
+            #   aqt_platform: windows
+            #   app_icon: icons\\app_icon.ico
+            #   qt_modules:
+            # - os: macos-latest
+            #   compiler_name: clang_64
+            #   compiler_dir: macos
+            #   aqt_platform: mac
+            #   app_icon: icons/app_icon.icns
+            #   qt_modules:
 
     steps:
     - name: Checkout code
