@@ -7,6 +7,8 @@ on:
     branches: [ main, develop ]
 
 env:
+  APP_NAME: MyApp
+  APP_VERSION: 0.1.0
   QT_VERSION: 6.9.1
   PYTHON_VERSION: 3.13
   BUILD_DIR: build
@@ -47,11 +49,17 @@ jobs:
       if: runner.os == 'macOS'
       run: system_profiler SPSoftwareDataType
 
-    - name: Configure MSVC environment (Windows)
+    - name: Configure MSVC Environment (Windows)
       if: runner.os == 'Windows'
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Install Qt
+    - name: Install Deployment Tools (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        choco install innosetup
+
+    - name: Install Qt (All)
       shell: bash
       run: |
         pip install aqtinstall
@@ -61,21 +69,64 @@ jobs:
         fi
         aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O $INSTALL_DIR
 
-    - name: Configure and Build
+    - name: Configure and Build (All)
       shell: bash
       run: |
         export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
+        export BUILD_DIR="${{ env.BUILD_DIR }}"
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            export QT_DIR=$(cygpath -w "$QT_DIR")
+            export QT_DIR=$(cygpath -w "${QT_DIR}")
+            export BUILD_DIR=$(cygpath -w "${BUILD_DIR}")
         fi
-        cmake -B ${{ env.BUILD_DIR }} -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
-        cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
+        cmake -B ${BUILD_DIR} -DCMAKE_PREFIX_PATH=${QT_DIR} -DQT_DEBUG_FIND_PACKAGE=ON
+        cmake --build ${BUILD_DIR} --parallel --config Release
+
+    - name: Deploy Qt Dependencies (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        export QT_BIN="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin"
+        export APP_PATH="${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app"
+        "${QT_BIN}/macdeployqt" "${APP_PATH}"
+
+    - name: Deploy Qt Dependencies and Build Installer (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        export WINDEPLOYQT=$(cygpath -w "${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin/windeployqt.exe")
+        export BUILD_DIR=$(cygpath -w "${{ env.BUILD_DIR }}")
+        export EXE_PATH=$(cygpath -w "$BUILD_DIR/${{ env.APP_NAME }}.exe")
+
+        ${WINDEPLOYQT} "${EXE_PATH}"
+        
+        export ISS_PATH=$(cygpath -w "${{ github.workspace }}/inno.iss")
+        cat > "${ISS_PATH}" <<'EOF'
+        [Setup]
+        AppName=${{ env.APP_NAME }}
+        AppVersion=${{ env.APP_VERSION }}
+        DefaultDirName={commonpf}\${{ env.APP_NAME }}
+        OutputDir=${{ env.BUILD_DIR }}
+        OutputBaseFilename=${{ env.APP_NAME }}Installer
+        Compression=lzma
+        SolidCompression=yes
+
+        [Files]
+        Source: "${{ env.BUILD_DIR }}\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
+        Source: "${{ env.BUILD_DIR }}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        Source: "${{ env.BUILD_DIR }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+
+        [Icons]
+        Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"
+        Name: "{commondesktop}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; Tasks: desktopicon
+        EOF
+
+        iscc "${ISS_PATH}"
 
     - name: Upload Executable
       uses: actions/upload-artifact@v4
       with:
-        name: MyApp-${{ matrix.os }}
+        name: ${{ env.APP_NAME }}-${{ matrix.os }}
         path: |
-          ${{ env.BUILD_DIR }}/MyApp
-          ${{ env.BUILD_DIR }}/MyApp.app
-          ${{ env.BUILD_DIR }}/MyApp.exe
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}Installer.exe
