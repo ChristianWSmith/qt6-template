@@ -1,1 +1,1 @@
-# qt-template
+# MyApp
