@@ -78,4 +78,4 @@ jobs:
         path: |
           ${{ env.BUILD_DIR }}/MyApp
           ${{ env.BUILD_DIR }}/MyApp.app
-          ${{ env.BUILD_DIR }}/MyApp.exe
+          ${{ env.BUILD_DIR }}/Release/MyApp.exe
