@@ -57,7 +57,7 @@ jobs:
         pip install aqtinstall
         export INSTALL_DIR="${{ runner.temp }}/Qt"
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-            export INSTALL_DIR=$(cygpath -w "INSTALL_DIR")
+            export INSTALL_DIR=$(cygpath -w "$INSTALL_DIR")
         fi
         aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O $INSTALL_DIR
 
