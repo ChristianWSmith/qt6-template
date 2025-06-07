@@ -136,11 +136,18 @@ jobs:
         echo "Getting dependency blacklist..."
         EXCLUDELIST_PATH="${{ runner.temp }}/appimage_excludelist"
         wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
-        BLACKLIST_REGEX=$(sed 's/^/^/;s/$/$/;' "${EXCLUDELIST_PATH}" | paste -sd'|' -)
+        BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \
+          cut -d'#' -f1 | \
+          sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | \
+          sed -E 's/[][\.^$]/\\&/g' | \
+          sed 's/^/^/' | \
+          sed 's/$/$/' | \
+          paste -sd'|' -)
 
         echo "Copying dependencies..."
         for dep in "${deps[@]}"; do
-          base=$(basename "${dep}")
+          real_dep=$(readlink -f "${dep}")
+          base=$(basename "${real_dep}")
           if [[ ! "${base}" =~ ${BLACKLIST_REGEX} ]]; then
             cp -v "${dep}" "${LIB_DIR}/" || true
           else
