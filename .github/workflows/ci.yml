@@ -31,11 +31,11 @@ jobs:
               compiler_dir: msvc2022_64
               aqt_platform: windows
               app_icon: icons\\app_icon.ico
-            # - os: macos-latest
-            #   compiler_name: clang_64
-            #   compiler_dir: macos
-            #   aqt_platform: mac
-            #   app_icon: icons/app_icon.icns
+            - os: macos-latest
+              compiler_name: clang_64
+              compiler_dir: macos
+              aqt_platform: mac
+              app_icon: icons/app_icon.icns
 
     steps:
     - name: Checkout code
@@ -160,7 +160,7 @@ jobs:
         rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
         rm -rf "${{ env.APP_NAME }}.AppImage"
         ./appimagetool "${APP_DIR}"
-        mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.APP_NAME }}.AppImage"
+        mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage"
 
     - name: Bundle Application (macOS)
       if: runner.os == 'macOS'
