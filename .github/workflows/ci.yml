@@ -55,7 +55,11 @@ jobs:
       shell: bash
       run: |
         pip install aqtinstall
-        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O ${{ runner.temp }}/Qt
+        export INSTALL_DIR="${{ runner.temp }}/Qt"
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+            export INSTALL_DIR=$(cygpath -w "INSTALL_DIR")
+        fi
+        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O $INSTALL_DIR
 
     - name: Configure and Build
       shell: bash
@@ -64,7 +68,6 @@ jobs:
         if [[ "${{ runner.os }}" == "Windows" ]]; then
             export QT_DIR=$(cygpath -w "$QT_DIR")
         fi
-        ls -lR $QT_DIR
         cmake -B ${{ env.BUILD_DIR }} -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
 
