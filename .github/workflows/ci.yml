@@ -35,17 +35,29 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
 
+    - name: Install OpenGL (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+
+    - name: Confirm OpenGL (macOS)
+      if: runner.os == 'macOS'
+      run: system_profiler SPSoftwareDataType
+
+    - name: Configure MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
     - name: Install Qt
       shell: bash
       run: |
         pip install aqtinstall
-        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O ${{ runner.temp }}/Qt
+        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O ${{ runner.temp }}/Qt --modules qtbase qtwidgets qttools
 
     - name: Configure and Build
       shell: bash
       run: |
         export Qt6_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
-        cmake -B build -DCMAKE_PREFIX_PATH=$Qt6_DIR
+        cmake -B build -DCMAKE_PREFIX_PATH=$Qt6_DIR -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build build --parallel --config Release
 
     - name: Upload Executable
