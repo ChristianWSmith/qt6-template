@@ -196,7 +196,17 @@ jobs:
         Categories=${{ env.APP_CATEGORIES }}
         EOF
 
+        mkdir -p "${APP_DIR}/usr/share/applications"
+        ln -s "../../../${{ env.APP_ID }}.desktop" "${APP_DIR}/usr/share/applications/${{ env.APP_ID }}.desktop"
+
+        echo "Setting up icons..."
         convert "${{ matrix.app_icon }}" "${APP_DIR}/${{ env.APP_ID }}.png"
+        mkdir -p "${APP_DIR}/usr/share/icons/hicolor"
+        for size in 16 32 48 64 128 256 512; do
+            mkdir -p "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps"
+            convert "${{ matrix.app_icon }}" -resize ${size}x${size} "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/${{ env.APP_ID }}.png"
+        done
+
 
         echo "Building AppImage..."
         rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
