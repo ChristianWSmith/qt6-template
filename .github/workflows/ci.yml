@@ -93,6 +93,8 @@ jobs:
         export BIN_DIR="${APP_DIR}/usr/bin"
         export LIB_DIR="${APP_DIR}/usr/lib"
         export APP_BIN="${BIN_DIR}/${{ env.APP_NAME }}"
+        export QT_PLATFORMS_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/plugins/platforms"
+        export APP_PLATFORMS_DIR="${APP_DIR}/usr/plugins/platforms"
 
         echo "Installing system dependencies..."
         sudo apt install -y fuse libfuse2 imagemagick patchelf
@@ -104,6 +106,8 @@ jobs:
         echo "Setting up AppDir..."
         mkdir -p "${BIN_DIR}"
         mkdir -p "${LIB_DIR}"
+        mkdir -p "${APP_PLATFORMS_DIR}"
+        cp -r "${QT_PLATFORMS_DIR}/." "${APP_PLATFORMS_DIR}/"
         cp "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}" "${APP_BIN}"
         chmod +x "${APP_BIN}"
 
@@ -159,7 +163,12 @@ jobs:
         patchelf --set-rpath '$ORIGIN/../lib' "${APP_BIN}"
 
         echo "Finalizing AppDir..."
-        ln -s "usr/bin/${{ env.APP_NAME }}" "${APP_DIR}/AppRun"
+        cat > "${APP_DIR}/AppRun" <<EOF
+        #!/bin/sh
+        export QT_QPA_PLATFORM_PLUGIN_PATH="\$APPDIR/usr/plugins/platforms"
+        exec "\$APPDIR/usr/bin/${{ env.APP_NAME }}" "$@"
+        EOF
+        chmod +x "${APP_DIR}/AppRun"
 
         cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
         [Desktop Entry]
