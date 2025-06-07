@@ -10,7 +10,6 @@ env:
   APP_NAME: MyApp
   APP_ID: com.example.MyApp
   APP_CATEGORIES: Utility;
-  APP_ICON: path/to/icon.png
   APP_VERSION: 0.1.0
   QT_VERSION: 6.9.1
   PYTHON_VERSION: 3.13
@@ -26,14 +25,17 @@ jobs:
               compiler_name: linux_gcc_64
               compiler_dir: gcc_64
               aqt_platform: linux
-            # - os: windows-latest
-            #   compiler_name: win64_msvc2022_64
-            #   compiler_dir: msvc2022_64
-            #   aqt_platform: windows
-            # - os: macos-latest
-            #   compiler_name: clang_64
-            #   compiler_dir: macos
-            #   aqt_platform: mac
+              app_icon: icons/app_icon.png
+            - os: windows-latest
+              compiler_name: win64_msvc2022_64
+              compiler_dir: msvc2022_64
+              aqt_platform: windows
+              app_icon: icons\\app_icon.ico
+            - os: macos-latest
+              compiler_name: clang_64
+              compiler_dir: macos
+              aqt_platform: mac
+              app_icon: icons/app_icon.icns
 
     steps:
     - name: Checkout code
@@ -152,7 +154,7 @@ jobs:
         Categories=${{ env.APP_CATEGORIES }}
         EOF
 
-        convert "${{ env.APP_ICON }}" "${APP_DIR}/${{ env.APP_ID }}.png"
+        convert "${{ matrix.app_icon }}" "${APP_DIR}/${{ env.APP_ID }}.png"
 
         echo "Building AppImage..."
         rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
@@ -188,18 +190,16 @@ jobs:
         OutputBaseFilename=${{ env.APP_NAME }}Installer
         Compression=lzma
         SolidCompression=yes
+        SetupIconFile=${{ matrix.app_icon }}
 
         [Files]
         Source: "${{ env.BUILD_DIR }}\\Release\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
         Source: "${{ env.BUILD_DIR }}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
         Source: "${{ env.BUILD_DIR }}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
-        [Tasks]
-        Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
-
         [Icons]
-        Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"
-        Name: "{commondesktop}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; Tasks: desktopicon
+        Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
+        Name: "{commondesktop}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
         EOF
 
         iscc "${ISS_PATH}"

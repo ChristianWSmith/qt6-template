@@ -23,26 +23,58 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    set(APP_SOURCES
+        ${PROJECT_SOURCES}
+        resources.qrc
+    )
+
+    if(WIN32)
+        list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/MyApp.rc)
+    elseif(APPLE)
+        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources"
+        )
+
+        list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns)
+
+        set_target_properties(MyApp PROPERTIES
+            MACOSX_BUNDLE_ICON_FILE app_icon.icns
+        )
+    endif()
+
     qt_add_executable(MyApp
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
+        ${APP_SOURCES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET MyApp APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
     qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 else()
+    set(APP_SOURCES
+        ${PROJECT_SOURCES}
+        resources.qrc
+    )
+
+    if(WIN32)
+        list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/MyApp.rc)
+    elseif(APPLE)
+        set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources"
+        )
+
+        list(APPEND APP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/icons/app_icon.icns)
+
+        set_target_properties(MyApp PROPERTIES
+            MACOSX_BUNDLE_ICON_FILE app_icon.icns
+        )
+    endif()
+
     if(ANDROID)
         add_library(MyApp SHARED
-            ${PROJECT_SOURCES}
+            ${APP_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(MyApp
-            ${PROJECT_SOURCES}
+            ${APP_SOURCES}
         )
     endif()
 
@@ -51,9 +83,7 @@ endif()
 
 target_link_libraries(MyApp PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+set(BUNDLE_ID_OPTION "")
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.MyApp)
 endif()
