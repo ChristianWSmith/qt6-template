@@ -17,18 +17,18 @@ jobs:
     strategy:
       matrix:
         include:
-            # - os: ubuntu-latest
-            #   compiler_name: linux_gcc_64
-            #   compiler_dir: gcc_64
-            #   aqt_platform: linux
+            - os: ubuntu-latest
+              compiler_name: linux_gcc_64
+              compiler_dir: gcc_64
+              aqt_platform: linux
             - os: windows-latest
-              compiler_name: win64_mingw
-              compiler_dir: mingw_64
+              compiler_name: win64_msvc2022_64
+              compiler_dir: msvc2022_64
               aqt_platform: windows
-            # - os: macos-latest
-            #   compiler_name: clang_64
-            #   compiler_dir: macos
-            #   aqt_platform: mac
+            - os: macos-latest
+              compiler_name: clang_64
+              compiler_dir: macos
+              aqt_platform: mac
 
     steps:
     - name: Checkout code
@@ -70,9 +70,6 @@ jobs:
         fi
         cmake -B ${{ env.BUILD_DIR }} -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
-
-    - name: List build folder
-      run: ls -lR ${{ env.BUILD_DIR }}
 
     - name: Upload Executable
       uses: actions/upload-artifact@v4
