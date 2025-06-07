@@ -180,9 +180,9 @@ jobs:
         echo "Finalizing AppDir..."
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
-        export QT_QPA_PLATFORM_PLUGIN_PATH="\$APPDIR/usr/plugins/platforms"
-        export XDG_DATA_DIRS="\$APPDIR:\$XDG_DATA_DIRS"
-        exec "\$APPDIR/usr/bin/${{ env.APP_NAME }}" "$@"
+        export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
+        export XDG_DATA_DIRS="\${APPDIR}/:\${XDG_DATA_DIRS}"
+        exec "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "$@"
         EOF
         chmod +x "${APP_DIR}/AppRun"
 
