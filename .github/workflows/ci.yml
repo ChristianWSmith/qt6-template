@@ -26,16 +26,16 @@ jobs:
               compiler_dir: gcc_64
               aqt_platform: linux
               app_icon: icons/app_icon.png
-            - os: windows-latest
-              compiler_name: win64_msvc2022_64
-              compiler_dir: msvc2022_64
-              aqt_platform: windows
-              app_icon: icons\\app_icon.ico
-            - os: macos-latest
-              compiler_name: clang_64
-              compiler_dir: macos
-              aqt_platform: mac
-              app_icon: icons/app_icon.icns
+            # - os: windows-latest
+            #   compiler_name: win64_msvc2022_64
+            #   compiler_dir: msvc2022_64
+            #   aqt_platform: windows
+            #   app_icon: icons\\app_icon.ico
+            # - os: macos-latest
+            #   compiler_name: clang_64
+            #   compiler_dir: macos
+            #   aqt_platform: mac
+            #   app_icon: icons/app_icon.icns
 
     steps:
     - name: Checkout code
