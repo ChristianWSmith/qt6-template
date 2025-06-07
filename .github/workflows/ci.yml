@@ -8,6 +8,7 @@ on:
 
 env:
   QT_VERSION: 6.9.1
+  PYTHON_VERSION: 3.13
   BUILD_DIR: build
 
 jobs:
@@ -16,18 +17,18 @@ jobs:
     strategy:
       matrix:
         include:
-            - os: ubuntu-latest
-              compiler_name: linux_gcc_64
-              compiler_dir: gcc_64
-              aqt_platform: linux
+            # - os: ubuntu-latest
+            #   compiler_name: linux_gcc_64
+            #   compiler_dir: gcc_64
+            #   aqt_platform: linux
             - os: windows-latest
               compiler_name: win64_mingw
               compiler_dir: mingw_64
               aqt_platform: windows
-            - os: macos-latest
-              compiler_name: clang_64
-              compiler_dir: macos
-              aqt_platform: mac
+            # - os: macos-latest
+            #   compiler_name: clang_64
+            #   compiler_dir: macos
+            #   aqt_platform: mac
 
     steps:
     - name: Checkout code
@@ -35,6 +36,8 @@ jobs:
 
     - name: Set up Python
       uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
@@ -58,6 +61,7 @@ jobs:
       shell: bash
       run: |
         export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
+        ls -lR $QT_DIR
         cmake -B ${{ env.BUILD_DIR }} -DQT_DIR=$QT_DIR -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
 
