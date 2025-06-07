@@ -61,7 +61,7 @@ jobs:
       shell: bash
       run: |
         export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
-        ls -lR $QT_DIR
+        ls -lR ${{ runner.temp }}/Qt
         cmake -B ${{ env.BUILD_DIR }} -DQT_DIR=$QT_DIR -DCMAKE_PREFIX_PATH=$QT_DIR -DQT_DEBUG_FIND_PACKAGE=ON
         cmake --build ${{ env.BUILD_DIR }} --parallel --config Release
 
