@@ -1,0 +1,262 @@
+name: Build Qt CMake Project
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  APP_NAME: MyApp
+  APP_ID: com.example.MyApp
+  APP_CATEGORIES: Utility;
+  APP_VERSION: 0.1.0
+  QT_VERSION: 6.9.1
+  PYTHON_VERSION: 3.13
+  BUILD_DIR: build
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+            - os: ubuntu-latest
+              compiler_name: linux_gcc_64
+              compiler_dir: gcc_64
+              aqt_platform: linux
+              app_icon: icons/app_icon.png
+              qt_modules: qtwaylandcompositor
+            - os: windows-latest
+              compiler_name: win64_msvc2022_64
+              compiler_dir: msvc2022_64
+              aqt_platform: windows
+              app_icon: icons\\app_icon.ico
+              qt_modules:
+            - os: macos-latest
+              compiler_name: clang_64
+              compiler_dir: macos
+              aqt_platform: mac
+              app_icon: icons/app_icon.icns
+              qt_modules:
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install OpenGL (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+
+    - name: Confirm OpenGL (macOS)
+      if: runner.os == 'macOS'
+      run: system_profiler SPSoftwareDataType
+
+    - name: Configure MSVC Environment (Windows)
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install Deployment Tools (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        choco install innosetup
+
+    - name: Install Qt (All)
+      shell: bash
+      run: |
+        pip install aqtinstall
+        export INSTALL_DIR="${{ runner.temp }}/Qt"
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+            export INSTALL_DIR=$(cygpath -w "${INSTALL_DIR}")
+        fi
+        export QT_MODULES="${{ matrix.qt_modules || '' }}"
+        if [[ -n "${QT_MODULES}" ]]; then
+          export MODULE_ARGS="-m ${QT_MODULES}"
+        fi
+        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O "${INSTALL_DIR}" ${MODULE_ARGS}
+
+    - name: Configure and Build (All)
+      shell: bash
+      run: |
+        export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
+        export BUILD_DIR="${{ env.BUILD_DIR }}"
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+            export QT_DIR=$(cygpath -w "${QT_DIR}")
+            export BUILD_DIR=$(cygpath -w "${BUILD_DIR}")
+        fi
+        cmake -B ${BUILD_DIR} -DCMAKE_PREFIX_PATH=${QT_DIR} -DQT_DEBUG_FIND_PACKAGE=ON
+        cmake --build ${BUILD_DIR} --parallel --config Release
+
+    - name: Bundle Application (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        export APP_DIR="${{ env.APP_NAME }}.AppDir"
+        export BIN_DIR="${APP_DIR}/usr/bin"
+        export LIB_DIR="${APP_DIR}/usr/lib"
+        export APP_BIN="${BIN_DIR}/${{ env.APP_NAME }}"
+
+        export QT_PLUGINS_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/plugins"
+        export QT_PLATFORMS_DIR="${QT_PLUGINS_DIR}/platforms"
+        export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
+
+        export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
+        export APP_PLATFORMS_DIR="${APP_PLUGINS_DIR}/platforms"
+        export APP_WAYLAND_DIR="${APP_PLUGINS_DIR}/wayland-shell-integration"
+
+        echo "Installing system dependencies..."
+        sudo apt install -y fuse libfuse2 imagemagick patchelf
+
+        echo "Installing appimagetool..."
+        wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O appimagetool
+        chmod +x appimagetool
+
+        echo "Setting up AppDir..."
+        mkdir -p "${BIN_DIR}"
+        mkdir -p "${LIB_DIR}"
+        mkdir -p "${APP_PLATFORMS_DIR}"
+        mkdir -p "${APP_WAYLAND_DIR}"
+        cp -r "${QT_WAYLAND_DIR}/." "${APP_WAYLAND_DIR}/"
+        cp -r "${QT_PLATFORMS_DIR}/." "${APP_PLATFORMS_DIR}/"
+        cp "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}" "${APP_BIN}"
+        chmod +x "${APP_BIN}"
+
+        seen_deps=()
+        deps=()
+
+        gather_deps() {
+          local bin="$1"
+          while IFS= read -r dep; do
+            [[ -z "${dep}" ]] && continue
+
+            if [[ ! -e "${dep}" ]]; then
+              echo "ERROR: Dependency not found or broken symlink: ${dep}" >&2
+              exit 1
+            fi
+
+            for existing in "${seen_deps[@]}"; do
+              [[ "${existing}" == "${dep}" ]] && continue 2
+            done
+
+            seen_deps+=("${dep}")
+            deps+=("${dep}")
+            gather_deps "${dep}"
+          done < <(ldd "${bin}" | awk '/=>/ {print $3}' | grep -v '^(')
+        }
+
+        echo "Gathering dependencies..."
+        gather_deps "${APP_BIN}"
+
+        echo "Getting dependency blacklist..."
+        EXCLUDELIST_PATH="${{ runner.temp }}/appimage_excludelist"
+        wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
+        BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \
+          cut -d'#' -f1 | \
+          sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | \
+          sed -E 's/[][\.^$]/\\&/g' | \
+          sed 's/^/^/' | \
+          sed 's/$/$/' | \
+          paste -sd'|' -)
+
+        echo "Copying dependencies..."
+        for dep in "${deps[@]}"; do
+          real_dep=$(readlink -f "${dep}")
+          base=$(basename "${real_dep}")
+          if [[ ! "${base}" =~ ${BLACKLIST_REGEX} ]]; then
+            cp -v "${dep}" "${LIB_DIR}/" || true
+          else
+            echo "Skipping blacklisted dependency: ${base}"
+          fi
+        done
+
+        echo "Patching RPATH..."
+        patchelf --set-rpath '$ORIGIN/../lib' "${APP_BIN}"
+
+        echo "Finalizing AppDir..."
+        cat > "${APP_DIR}/AppRun" <<EOF
+        #!/bin/sh
+        export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
+        cp "\${APPDIR}/${{ env.APP_ID }}.desktop" "\${HOME}/.local/share/applications"
+        sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
+        cp "\${APPDIR}/${{ env.APP_ID }}.png" "\${HOME}/.local/share/icons"
+        "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "\$@"
+        rm "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
+        rm "\${HOME}/.local/share/icons/${{ env.APP_ID }}.png"
+        EOF
+        chmod +x "${APP_DIR}/AppRun"
+
+        cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
+        [Desktop Entry]
+        Type=Application
+        X-AppVersion=${{ env.APP_VERSION }}
+        Name=${{ env.APP_NAME }}
+        Exec=${{ env.APP_NAME }}
+        Icon=${{ env.APP_ID }}
+        Categories=${{ env.APP_CATEGORIES }}
+        StartupWMClass=${{ env.APP_NAME }}
+        EOF
+
+        convert "${{ matrix.app_icon }}" "${APP_DIR}/${{ env.APP_ID }}.png"
+
+
+        echo "Building AppImage..."
+        rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
+        rm -rf "${{ env.APP_NAME }}.AppImage"
+        ./appimagetool "${APP_DIR}"
+        mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage"
+
+    - name: Bundle Application (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        export QT_BIN="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin"
+        export APP_PATH="${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app"
+        "${QT_BIN}/macdeployqt" "${APP_PATH}"
+
+    - name: Bundle Application (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        export WINDEPLOYQT=$(cygpath -w "${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin/windeployqt.exe")
+        export BUILD_DIR=$(cygpath -w "${{ env.BUILD_DIR }}")
+        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/Release/${{ env.APP_NAME }}.exe")
+
+        ${WINDEPLOYQT} "${EXE_PATH}"
+        
+        export ISS_PATH=$(cygpath -w "${{ github.workspace }}/inno.iss")
+        cat > "${ISS_PATH}" <<'EOF'
+        [Setup]
+        AppName=${{ env.APP_NAME }}
+        AppVersion=${{ env.APP_VERSION }}
+        DefaultDirName={commonpf}\${{ env.APP_NAME }}
+        OutputDir=${{ env.BUILD_DIR }}
+        OutputBaseFilename=${{ env.APP_NAME }}Installer
+        Compression=lzma
+        SolidCompression=yes
+        SetupIconFile=${{ matrix.app_icon }}
+
+        [Files]
+        Source: "${{ env.BUILD_DIR }}\\Release\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
+        Source: "${{ env.BUILD_DIR }}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        Source: "${{ env.BUILD_DIR }}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+
+        [Icons]
+        Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
+        Name: "{commondesktop}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
+        EOF
+
+        iscc "${ISS_PATH}"
+
+    - name: Upload Executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.APP_NAME }}-${{ matrix.os }}
+        path: |
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app
+          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}Installer.exe
