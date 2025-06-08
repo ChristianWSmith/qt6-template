@@ -181,11 +181,10 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        # export XDG_DATA_DIRS="\${APPDIR}/usr/share:\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
         cp "\${APPDIR}/${{ env.APP_ID }}.desktop" "\${HOME}/.local/share/applications"
         sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
         cp "\${APPDIR}/${{ env.APP_ID }}.png" "\${HOME}/.local/share/icons"
-        exec "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "\$@"
+        "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "\$@"
         rm "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
         rm "\${HOME}/.local/share/icons/${{ env.APP_ID }}.png"
         EOF
@@ -202,16 +201,7 @@ jobs:
         StartupWMClass=${{ env.APP_NAME }}
         EOF
 
-        # mkdir -p "${APP_DIR}/usr/share/applications"
-        # ln -s "../../../${{ env.APP_ID }}.desktop" "${APP_DIR}/usr/share/applications/${{ env.APP_ID }}.desktop"
-
-        echo "Setting up icons..."
         convert "${{ matrix.app_icon }}" "${APP_DIR}/${{ env.APP_ID }}.png"
-        # mkdir -p "${APP_DIR}/usr/share/icons/hicolor"
-        # for size in 16 32 48 64 128 256 512; do
-        #     mkdir -p "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps"
-        #     convert "${{ matrix.app_icon }}" -resize ${size}x${size} "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/${{ env.APP_ID }}.png"
-        # done
 
 
         echo "Building AppImage..."
