@@ -6,3 +6,6 @@ compiler.cppstd=17
 compiler.runtime=dynamic
 compiler.version=193
 os=Windows
+
+[conf]
+tools.cmake.cmaketoolchain:generator_multi=False

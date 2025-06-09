@@ -1,9 +1,10 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeDeps, CMakeToolchain, CMake
+import os
 
 class MyAppConan(ConanFile):
-    name = "myapp"
-    version = "0.1"
+    name = os.environ['APP_NAME']
+    version = os.environ['APP_VERSION']
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "CMakeToolchain"
     requires = [
