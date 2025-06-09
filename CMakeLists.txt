@@ -13,6 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Only use Qt6
 find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(fmt REQUIRED)
+find_package(Vulkan REQUIRED)
+
 
 set(TS_FILES MyApp_en_US.ts)
 
@@ -60,6 +62,7 @@ endif()
 
 target_link_libraries(MyApp PRIVATE Qt6::Widgets)
 target_link_libraries(MyApp PRIVATE fmt::fmt)
+target_link_libraries(MyApp PRIVATE Vulkan::Vulkan)
 
 qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 

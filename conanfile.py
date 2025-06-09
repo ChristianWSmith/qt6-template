@@ -6,7 +6,11 @@ class MyAppConan(ConanFile):
     version = "0.1"
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "CMakeToolchain"
-    requires = "fmt/10.2.1"
+    requires = [
+        "fmt/10.2.1",
+        "vulkan-loader/1.3.268.0",
+        "vulkan-headers/1.3.268.0"
+    ]
 
     def layout(self):
         self.folders.build = "build"
