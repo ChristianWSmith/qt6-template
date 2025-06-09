@@ -28,6 +28,21 @@ case "${PLATFORM}" in
     export COMPILER_DIR="msvc2022_64"
     export AQT_PLATFORM="windows"
     export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/icons/app_icon.ico")"
+    ls 'C:\'
+    ls 'C:\Program Files'
+    ls 'C:\Program Files\Microsoft Visual Studio'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build'
+    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat'
+    eval "$(
+      cmd.exe /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && set' \
+      | tr -d '\r' \
+      | grep -E '^(INCLUDE|LIB|LIBPATH|PATH)=' \
+      | sed -E 's|^([^=]+)=(.*)|export \1="\2"|'
+    )"
     ;;
   darwin)
     export COMPILER_NAME="clang_64"
@@ -62,12 +77,4 @@ if [ "${PLATFORM}" = "windows" ]; then
     export QT_WAYLAND_DIR="$(cygpath -w "${QT_WAYLAND_DIR}")"
     export CONAN_PROFILE="$(cygpath -w "${CONAN_PROFILE}")"
     export CONAN_TOOLCHAIN="$(cygpath -w "${CONAN_TOOLCHAIN}")"
-
-    VC_VARS_BAT="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-    cmd.exe /c "\"${VC_VARS_BAT}\" && set" \
-      | sed 's/\r$//' \
-      | grep -E '^(INCLUDE|LIB|LIBPATH|PATH|TEMP|TMP|VCTools|WindowsSdk|VisualStudioVersion|Platform)=.*' \
-      | while IFS='=' read -r name value; do
-          eval "export ${name}=\"$(echo "${value}" | sed 's/"/\\"/g')\""
-        done
 fi
