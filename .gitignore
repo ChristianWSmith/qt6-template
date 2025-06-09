@@ -87,3 +87,6 @@ CMakeLists.txt.user*
 # Qt
 Qt/
 aqtinstall.log
+
+# Conan
+CMakeUserPresets.json

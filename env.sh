@@ -14,7 +14,7 @@ export APP_CATEGORIES="Utility;"
 export QT_VERSION="6.9.1"
 
 # --- OS DETECTION ---
-PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
+export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
 
 case "${PLATFORM}" in
   linux)
@@ -49,6 +49,8 @@ export QT_BIN="${QT_ROOT}/bin"
 export QT_PLUGINS_DIR="${QT_ROOT}/plugins"
 export QT_PLATFORMS_DIR="${QT_PLUGINS_DIR}/platforms"
 export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
+export CONAN_PROFILE="${PROJECT_ROOT}/conan/profiles/${PLATFORM}"
+export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 
 if [ "${PLATFORM}" = "windows" ]; then
     export BUILD_DIR="$(cygpath -w "{$BUILD_DIR}")"
@@ -58,4 +60,6 @@ if [ "${PLATFORM}" = "windows" ]; then
     export QT_PLUGINS_DIR="$(cygpath -w "${QT_PLUGINS_DIR}")"
     export QT_PLATFORMS_DIR="$(cygpath -w "${QT_PLATFORMS_DIR}")"
     export QT_WAYLAND_DIR="$(cygpath -w "${QT_WAYLAND_DIR}")"
+    export CONAN_PROFILE="$(cygpath -w "${CONAN_PROFILE}")"
+    export CONAN_TOOLCHAIN="$(cygpath -w "${CONAN_TOOLCHAIN}")"
 fi

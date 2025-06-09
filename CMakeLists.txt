@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Only use Qt6
 find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(fmt REQUIRED)
 
 set(TS_FILES MyApp_en_US.ts)
 
@@ -58,6 +59,7 @@ if(WIN32)
 endif()
 
 target_link_libraries(MyApp PRIVATE Qt6::Widgets)
+target_link_libraries(MyApp PRIVATE fmt::fmt)
 
 qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 
