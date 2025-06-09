@@ -40,7 +40,9 @@ jobs:
       shell: bash
       run: |
         pip install --user pipenv
-        echo "$(python -m site --user-base)/bin" >> "$GITHUB_PATH"
+        PYTHON_BIN="$(python -m site --user-base)/bin"
+        echo "${PYTHON_BIN}" >> "${GITHUB_PATH}"
+        export PATH="${PYTHON_BIN}:${PATH}"
         pipenv install
 
     - name: Install OpenGL (Linux)
