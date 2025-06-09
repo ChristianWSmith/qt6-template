@@ -13,6 +13,9 @@ export APP_CATEGORIES="Utility;"
 # --- QT CONFIG ---
 export QT_VERSION="6.9.1"
 
+# --- BUILD DIR ---
+export BUILD_DIR="${PROJECT_ROOT}/build"
+
 # --- OS DETECTION ---
 export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
 
@@ -45,7 +48,6 @@ case "${PLATFORM}" in
 esac
 
 # --- DERIVED PATHS ---
-export BUILD_DIR="${PROJECT_ROOT}/build"
 export QT_ROOT="${PROJECT_ROOT}/Qt/${QT_VERSION}/${COMPILER_DIR}"
 export QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
 export QT_BIN="${QT_ROOT}/bin"
