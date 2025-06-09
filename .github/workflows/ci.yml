@@ -36,9 +36,11 @@ jobs:
       with:
         python-version: ${{ steps.extract_python.outputs.python-version }}
 
-    - name : Install pipenv
+    - name: Install Pipenv
       shell: bash
-      run: pip install --user pipenv
+      run: |
+        pip install --user pipenv
+        echo "$(python -m site --user-base)/bin" >> "$GITHUB_PATH"
 
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
