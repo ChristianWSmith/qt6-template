@@ -52,7 +52,7 @@ export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
 export CONAN_PROFILE="${PROJECT_ROOT}/conan/profiles/${PLATFORM}"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 
-if [ "${PLATFORM}" = "windows" ]; then
+if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
     export QT_ROOT="$(cygpath -w "${QT_ROOT}")"
     export QT_CMAKE_DIR="$(cygpath -w "${QT_CMAKE_DIR}")"

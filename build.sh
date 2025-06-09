@@ -35,11 +35,11 @@ cmake --build "${BUILD_DIR}" --parallel --config "${CMAKE_CONFIG}"
 exit /b %errorlevel%
 EOF
 
-    echo "Created build wrapper: ${WRAPPER_BAT}"
-    cat "${WRAPPER_BAT}"
+  echo "Created build wrapper: ${WRAPPER_BAT}"
+  cat "${WRAPPER_BAT}"
 
-    # Execute it from bash
-    cmd.exe /c "${WRAPPER_BAT}"
+  WRAPPER_BAT_WIN=$(cygpath -w "${WRAPPER_BAT}")
+  cmd.exe /c "\"${WRAPPER_BAT_WIN}\""
 else
   cmake -B "${BUILD_DIR}" \
     -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
