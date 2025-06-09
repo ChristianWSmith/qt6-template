@@ -36,6 +36,10 @@ jobs:
       with:
         python-version: ${{ steps.extract_python.outputs.python-version }}
 
+    - name : Install pipenv
+      shell: bash
+      run: pip install --user pipenv
+
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
