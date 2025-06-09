@@ -29,6 +29,7 @@ case "${PLATFORM}" in
     export AQT_PLATFORM="windows"
     export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/icons/app_icon.ico")"
     ${PROJECT_ROOT}/vcvars.sh
+    source ${PROJECT_ROOT}/vcvars_exports.sh
     ;;
   darwin)
     export COMPILER_NAME="clang_64"
