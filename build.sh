@@ -22,15 +22,20 @@ if [[ "${PLATFORM}" == "windows" ]]; then
   WRAPPER_BAT="$(mktemp --suffix=.bat)"
 
   cat > "${WRAPPER_BAT}" <<EOF
-@echo off
+@echo on
+echo === Activating vcvars ===
 call "${VCVARSALL_ESCAPED}" amd64
 if errorlevel 1 exit /b %errorlevel%
+
+echo === Configuring with CMake ===
 cmake -B "${BUILD_DIR}" ^
   -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" ^
   -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" ^
   -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} ^
   -DQT_DEBUG_FIND_PACKAGE=ON
 if errorlevel 1 exit /b %errorlevel%
+
+echo === Building with CMake ===
 cmake --build "${BUILD_DIR}" --parallel --config "${CMAKE_CONFIG}"
 exit /b %errorlevel%
 EOF
