@@ -28,21 +28,17 @@ case "${PLATFORM}" in
     export COMPILER_DIR="msvc2022_64"
     export AQT_PLATFORM="windows"
     export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/icons/app_icon.ico")"
-    ls 'C:\'
-    ls 'C:\Program Files'
-    ls 'C:\Program Files\Microsoft Visual Studio'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build'
-    ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat'
+    env | sort > before
     eval "$(
       cmd.exe /c '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && set' \
       | tr -d '\r' \
       | grep -E '^(INCLUDE|LIB|LIBPATH|PATH)=' \
       | sed -E 's|^([^=]+)=(.*)|export \1="\2"|'
     )"
+    env | sort > after
+    echo "--- Diffing env ---"
+    diff before after
+    rm before after
     ;;
   darwin)
     export COMPILER_NAME="clang_64"
