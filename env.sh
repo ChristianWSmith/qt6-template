@@ -22,18 +22,21 @@ case "${PLATFORM}" in
     export COMPILER_DIR="gcc_64"
     export AQT_PLATFORM="linux"
     export APP_ICON="${PROJECT_ROOT}/icons/app_icon.png"
+    export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
     ;;
   windows)
     export COMPILER_NAME="win64_msvc2022_64"
     export COMPILER_DIR="msvc2022_64"
     export AQT_PLATFORM="windows"
     export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/icons/app_icon.ico")"
+    export CONAN_TOOLCHAIN="${BUILD_DIR}/Release/conan_toolchain.cmake"
     ;;
   darwin)
     export COMPILER_NAME="clang_64"
     export COMPILER_DIR="macos"
     export AQT_PLATFORM="mac"
     export APP_ICON="${PROJECT_ROOT}/icons/app_icon.icns"
+    export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
     ;;
   *)
     echo "Unsupported platform: ${PLATFORM}"
@@ -50,7 +53,6 @@ export QT_PLUGINS_DIR="${QT_ROOT}/plugins"
 export QT_PLATFORMS_DIR="${QT_PLUGINS_DIR}/platforms"
 export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
 export CONAN_PROFILE="${PROJECT_ROOT}/conan/profiles/${PLATFORM}"
-export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 
 if [ "${PLATFORM}" = "windows" ]; then
     export BUILD_DIR="$(cygpath -w "{$BUILD_DIR}")"

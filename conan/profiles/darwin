@@ -9,5 +9,4 @@ os=Macos
 
 [conf]
 tools.system.package_manager:mode=install
-tools.system.package_manager:sudo=True[conf]
-tools.cmake.cmaketoolchain:generator_multi=False
+tools.system.package_manager:sudo=True

@@ -10,4 +10,3 @@ os=Linux
 [conf]
 tools.system.package_manager:mode=install
 tools.system.package_manager:sudo=True
-tools.cmake.cmaketoolchain:generator_multi=False
