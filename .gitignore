@@ -83,3 +83,7 @@ CMakeLists.txt.user*
 
 # Resources
 !MyApp.rc
+
+# Qt
+Qt/
+aqtinstall.log
