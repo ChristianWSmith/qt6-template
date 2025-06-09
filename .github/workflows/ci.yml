@@ -211,7 +211,7 @@ jobs:
         [Setup]
         AppName=${APP_NAME}
         AppVersion=${APP_VERSION}
-        DefaultDirName={commonpf}\${APP_NAME}
+        DefaultDirName={commonpf}\\${APP_NAME}
         OutputDir=${BUILD_DIR}
         OutputBaseFilename=${APP_NAME}Installer
         Compression=lzma
@@ -228,6 +228,7 @@ jobs:
         Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"
         EOF
 
+        cat "${ISS_PATH}"
         iscc "${ISS_PATH}"
 
     - name: Move Artifact to Uploads
