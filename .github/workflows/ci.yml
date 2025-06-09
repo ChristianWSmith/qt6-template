@@ -204,7 +204,7 @@ jobs:
       run: |
         source ./env.sh
         export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
-        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/Release/${APP_NAME}.exe")
+        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${APP_NAME}.exe")
 
         ${WINDEPLOYQT} "${EXE_PATH}"
         
