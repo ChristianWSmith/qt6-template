@@ -207,7 +207,7 @@ jobs:
         ${WINDEPLOYQT} "${EXE_PATH}"
         
         export ISS_PATH=$(cygpath -w "${{ github.workspace }}/inno.iss")
-        cat > "${ISS_PATH}" <<'EOF'
+        cat > "${ISS_PATH}" <<EOF
         [Setup]
         AppName=${APP_NAME}
         AppVersion=${APP_VERSION}
