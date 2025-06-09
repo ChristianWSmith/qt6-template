@@ -62,4 +62,12 @@ if [ "${PLATFORM}" = "windows" ]; then
     export QT_WAYLAND_DIR="$(cygpath -w "${QT_WAYLAND_DIR}")"
     export CONAN_PROFILE="$(cygpath -w "${CONAN_PROFILE}")"
     export CONAN_TOOLCHAIN="$(cygpath -w "${CONAN_TOOLCHAIN}")"
+
+    VC_VARS_BAT="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+    cmd.exe /c "\"${VC_VARS_BAT}\" && set" \
+      | sed 's/\r$//' \
+      | grep -E '^(INCLUDE|LIB|LIBPATH|PATH|TEMP|TMP|VCTools|WindowsSdk|VisualStudioVersion|Platform)=.*' \
+      | while IFS='=' read -r name value; do
+          eval "export ${name}=\"$(echo "${value}" | sed 's/"/\\"/g')\""
+        done
 fi
