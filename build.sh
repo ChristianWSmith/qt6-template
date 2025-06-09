@@ -11,8 +11,6 @@ pipenv run conan install . \
   --build=missing \
   --profile:build="${CONAN_PROFILE}" \
   --profile:host="${CONAN_PROFILE}"
-    
-find "${BUILD_DIR}" -name conan_toolchain.cmake
 
 cmake -B "${BUILD_DIR}" \
   -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
