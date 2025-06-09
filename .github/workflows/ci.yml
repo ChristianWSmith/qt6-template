@@ -41,6 +41,7 @@ jobs:
       run: |
         pip install --user pipenv
         echo "$(python -m site --user-base)/bin" >> "$GITHUB_PATH"
+        pipenv install
 
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
@@ -63,7 +64,6 @@ jobs:
     - name: Install Qt (All)
       shell: bash
       run: |
-        pipenv install
         ./install_qt.sh
 
     - name: Configure and Build (All)
