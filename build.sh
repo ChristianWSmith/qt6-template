@@ -19,6 +19,11 @@ cmake -B "${BUILD_DIR}" \
   -DQT_DEBUG_FIND_PACKAGE=ON
 
 # cmake --build "${BUILD_DIR}" --parallel --config ${CMAKE_CONFIG}
-pushd "${BUILD_DIR}"
-pipenv run conan build "${PROJECT_ROOT}"
-popd
+
+if [[ "${PLATFORM}" == "windows" ]]; then
+  cmd.exe /c "cd \"${BUILD_DIR}\" && python -m pipenv run conan build \"${PROJECT_ROOT}\""
+else
+  pushd "${BUILD_DIR}"
+  pipenv run conan build "${PROJECT_ROOT}"
+  popd
+fi
