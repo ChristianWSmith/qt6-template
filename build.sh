@@ -6,6 +6,11 @@ source ${SCRIPT_DIR}/env.sh
 
 CMAKE_CONFIG="${1:-Release}"
 
+pipenv run conan profile detect
+echo "--- ${HOME}/.conan2/profiles/default ---"
+cat "${HOME}/.conan2/profiles/default"
+echo "--- ${HOME}/.conan2/profiles/default ---"
+
 pipenv run conan install . \
   --output-folder="${BUILD_DIR}" \
   --build=missing \
