@@ -12,20 +12,40 @@ pipenv run conan install . \
   --profile:build="${CONAN_PROFILE}" \
   --profile:host="${CONAN_PROFILE}"
 
-cmake -B "${BUILD_DIR}" \
-  -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
-  -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" \
-  -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} \
-  -DQT_DEBUG_FIND_PACKAGE=ON
-
 if [[ "${PLATFORM}" == "windows" ]]; then
-  VCVARSALL='C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
-  CMD_LINE=$(cat <<EOF
-call "${VCVARSALL}" amd64 && ^
+  VCVARSALL="C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat"
+
+  # Escape backslashes for cmd.exe usage
+  VCVARSALL_ESCAPED=$(echo "${VCVARSALL}" | sed 's|\\|\\\\|g')
+
+  # Create a temporary batch file to execute properly in CMD
+  WRAPPER_BAT="$(mktemp --suffix=.bat)"
+
+  cat > "${WRAPPER_BAT}" <<EOF
+@echo off
+call "${VCVARSALL_ESCAPED}" amd64
+if errorlevel 1 exit /b %errorlevel%
+cmake -B "${BUILD_DIR}" ^
+  -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" ^
+  -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" ^
+  -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} ^
+  -DQT_DEBUG_FIND_PACKAGE=ON
+if errorlevel 1 exit /b %errorlevel%
 cmake --build "${BUILD_DIR}" --parallel --config "${CMAKE_CONFIG}"
+exit /b %errorlevel%
 EOF
-  )
-  cmd.exe /c "${CMD_LINE}"
+
+    echo "Created build wrapper: ${WRAPPER_BAT}"
+    cat "${WRAPPER_BAT}"
+
+    # Execute it from bash
+    cmd.exe /c "${WRAPPER_BAT}"
 else
+  cmake -B "${BUILD_DIR}" \
+    -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
+    -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" \
+    -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} \
+    -DQT_DEBUG_FIND_PACKAGE=ON
   cmake --build "${BUILD_DIR}" --parallel --config ${CMAKE_CONFIG}
 fi
+
