@@ -61,7 +61,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        choco install innosetup vulkan-sdk
+        choco install innosetup
 
     - name: Install Qt (All)
       shell: bash
