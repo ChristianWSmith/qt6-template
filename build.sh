@@ -11,46 +11,14 @@ pipenv run conan install . \
   --build=missing \
   --profile:build="${CONAN_PROFILE}" \
   --profile:host="${CONAN_PROFILE}"
-
-if [[ "${PLATFORM}" == "windows" ]]; then
-  VCVARSALL="C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsall.bat"
-
-  # Escape backslashes for cmd.exe usage
-  VCVARSALL_ESCAPED=$(echo "${VCVARSALL}" | sed 's|\\|\\\\|g')
-
-  # Create a temporary batch file to execute properly in CMD
-  WRAPPER_BAT="$(mktemp --suffix=.bat)"
-
-  cat > "${WRAPPER_BAT}" <<EOF
-@echo on
-echo === Activating vcvars ===
-call "${VCVARSALL_ESCAPED}" amd64
-if errorlevel 1 exit /b %errorlevel%
-
-echo === Configuring with CMake ===
-cmake -B "${BUILD_DIR}" ^
-  -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" ^
-  -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" ^
-  -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} ^
+  
+cmake -B "${BUILD_DIR}" \
+  -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
+  -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" \
+  -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} \
   -DQT_DEBUG_FIND_PACKAGE=ON
-if errorlevel 1 exit /b %errorlevel%
 
-echo === Building with CMake ===
-cmake --build "${BUILD_DIR}" --parallel --config "${CMAKE_CONFIG}"
-exit /b %errorlevel%
-EOF
-
-  echo "Created build wrapper: ${WRAPPER_BAT}"
-  cat "${WRAPPER_BAT}"
-
-  WRAPPER_BAT_WIN=$(cygpath -w "${WRAPPER_BAT}")
-  cmd.exe //c "${WRAPPER_BAT_WIN}"
-else
-  cmake -B "${BUILD_DIR}" \
-    -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
-    -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" \
-    -DCMAKE_BUILD_TYPE=${CMAKE_CONFIG} \
-    -DQT_DEBUG_FIND_PACKAGE=ON
-  cmake --build "${BUILD_DIR}" --parallel --config ${CMAKE_CONFIG}
-fi
-
+# cmake --build "${BUILD_DIR}" --parallel --config ${CMAKE_CONFIG}
+pushd "${BUILD_DIR}"
+pipenv run conan build "${PROJECT_ROOT}"
+popd

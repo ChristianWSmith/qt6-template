@@ -1,0 +1,1 @@
+. "/home/christian/Programming/qt-template/conanrunenv-release-x86_64.sh"
