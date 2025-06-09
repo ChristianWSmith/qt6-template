@@ -44,7 +44,7 @@ EOF
   cat "${WRAPPER_BAT}"
 
   WRAPPER_BAT_WIN=$(cygpath -w "${WRAPPER_BAT}")
-  cmd.exe /c "\"${WRAPPER_BAT_WIN}\""
+  cmd.exe //c "${WRAPPER_BAT_WIN}"
 else
   cmake -B "${BUILD_DIR}" \
     -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
