@@ -12,6 +12,8 @@ pipenv run conan install . \
   --profile:build="${CONAN_PROFILE}" \
   --profile:host="${CONAN_PROFILE}"
 
+find "${BUILD_DIR}"
+
 cmake -B "${BUILD_DIR}" \
   -DCMAKE_TOOLCHAIN_FILE="${CONAN_TOOLCHAIN}" \
   -DCMAKE_PREFIX_PATH="${QT_CMAKE_DIR}" \
