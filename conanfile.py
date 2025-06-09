@@ -16,7 +16,7 @@ class MyAppConan(ConanFile):
     ]
 
     def layout(self):
-        self.folders.build = "build"
+        self.folders.build = os.environ.get("BUILD_DIR", "build")
 
     def build(self):
         cmake = CMake(self)
