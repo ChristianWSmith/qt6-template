@@ -83,3 +83,11 @@ CMakeLists.txt.user*
 
 # Resources
 !MyApp.rc
+
+# Qt
+Qt/
+aqtinstall.log
+
+# Conan
+CMakeUserPresets.json
+.mypy_cache/

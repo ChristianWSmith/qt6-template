@@ -3,9 +3,11 @@
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
+#include <fmt/core.h>
 
 int main(int argc, char *argv[])
 {
+    fmt::print("Hello from fmt!\n");
     QApplication a(argc, argv);
     a.setWindowIcon(QIcon(":/icons/app_icon.png"));
     QGuiApplication::setDesktopFileName("com.example.MyApp");

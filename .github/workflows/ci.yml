@@ -7,13 +7,8 @@ on:
     branches: [ main, develop ]
 
 env:
-  APP_NAME: MyApp
-  APP_ID: com.example.MyApp
-  APP_CATEGORIES: Utility;
-  APP_VERSION: 0.1.0
-  QT_VERSION: 6.9.1
-  PYTHON_VERSION: 3.13
-  BUILD_DIR: build
+  UPLOAD_DIR: upload
+  BUILD_TYPE: Release
 
 jobs:
   build:
@@ -22,32 +17,34 @@ jobs:
       matrix:
         include:
             - os: ubuntu-latest
-              compiler_name: linux_gcc_64
-              compiler_dir: gcc_64
-              aqt_platform: linux
-              app_icon: icons/app_icon.png
-              qt_modules: qtwaylandcompositor
             - os: windows-latest
-              compiler_name: win64_msvc2022_64
-              compiler_dir: msvc2022_64
-              aqt_platform: windows
-              app_icon: icons\\app_icon.ico
-              qt_modules:
             - os: macos-latest
-              compiler_name: clang_64
-              compiler_dir: macos
-              aqt_platform: mac
-              app_icon: icons/app_icon.icns
-              qt_modules:
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Extract Python Version from Pipfile
+      id: extract_python
+      shell: bash
+      run: |
+        PYTHON_VERSION=$(awk -F'"' '/python_version/ { print $2 }' Pipfile)
+        echo "Found Python version: ${PYTHON_VERSION}"
+        echo "python-version=${PYTHON_VERSION}" >> "$GITHUB_OUTPUT"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: ${{ steps.extract_python.outputs.python-version }}
+
+    - name: Install Pipenv
+      shell: bash
+      run: |
+        pip install --user pipenv
+        PYTHON_BIN="$(python -m site --user-base)/bin"
+        echo "${PYTHON_BIN}" >> "${GITHUB_PATH}"
+        export PATH="${PYTHON_BIN}:${PATH}"
+        pipenv install
 
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
@@ -70,40 +67,22 @@ jobs:
     - name: Install Qt (All)
       shell: bash
       run: |
-        pip install aqtinstall
-        export INSTALL_DIR="${{ runner.temp }}/Qt"
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-            export INSTALL_DIR=$(cygpath -w "${INSTALL_DIR}")
-        fi
-        export QT_MODULES="${{ matrix.qt_modules || '' }}"
-        if [[ -n "${QT_MODULES}" ]]; then
-          export MODULE_ARGS="-m ${QT_MODULES}"
-        fi
-        aqt install-qt ${{ matrix.aqt_platform }} desktop ${{ env.QT_VERSION }} ${{ matrix.compiler_name }} -O "${INSTALL_DIR}" ${MODULE_ARGS}
+        ./install_qt.sh
 
     - name: Configure and Build (All)
       shell: bash
       run: |
-        export QT_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/lib/cmake/Qt6"
-        export BUILD_DIR="${{ env.BUILD_DIR }}"
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-            export QT_DIR=$(cygpath -w "${QT_DIR}")
-            export BUILD_DIR=$(cygpath -w "${BUILD_DIR}")
-        fi
-        cmake -B ${BUILD_DIR} -DCMAKE_PREFIX_PATH=${QT_DIR} -DQT_DEBUG_FIND_PACKAGE=ON
-        cmake --build ${BUILD_DIR} --parallel --config Release
+        ./build.sh ${{ env.BUILD_TYPE }}
 
     - name: Bundle Application (Linux)
       if: runner.os == 'Linux'
       run: |
-        export APP_DIR="${{ env.APP_NAME }}.AppDir"
+        source ./env.sh
+
+        export APP_DIR="${APP_NAME}.AppDir"
         export BIN_DIR="${APP_DIR}/usr/bin"
         export LIB_DIR="${APP_DIR}/usr/lib"
-        export APP_BIN="${BIN_DIR}/${{ env.APP_NAME }}"
-
-        export QT_PLUGINS_DIR="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/plugins"
-        export QT_PLATFORMS_DIR="${QT_PLUGINS_DIR}/platforms"
-        export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
+        export APP_BIN="${BIN_DIR}/${APP_NAME}"
 
         export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
         export APP_PLATFORMS_DIR="${APP_PLUGINS_DIR}/platforms"
@@ -123,7 +102,7 @@ jobs:
         mkdir -p "${APP_WAYLAND_DIR}"
         cp -r "${QT_WAYLAND_DIR}/." "${APP_WAYLAND_DIR}/"
         cp -r "${QT_PLATFORMS_DIR}/." "${APP_PLATFORMS_DIR}/"
-        cp "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}" "${APP_BIN}"
+        cp "${BUILD_DIR}/${APP_NAME}" "${APP_BIN}"
         chmod +x "${APP_BIN}"
 
         seen_deps=()
@@ -181,82 +160,100 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        cp "\${APPDIR}/${{ env.APP_ID }}.desktop" "\${HOME}/.local/share/applications"
-        sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
-        cp "\${APPDIR}/${{ env.APP_ID }}.png" "\${HOME}/.local/share/icons"
-        "\${APPDIR}/usr/bin/${{ env.APP_NAME }}" "\$@"
-        rm "\${HOME}/.local/share/applications/${{ env.APP_ID }}.desktop"
-        rm "\${HOME}/.local/share/icons/${{ env.APP_ID }}.png"
+        mkdir -p "\${HOME}/.local/share/applications"
+        mkdir -p "\${HOME}/.local/share/icons"
+        cp "\${APPDIR}/${APP_ID}.desktop" "\${HOME}/.local/share/applications"
+        sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${APP_ID}.desktop"
+        cp "\${APPDIR}/${APP_ID}.png" "\${HOME}/.local/share/icons"
+        "\${APPDIR}/usr/bin/${APP_NAME}" "\$@"
+        rm "\${HOME}/.local/share/applications/${APP_ID}.desktop"
+        rm "\${HOME}/.local/share/icons/${APP_ID}.png"
         EOF
         chmod +x "${APP_DIR}/AppRun"
 
-        cat > "${APP_DIR}/${{ env.APP_ID }}.desktop" <<EOF
+        cat > "${APP_DIR}/${APP_ID}.desktop" <<EOF
         [Desktop Entry]
         Type=Application
-        X-AppVersion=${{ env.APP_VERSION }}
-        Name=${{ env.APP_NAME }}
-        Exec=${{ env.APP_NAME }}
-        Icon=${{ env.APP_ID }}
-        Categories=${{ env.APP_CATEGORIES }}
-        StartupWMClass=${{ env.APP_NAME }}
+        X-AppVersion=${APP_VERSION}
+        Name=${APP_NAME}
+        Exec=${APP_NAME}
+        Icon=${APP_ID}
+        Categories=${APP_CATEGORIES}
+        StartupWMClass=${APP_NAME}
         EOF
 
-        convert "${{ matrix.app_icon }}" "${APP_DIR}/${{ env.APP_ID }}.png"
+        convert "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
 
 
         echo "Building AppImage..."
-        rm -rf "${{ env.APP_NAME }}-x86_64.AppImage"
-        rm -rf "${{ env.APP_NAME }}.AppImage"
+        rm -rf "${APP_NAME}-x86_64.AppImage"
+        rm -rf "${APP_NAME}.AppImage"
         ./appimagetool "${APP_DIR}"
-        mv "${{ env.APP_NAME }}-x86_64.AppImage" "${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage"
+        mv "${APP_NAME}-x86_64.AppImage" "${BUILD_DIR}/${APP_NAME}.AppImage"
 
     - name: Bundle Application (macOS)
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        export QT_BIN="${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin"
-        export APP_PATH="${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app"
+        source ./env.sh
+        export APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
         "${QT_BIN}/macdeployqt" "${APP_PATH}"
 
     - name: Bundle Application (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        export WINDEPLOYQT=$(cygpath -w "${{ runner.temp }}/Qt/${{ env.QT_VERSION }}/${{ matrix.compiler_dir }}/bin/windeployqt.exe")
-        export BUILD_DIR=$(cygpath -w "${{ env.BUILD_DIR }}")
-        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/Release/${{ env.APP_NAME }}.exe")
+        source ./env.sh
+        export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
+        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${APP_NAME}.exe")
 
         ${WINDEPLOYQT} "${EXE_PATH}"
         
         export ISS_PATH=$(cygpath -w "${{ github.workspace }}/inno.iss")
-        cat > "${ISS_PATH}" <<'EOF'
+        cat > "${ISS_PATH}" <<EOF
         [Setup]
-        AppName=${{ env.APP_NAME }}
-        AppVersion=${{ env.APP_VERSION }}
-        DefaultDirName={commonpf}\${{ env.APP_NAME }}
-        OutputDir=${{ env.BUILD_DIR }}
-        OutputBaseFilename=${{ env.APP_NAME }}Installer
+        AppName=${APP_NAME}
+        AppVersion=${APP_VERSION}
+        DefaultDirName={commonpf}\\${APP_NAME}
+        OutputDir=${BUILD_DIR}
+        OutputBaseFilename=${APP_NAME}Installer
         Compression=lzma
         SolidCompression=yes
-        SetupIconFile=${{ matrix.app_icon }}
+        SetupIconFile=${APP_ICON}
 
         [Files]
-        Source: "${{ env.BUILD_DIR }}\\Release\\${{ env.APP_NAME }}.exe"; DestDir: "{app}"; Flags: ignoreversion
-        Source: "${{ env.BUILD_DIR }}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-        Source: "${{ env.BUILD_DIR }}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\${APP_NAME}.exe"; DestDir: "{app}"; Flags: ignoreversion
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
         [Icons]
-        Name: "{group}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
-        Name: "{commondesktop}\\${{ env.APP_NAME }}"; Filename: "{app}\\${{ env.APP_NAME }}.exe"; IconFilename: "{app}\\${{ matrix.app_icon }}"
+        Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"
+        Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"
         EOF
 
+        cat "${ISS_PATH}"
         iscc "${ISS_PATH}"
+
+    - name: Move Artifact to Uploads
+      shell: bash
+      run: |
+        source ./env.sh
+        mkdir -p "${{ env.UPLOAD_DIR }}"
+        
+        if [ -e "${BUILD_DIR}/${APP_NAME}.AppImage" ]; then
+          mv -v "${BUILD_DIR}/${APP_NAME}.AppImage" "${{ env.UPLOAD_DIR }}"
+        fi
+
+        if [ -e "${BUILD_DIR}/${APP_NAME}.app" ]; then
+          mv -v "${BUILD_DIR}/${APP_NAME}.app" "${{ env.UPLOAD_DIR }}"
+        fi
+
+        if [ -e "${BUILD_DIR}/${APP_NAME}Installer.exe" ]; then
+          mv -v "${BUILD_DIR}/${APP_NAME}Installer.exe" "${{ env.UPLOAD_DIR }}"
+        fi
 
     - name: Upload Executable
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.APP_NAME }}-${{ matrix.os }}
-        path: |
-          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.AppImage
-          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}.app
-          ${{ env.BUILD_DIR }}/${{ env.APP_NAME }}Installer.exe
+        name: ${{ matrix.os }}
+        path: ${{ env.UPLOAD_DIR }}
