@@ -80,3 +80,14 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+# Resources
+!resources/win_resources.rc
+
+# Qt
+Qt/
+aqtinstall.log
+
+# Conan
+CMakeUserPresets.json
+.mypy_cache/

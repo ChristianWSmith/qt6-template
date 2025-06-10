@@ -1,1 +1,1 @@
-# qt-template
+# qt6-template
