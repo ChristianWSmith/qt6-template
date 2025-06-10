@@ -4,15 +4,15 @@ from conan.tools.microsoft import VCVars
 import os
 
 
-class MyAppConan(ConanFile):
+class MyConanApp(ConanFile):
     name = os.environ.get('APP_NAME', 'DEFAULT_APP_NAME')
     version = os.environ.get('APP_VERSION', 'DEFAULT_APP_VERSION')
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "VCVars", "CMakeToolchain"
     requires = [
-        "fmt/10.2.1",
-        "vulkan-loader/1.3.268.0",
-        "vulkan-headers/1.3.268.0"
+        "fmt/[>=0]",
+        "vulkan-loader/[>=0]",
+        "vulkan-headers/[>=0]"
     ]
 
     def layout(self):
@@ -22,7 +22,9 @@ class MyAppConan(ConanFile):
         cmake = CMake(self)
         cmake.configure(variables={
             "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
-            "CMAKE_BUILD_TYPE": os.environ.get("CMAKE_BUILD_TYPE", "Release"),
+            "APP_NAME": os.environ.get("APP_NAME", "MyConanApp"),
+            "APP_VERSION": os.environ.get("APP_VERSION", "0.1.0"),
+            "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
             "QT_DEBUG_FIND_PACKAGE": "ON"
         })
         cmake.build()
