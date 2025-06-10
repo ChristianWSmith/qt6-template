@@ -67,17 +67,17 @@ jobs:
     - name: Install Qt (All)
       shell: bash
       run: |
-        ./install_qt.sh
+        ./scripts/install_qt.sh
 
     - name: Configure and Build (All)
       shell: bash
       run: |
-        ./build.sh ${{ env.BUILD_TYPE }}
+        ./scripts/build.sh ${{ env.BUILD_TYPE }}
 
     - name: Bundle Application (Linux)
       if: runner.os == 'Linux'
       run: |
-        source ./env.sh
+        source ./scripts/env.sh
 
         export APP_DIR="${APP_NAME}.AppDir"
         export BIN_DIR="${APP_DIR}/usr/bin"
@@ -195,7 +195,7 @@ jobs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        source ./env.sh
+        source ./scripts/env.sh
         export APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
         "${QT_BIN}/macdeployqt" "${APP_PATH}"
 
@@ -203,7 +203,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        source ./env.sh
+        source ./scripts/env.sh
         export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
         export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${APP_NAME}.exe")
 
@@ -237,7 +237,7 @@ jobs:
     - name: Move Artifact to Uploads
       shell: bash
       run: |
-        source ./env.sh
+        source ./scripts/env.sh
         mkdir -p "${{ env.UPLOAD_DIR }}"
         
         if [ -e "${BUILD_DIR}/${APP_NAME}.AppImage" ]; then

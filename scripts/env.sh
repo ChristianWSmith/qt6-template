@@ -2,16 +2,11 @@
 set -euo pipefail
 
 # --- SCRIPT DIR ---
-export PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+export PROJECT_ROOT="${SCRIPT_DIR}/.."
 
-# --- APP ---
-export APP_NAME="MyApp"
-export APP_VERSION="0.1.0"
-export APP_ID="com.example.MyApp"
-export APP_CATEGORIES="Utility;"
-
-# --- QT CONFIG ---
-export QT_VERSION="6.9.1"
+# --- APP/QT ---
+source "${PROJECT_ROOT}/app.env"
 
 # --- OS DETECTION ---
 export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
@@ -21,19 +16,19 @@ case "${PLATFORM}" in
     export COMPILER_NAME="linux_gcc_64"
     export COMPILER_DIR="gcc_64"
     export AQT_PLATFORM="linux"
-    export APP_ICON="${PROJECT_ROOT}/icons/app_icon.png"
+    export APP_ICON="${PROJECT_ROOT}/resources/icons/app_icon.png"
     ;;
   windows)
     export COMPILER_NAME="win64_msvc2022_64"
     export COMPILER_DIR="msvc2022_64"
     export AQT_PLATFORM="windows"
-    export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/icons/app_icon.ico")"
+    export APP_ICON="$(cygpath -w "${PROJECT_ROOT}/resources/icons/app_icon.ico")"
     ;;
   darwin)
     export COMPILER_NAME="clang_64"
     export COMPILER_DIR="macos"
     export AQT_PLATFORM="mac"
-    export APP_ICON="${PROJECT_ROOT}/icons/app_icon.icns"
+    export APP_ICON="${PROJECT_ROOT}/resources/icons/app_icon.icns"
     ;;
   *)
     echo "Unsupported platform: ${PLATFORM}"

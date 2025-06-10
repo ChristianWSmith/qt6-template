@@ -1,1 +1,1 @@
-# MyApp
+# qt6-template

@@ -82,7 +82,7 @@ CMakeLists.txt.user*
 /build*/
 
 # Resources
-!MyApp.rc
+!resources/win_resources.rc
 
 # Qt
 Qt/
