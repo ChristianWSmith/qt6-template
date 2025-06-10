@@ -17,7 +17,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void incrementCounter();
+
 private:
     Ui::MainWindow *ui;
+    int counter = 0;
 };
 #endif // MAINWINDOW_H
