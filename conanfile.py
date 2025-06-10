@@ -22,7 +22,7 @@ class MyAppConan(ConanFile):
         cmake = CMake(self)
         cmake.configure(variables={
             "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
-            "CMAKE_BUILD_TYPE": os.environ.get("CMAKE_CONFIG", "Release"),
+            "CMAKE_BUILD_TYPE": os.environ.get("CMAKE_BUILD_TYPE", "Release"),
             "QT_DEBUG_FIND_PACKAGE": "ON"
         })
         cmake.build()

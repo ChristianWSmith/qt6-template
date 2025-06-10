@@ -8,6 +8,7 @@ on:
 
 env:
   UPLOAD_DIR: upload
+  BUILD_TYPE: Release
 
 jobs:
   build:
@@ -15,9 +16,9 @@ jobs:
     strategy:
       matrix:
         include:
-            # - os: ubuntu-latest
+            - os: ubuntu-latest
             - os: windows-latest
-            # - os: macos-latest
+            - os: macos-latest
 
     steps:
     - name: Checkout code
@@ -71,7 +72,7 @@ jobs:
     - name: Configure and Build (All)
       shell: bash
       run: |
-        ./build.sh
+        ./build.sh ${{ env.BUILD_TYPE }}
 
     - name: Bundle Application (Linux)
       if: runner.os == 'Linux'
@@ -204,7 +205,7 @@ jobs:
       run: |
         source ./env.sh
         export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
-        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/Release/${APP_NAME}.exe")
+        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${APP_NAME}.exe")
 
         ${WINDEPLOYQT} "${EXE_PATH}"
         
@@ -221,9 +222,9 @@ jobs:
         SetupIconFile=${APP_ICON}
 
         [Files]
-        Source: "${BUILD_DIR}\\Release\\${APP_NAME}.exe"; DestDir: "{app}"; Flags: ignoreversion
-        Source: "${BUILD_DIR}\\Release\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-        Source: "${BUILD_DIR}\\Release\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\${APP_NAME}.exe"; DestDir: "{app}"; Flags: ignoreversion
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
+        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
         [Icons]
         Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"

@@ -43,7 +43,8 @@ esac
 
 # --- DERIVED PATHS ---
 export BUILD_DIR="${PROJECT_ROOT}/build"
-export QT_ROOT="${PROJECT_ROOT}/Qt/${QT_VERSION}/${COMPILER_DIR}"
+export QT_INSTALL_DIR="${PROJECT_ROOT}/Qt"
+export QT_ROOT="${QT_INSTALL_DIR}/${QT_VERSION}/${COMPILER_DIR}"
 export QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
 export QT_BIN="${QT_ROOT}/bin"
 export QT_PLUGINS_DIR="${QT_ROOT}/plugins"
@@ -54,6 +55,7 @@ export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 
 if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
+    export QT_INSTALL_DIR="$(cygpath -w "${QT_INSTALL_DIR}")"
     export QT_ROOT="$(cygpath -w "${QT_ROOT}")"
     export QT_CMAKE_DIR="$(cygpath -w "${QT_CMAKE_DIR}")"
     export QT_BIN="$(cygpath -w "${QT_BIN}")"
