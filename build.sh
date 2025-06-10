@@ -15,4 +15,5 @@ pipenv run conan build "${PROJECT_ROOT}" \
   --profile:build="${CONAN_PROFILE}" \
   --profile:host="${CONAN_PROFILE}" \
   -s build_type="${CMAKE_BUILD_TYPE}" \
-  --build=missing
+  --build=missing \
+  --lockfile="${CONAN_LOCK}"

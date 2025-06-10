@@ -50,7 +50,9 @@ export QT_BIN="${QT_ROOT}/bin"
 export QT_PLUGINS_DIR="${QT_ROOT}/plugins"
 export QT_PLATFORMS_DIR="${QT_PLUGINS_DIR}/platforms"
 export QT_WAYLAND_DIR="${QT_PLUGINS_DIR}/wayland-shell-integration"
-export CONAN_PROFILE="${PROJECT_ROOT}/conan/profiles/${PLATFORM}"
+export CONAN_PROFILES_DIR="${PROJECT_ROOT}/conan/profiles"
+export CONAN_PROFILE="${CONAN_PROFILES_DIR}/${PLATFORM}"
+export CONAN_LOCK="${PROJECT_ROOT}/conan.lock"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 
 if [ "${PLATFORM}" == "windows" ]; then
