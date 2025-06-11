@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_definitions(-DAPP_NAME="${APP_NAME}")
 add_definitions(-DAPP_VERSION="${APP_VERSION}")
