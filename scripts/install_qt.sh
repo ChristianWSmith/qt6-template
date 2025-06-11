@@ -10,5 +10,5 @@ if [[ -n "{$QT_MODULES}" ]]; then
   MODULE_ARGS="-m ${QT_MODULES}"
 fi
 
-pipenv install --dev
+installPipenv
 pipenv run aqt install-qt "${AQT_PLATFORM}" desktop "${QT_VERSION}" "${COMPILER_NAME}" -O "${QT_INSTALL_DIR}" ${MODULE_ARGS}
