@@ -1,6 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ENV_SOURCED="${ENV_SOURCED:-}"
+if [ ! -z "${ENV_SOURCED}" ]; then 
+  return 0
+fi
+export ENV_SOURCED=1
+
+installPipenv() {
+  PIPENV_INSTALLED="${PIPENV_INSTALLED:-}"
+  if [ ! -z "${PIPENV_INSTALLED}" ]; then 
+    return 0
+  fi
+  export PIPENV_INSTALLED=1
+  pipenv install --dev
+}
+
 # --- SCRIPT DIR ---
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export PROJECT_ROOT="${SCRIPT_DIR}/.."
@@ -17,6 +32,7 @@ case "${PLATFORM}" in
     export COMPILER_DIR="gcc_64"
     export AQT_PLATFORM="linux"
     export APP_ICON="${PROJECT_ROOT}/resources/icons/app_icon.png"
+    export QT_MODULES="qtwaylandcompositor ${QT_MODULES}"
     ;;
   windows)
     export COMPILER_NAME="win64_msvc2022_64"
