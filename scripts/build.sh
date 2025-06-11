@@ -11,6 +11,7 @@ if [ ! -e "${QT_ROOT}" ]; then
 fi
 
 installPipenv
+
 pipenv run conan build "${PROJECT_ROOT}" \
   --output-folder "${BUILD_DIR}" \
   --profile:build="${CONAN_PROFILE}" \

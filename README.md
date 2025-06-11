@@ -163,4 +163,3 @@ MIT License. See [LICENSE](./LICENSE) for details.
 ## 📣 Contributing
 
 This template is intended to kickstart Qt projects. If you have suggestions, feel free to open a PR or issue.
-
