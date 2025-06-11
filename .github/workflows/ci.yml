@@ -75,6 +75,7 @@ jobs:
         ./scripts/build.sh ${{ env.BUILD_TYPE }}
 
     - name: Static Analysis (Linux)
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         source ./scripts/env.sh
