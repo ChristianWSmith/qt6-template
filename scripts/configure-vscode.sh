@@ -14,12 +14,19 @@ cat > "${VSCODE_DIR}/settings.json" <<EOF
   "cmake.buildDirectory": "${BUILD_DIR}",
   "editor.formatOnSave": true,
   "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
   "files.associations": {
     "*.h": "cpp"
   },
+  "files.watcherExclude": {
+    "${BUILD_DIR}/**": true
+  },
   "clangd.arguments": [
-    "--compile-commands-dir=${BUILD_DIR}"
-  ]
+    "--compile-commands-dir=${BUILD_DIR}",
+    "--clang-tidy"
+  ],
+  "clangd.path": "$(which clangd)"
 }
 EOF
 
@@ -35,6 +42,9 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "program": "${BUILD_DIR}/${APP_NAME}",
       "args": [],
       "cwd": "${PROJECT_ROOT}",
+      "env": {
+        "QT_DEBUG_PLUGINS": "1"
+      }
     }
   ]
 }
@@ -58,6 +68,13 @@ cat > "${VSCODE_DIR}/tasks.json" <<EOF
       "command": "${PROJECT_ROOT}/scripts/build.sh Release",
       "group": "build",
       "problemMatcher": []
+    },
+    {
+      "label": "Clean",
+      "type": "shell",
+      "command": "${PROJECT_ROOT}/scripts/clean.sh",
+      "group": "build",
+      "problemMatcher": []
     }
   ]
 }
@@ -73,7 +90,9 @@ cat > "${VSCODE_DIR}/extensions.json" <<EOF
         "theqtcompany.qt-cpp",
         "theqtcompany.qt-ui",
         "llvm-vs-code-extensions.vscode-clangd",
-        "vadimcn.vscode-lldb"
+        "vadimcn.vscode-lldb",
+        "notskm.clang-tidy",
+        "jeff-hykin.better-cpp-syntax"
     ]
 }
 EOF

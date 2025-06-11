@@ -48,7 +48,7 @@ jobs:
 
     - name: Install OpenGL (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev
+      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev clang-tidy
 
     - name: Confirm OpenGL (macOS)
       if: runner.os == 'macOS'
@@ -73,6 +73,12 @@ jobs:
       shell: bash
       run: |
         ./scripts/build.sh ${{ env.BUILD_TYPE }}
+
+    - name: Static Analysis (Linux)
+      shell: bash
+      run: |
+        source ./scripts/env.sh
+        clang-tidy -p "${BUILD_DIR}" $(find "${PROJECT_ROOT}/src" -type f -regextype posix-extended -regex ".*\.(cpp|h)")
 
     - name: Bundle Application (Linux)
       if: runner.os == 'Linux'
