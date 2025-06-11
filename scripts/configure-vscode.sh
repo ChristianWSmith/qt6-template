@@ -41,6 +41,14 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "request": "launch",
       "program": "${BUILD_DIR}/${APP_NAME}",
       "args": [],
+      "cwd": "${PROJECT_ROOT}"
+    },
+    {
+      "name": "Debug ${APP_NAME} (w/Qt Debug)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${BUILD_DIR}/${APP_NAME}",
+      "args": [],
       "cwd": "${PROJECT_ROOT}",
       "env": {
         "QT_DEBUG_PLUGINS": "1"
