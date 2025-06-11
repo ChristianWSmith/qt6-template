@@ -26,7 +26,8 @@ cat > "${VSCODE_DIR}/settings.json" <<EOF
     "--compile-commands-dir=${BUILD_DIR}",
     "--clang-tidy"
   ],
-  "clangd.path": "$(which clangd)"
+  "clangd.path": "$(which clangd)",
+  "clang-tidy.buildPath": "${BUILD_DIR}"
 }
 EOF
 
@@ -93,7 +94,6 @@ cat > "${VSCODE_DIR}/extensions.json" <<EOF
 {
     "recommendations": [
         "theqtcompany.qt-core",
-        "xaver.clang-format",
         "ms-vscode.cmake-tools",
         "theqtcompany.qt-cpp",
         "theqtcompany.qt-ui",

@@ -9,19 +9,18 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
+class MainWindow : public QMainWindow {
+  Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+  MainWindow(QWidget *parent = nullptr);
+  ~MainWindow();
 
 private slots:
-    void incrementCounter();
+  void incrementCounter();
 
 private:
-    Ui::MainWindow *ui;
-    int counter = 0;
+  Ui::MainWindow *ui;
+  int counter = 0;
 };
 #endif // MAINWINDOW_H
