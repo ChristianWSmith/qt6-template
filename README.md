@@ -18,7 +18,7 @@ This is a modern, cross-platform C++ Qt application template using CMake, Conan,
 
 ### 0. Create Repo
 
-See that green `Use this template ▼` button in the upper right corner of this page?  Click that and hit `Create a new repository`.
+See that green `Use this template ▼` button in the upper right corner of this page?  Click that and hit `Create a new repository` 😉
 
 ### 1. Install Requirements
 
