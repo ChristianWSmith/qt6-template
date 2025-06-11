@@ -27,6 +27,13 @@ See that green `Use this template ▼` button in the upper right corner of this 
 - Pipenv
 - CMake
 - C++ compiler (MSVC, Clang, or GCC)
+- `clangd` and `clang-tidy` if using vscode integrations
+
+### 1.5. Configure VSCode
+```bash
+./scripts/configure-vscode.sh
+```
+This will set you up with a `.vscode` directory with some sensible default settings.  Make sure you rerun this command if you ever update your app name in `app.env`.  Or you can modify the contents of the `.vscode` directory manually.
 
 ### 2. Install Qt Version
 

@@ -91,3 +91,6 @@ aqtinstall.log
 # Conan
 CMakeUserPresets.json
 .mypy_cache/
+
+# vscode
+.vscode
