@@ -10,7 +10,8 @@ if [ ! -e "${QT_ROOT}" ]; then
   ${SCRIPT_DIR}/install_qt.sh
 fi
 
-pipenv install --dev
+installPipenv
+
 pipenv run conan build "${PROJECT_ROOT}" \
   --output-folder "${BUILD_DIR}" \
   --profile:build="${CONAN_PROFILE}" \
