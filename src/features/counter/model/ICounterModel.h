@@ -8,6 +8,7 @@
 
 class ICounterModel : public QObject {
   Q_OBJECT
+
 public:
   explicit ICounterModel(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~ICounterModel() = default;

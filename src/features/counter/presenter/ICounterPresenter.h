@@ -7,6 +7,7 @@
 
 class ICounterPresenter : public QObject {
   Q_OBJECT
+
 public:
   explicit ICounterPresenter(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~ICounterPresenter() = default;

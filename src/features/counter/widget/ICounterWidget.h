@@ -7,6 +7,7 @@
 
 class ICounterWidget : public QWidget {
   Q_OBJECT
+
 public:
   explicit ICounterWidget(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~ICounterWidget() = default;

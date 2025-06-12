@@ -8,9 +8,11 @@
 class CounterPresenter : public ICounterPresenter {
   Q_OBJECT
   Q_INTERFACES(ICounterPresenter)
+
 public:
   explicit CounterPresenter(ICounterModel *model, ICounterWidget *view,
                             QObject *parent = nullptr);
+
 private slots:
   void handleIncrementRequest();
   void handleCounterValueChanged(int newValue);

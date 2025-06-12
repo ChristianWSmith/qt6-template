@@ -5,6 +5,7 @@
 class CounterModel : public ICounterModel {
   Q_OBJECT
   Q_INTERFACES(ICounterModel)
+
 public:
   explicit CounterModel(QObject *parent = nullptr);
   int value() const override;
