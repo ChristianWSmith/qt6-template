@@ -1,3 +1,4 @@
+
 #include "AppMainWindow.h"
 
 #include "../features/counter/CounterModel.h"
@@ -10,8 +11,7 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 
   setWindowTitle(APP_NAME);
 
-  m_counterModel = new Counter(this);
-
+  m_counterModel = new CounterModel(this);
   m_counterWidgetView = new CounterWidget(this);
 
   m_counterPresenter =

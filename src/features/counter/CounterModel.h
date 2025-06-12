@@ -1,20 +1,17 @@
-#ifndef COUNTER_H
-#define COUNTER_H
+#ifndef COUNTERMODEL_H
+#define COUNTERMODEL_H
+#include "ICounterModel.h"
 
-#include <QObject>
-
-class Counter : public QObject {
+class CounterModel : public ICounterModel {
   Q_OBJECT
-
+  Q_INTERFACES(ICounterModel)
 public:
-  explicit Counter(QObject *parent = nullptr);
-
-  int value() const;
-
-  void increment();
-
+  explicit CounterModel(QObject *parent = nullptr);
+  int value() const override;
+  void increment() override;
+  QMetaObject::Connection connectValueChanged(QObject *receiver,
+                                              const char *member) override;
 signals:
-
   void valueChanged(int newValue);
 
 private:

@@ -1,0 +1,44 @@
+#include <iostream>
+#include "events/EventBus.hpp"
+#include "events/EventBusImpl.hpp"
+
+struct MyEvent {
+    int value;
+};
+
+class MyPresenter {
+public:
+    MyPresenter() {
+        // Subscribe to MyEvent
+        sub_ = events::subscribe<MyEvent>([this](const MyEvent& e) {
+            onEvent(e);
+        });
+    }
+
+    void printCurrent() {
+        MyEvent current = events::current<MyEvent>();
+        std::cout << "Current MyEvent value: " << current.value << "\n";
+    }
+
+private:
+    void onEvent(const MyEvent& e) {
+        std::cout << "Event received: " << e.value << "\n";
+    }
+
+    events::Subscription<MyEvent> sub_;
+};
+
+int main() {
+    MyPresenter presenter;
+
+    // Publish an event
+    events::publish(MyEvent{42});
+
+    // Wait briefly to allow async subscriber to process
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // Show current value
+    presenter.printCurrent();
+
+    return 0;
+}

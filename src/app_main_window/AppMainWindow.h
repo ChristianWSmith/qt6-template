@@ -4,9 +4,9 @@
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 
-class Counter;
-class CounterWidget;
-class CounterPresenter;
+class ICounterModel;
+class ICounterWidget;
+class ICounterPresenter;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -22,9 +22,9 @@ public:
 private:
   Ui::AppMainWindow *ui;
 
-  Counter *m_counterModel;
-  CounterWidget *m_counterWidgetView;
-  CounterPresenter *m_counterPresenter;
+  ICounterModel *m_counterModel;
+  ICounterWidget *m_counterWidgetView;
+  ICounterPresenter *m_counterPresenter;
 };
 
 #endif
