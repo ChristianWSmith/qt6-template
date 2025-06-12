@@ -1,7 +1,7 @@
 #ifndef ICOUNTERWIDGET_H
 #define ICOUNTERWIDGET_H
-#include "../../features_common.h"
-#include "../counter_common.h"
+#include "../../featurescommon.h"
+#include "../countercommon.h"
 #include <QWidget>
 #include <QtPlugin>
 

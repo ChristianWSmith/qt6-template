@@ -1,7 +1,7 @@
 #ifndef ICOUNTERPRESENTER_H
 #define ICOUNTERPRESENTER_H
-#include "../../features_common.h"
-#include "../counter_common.h"
+#include "../../featurescommon.h"
+#include "../countercommon.h"
 #include <QObject>
 #include <QtPlugin>
 
