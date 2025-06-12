@@ -1,7 +1,7 @@
 #ifndef ICOUNTERMODEL_H
 #define ICOUNTERMODEL_H
-#include "../features_common.h"
-#include "counter_common.h"
+#include "../../features_common.h"
+#include "../counter_common.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>

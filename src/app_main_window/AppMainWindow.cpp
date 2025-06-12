@@ -1,9 +1,9 @@
 
 #include "AppMainWindow.h"
 
-#include "../features/counter/CounterModel.h"
-#include "../features/counter/CounterPresenter.h"
-#include "../features/counter/CounterWidget.h"
+#include "../features/counter/model/CounterModel.h"
+#include "../features/counter/presenter/CounterPresenter.h"
+#include "../features/counter/widget/CounterWidget.h"
 
 AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AppMainWindow) {

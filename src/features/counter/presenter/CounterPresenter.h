@@ -1,8 +1,8 @@
 #ifndef COUNTERPRESENTER_H
 #define COUNTERPRESENTER_H
-#include "ICounterModel.h"
+#include "../model/ICounterModel.h"
+#include "../widget/ICounterWidget.h"
 #include "ICounterPresenter.h"
-#include "ICounterWidget.h"
 #include <QObject>
 
 class CounterPresenter : public ICounterPresenter {
