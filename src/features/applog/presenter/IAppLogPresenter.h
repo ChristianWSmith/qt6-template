@@ -1,5 +1,6 @@
 #ifndef IAPPLOGPRESENTER_H
 #define IAPPLOGPRESENTER_H
+
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
 #include <QObject>

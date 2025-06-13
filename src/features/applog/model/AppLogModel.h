@@ -1,6 +1,9 @@
 #ifndef APPLOGMODEL_H
 #define APPLOGMODEL_H
+
 #include "IAppLogModel.h"
+#include <QString>
+#include <QVector>
 
 class AppLogModel : public IAppLogModel {
   Q_OBJECT
@@ -8,13 +11,18 @@ class AppLogModel : public IAppLogModel {
 
 public:
   explicit AppLogModel(QObject *parent = nullptr);
-  // Implements IAppLogModel methods
+
+  void addLogMessage(const QString &message) override;
+
+  QMetaObject::Connection connectLogMessageAdded(QObject *receiver,
+                                                 const char *member) override;
 
 signals:
-  // Signals emitted by this concrete Model
+  void logMessageAdded(const QString &message) override;
 
 private:
-  // Private data members holding the Model's state
+  QVector<QString> m_logMessages;
+  const int m_maxLogMessages = 500;
 };
 
 #endif

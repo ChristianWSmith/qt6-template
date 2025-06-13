@@ -1,4 +1,6 @@
 #include "CounterModel.h"
+#include "../../../events/LogEvent.hpp"
+#include "../../../events/bus/EventBus.hpp"
 #include <fmt/core.h>
 
 CounterModel::CounterModel(QObject *parent)
@@ -12,6 +14,7 @@ void CounterModel::increment() {
   m_value++;
   fmt::print("Counter model incremented to: {}\n", m_value);
   emit valueChanged(m_value);
+  events::publish(LogEvent{fmt::format("{}", m_value)});
   fmt::print("Counter model: Emitted valueChanged signal.\n");
 }
 

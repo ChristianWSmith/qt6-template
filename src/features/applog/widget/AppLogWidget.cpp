@@ -1,4 +1,6 @@
 #include "AppLogWidget.h"
+#include <QScrollBar>
+#include <fmt/core.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
     : IAppLogWidget(parent), ui(new Ui::AppLogWidget) {
@@ -7,6 +9,14 @@ AppLogWidget::AppLogWidget(QWidget *parent)
 
 AppLogWidget::~AppLogWidget() { delete ui; }
 
-// Implements IAppLogWidget methods and internal connections
+void AppLogWidget::displayLogMessage(const QString &message) {
 
-// Implements UI slots, typically emitting signals to the Presenter
+  ui->logTextEdit->append(message);
+
+  QScrollBar *sb = ui->logTextEdit->verticalScrollBar();
+  if (sb) {
+    sb->setValue(sb->maximum());
+  }
+  fmt::print("AppLogWidget: Displayed log message: {}\n",
+             message.toStdString());
+}

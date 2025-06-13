@@ -1,10 +1,14 @@
 #ifndef APPLOGWIDGET_H
 #define APPLOGWIDGET_H
+
 #include "IAppLogWidget.h"
 #include "ui_AppLogWidget.h"
+#include <QTextEdit>
 
 QT_BEGIN_NAMESPACE
-namespace Ui {}
+namespace Ui {
+class AppLogWidget;
+}
 QT_END_NAMESPACE
 
 class AppLogWidget : public IAppLogWidget {
@@ -14,13 +18,13 @@ class AppLogWidget : public IAppLogWidget {
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
-  // Implements IAppLogWidget methods
+
+public slots:
+  void displayLogMessage(const QString &message) override;
 
 signals:
-  // Signals emitted by this concrete Widget
 
 private slots:
-  // Slots for UI events (auto-connected by Qt Designer)
 
 private:
   Ui::AppLogWidget *ui;
