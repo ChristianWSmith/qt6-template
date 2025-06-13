@@ -63,7 +63,7 @@ class I${FEATURE_NAME_TITLE}Model : public QObject {
 public:
   explicit I${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Model() = default;
-  // methods and connections
+  // Model API methods and connections
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
@@ -84,13 +84,13 @@ class ${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
 
 public:
   explicit ${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr);
-  // methods and connections
+  // Implements I${FEATURE_NAME_TITLE}Model methods
 
 signals:
-  // signals
+  // Signals emitted by this concrete Model
 
 private:
-  // data
+  // Private data members holding the Model's state
 };
 
 #endif
@@ -104,7 +104,7 @@ cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent)
     : I${FEATURE_NAME_TITLE}Model(parent) {}
 
-// method and connections impl
+// Implementation of I${FEATURE_NAME_TITLE}Model methods and internal connections
 
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
@@ -152,7 +152,7 @@ public:
                             QObject *parent = nullptr);
 
 private slots:
-  // slots
+  // Concrete slots for handling events
 
 private:
   I${FEATURE_NAME_TITLE}Model *m_model;
@@ -170,10 +170,10 @@ cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
                                    QObject *parent)
     : I${FEATURE_NAME_TITLE}Presenter(parent), m_model(model), m_view(view) {
-  // connect signals to presenter slots
+  // Connects view/model signals to presenter slots
 }
 
-// implement presenter slots
+// Implements presenter slots
 
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
@@ -194,7 +194,7 @@ class I${FEATURE_NAME_TITLE}Widget : public QWidget {
 public:
   explicit I${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Widget() = default;
-  // methods and connections
+  // Widget API methods and connections
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
@@ -221,13 +221,13 @@ class ${FEATURE_NAME_TITLE}Widget : public I${FEATURE_NAME_TITLE}Widget {
 public:
   explicit ${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr);
   ~${FEATURE_NAME_TITLE}Widget();
-  // methods and connections
+  // Implements I${FEATURE_NAME_TITLE}Widget methods
 
 signals:
-  // signals
+  // Signals emitted by this concrete Widget
 
 private slots:
-  // slots (names must align with ui on_<elementName>_<eventType>)
+  // Slots for UI events (auto-connected by Qt Designer)
 
 private:
   Ui::${FEATURE_NAME_TITLE}Widget *ui;
@@ -248,9 +248,9 @@ ${FEATURE_NAME_TITLE}Widget::${FEATURE_NAME_TITLE}Widget(QWidget *parent)
 
 ${FEATURE_NAME_TITLE}Widget::~${FEATURE_NAME_TITLE}Widget() { delete ui; }
 
-// implement methods and connections
+// Implements I${FEATURE_NAME_TITLE}Widget methods and internal connections
 
-// implement slots (emit signal)
+// Implements UI slots, typically emitting signals to the Presenter
 
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp"
