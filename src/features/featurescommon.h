@@ -1,3 +1,8 @@
+#ifndef FEATURESCOMMON_H
+#define FEATURESCOMMON_H
+
 #define FEATURE_MODEL_SUFFIX ".Model"
 #define FEATURE_PRESENTER_SUFFIX ".Presenter"
 #define FEATURE_WIDGET_SUFFIX ".Widget"
+
+#endif
