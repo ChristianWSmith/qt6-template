@@ -12,6 +12,12 @@ usage() {
     exit 1
 }
 
+format() {
+    if [[ ! -z "$(which clang-format)" ]]; then
+        clang-format -i "${1}"
+    fi
+}
+
 if [[ "${FEATURE_NAME_TITLE}" == "" ]] || \
     [[ ! "${FEATURE_NAME_TITLE}" =~ ^[A-Z] ]] || \
     [[ ! "${FEATURE_NAME_TITLE}" =~ [A-Za-z]? ]]; then 
@@ -38,6 +44,7 @@ cat > "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h" <<EOF
 #endif
 
 EOF
+format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 
 # MODEL
 mkdir -p "${MODEL_DIR}"
@@ -64,6 +71,8 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_I
 #endif
 
 EOF
+format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
+
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}MODEL_H
 #define ${FEATURE_NAME_UPPER}MODEL_H
@@ -87,12 +96,18 @@ private:
 #endif
 
 EOF
+format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
+
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Model.h"
+
+${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent)
+    : I${FEATURE_NAME_TITLE}Model(parent) {}
 
 // method and connections impl
 
 EOF
+format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 
 # PRESENTER
 mkdir -p "${PRESENTER_DIR}"
@@ -118,6 +133,8 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
 #endif
 
 EOF
+format "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h"
+
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}PRESENTER_H
 #define ${FEATURE_NAME_UPPER}PRESENTER_H
@@ -145,6 +162,8 @@ private:
 #endif
 
 EOF
+format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
+
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Presenter.h"
 
@@ -157,6 +176,7 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 // implement presenter slots
 
 EOF
+format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 
 # WIDGET
 mkdir -p "${WIDGET_DIR}"
@@ -182,6 +202,8 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_
 #endif
 
 EOF
+format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
+
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}WIDGET_H
 #define ${FEATURE_NAME_UPPER}WIDGET_H
@@ -214,6 +236,8 @@ private:
 #endif
 
 EOF
+format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h"
+
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Widget.h"
 
@@ -229,6 +253,8 @@ ${FEATURE_NAME_TITLE}Widget::~${FEATURE_NAME_TITLE}Widget() { delete ui; }
 // implement slots (emit signal)
 
 EOF
+format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp"
+
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.ui" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
