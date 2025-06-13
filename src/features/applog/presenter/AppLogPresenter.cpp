@@ -11,33 +11,27 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
                                       Qt::QueuedConnection, Q_ARG(LogEvent, e));
           })) {
   if (!m_model) {
-    fmt::print(stderr, "Error: AppLogPresenter received null IAppLogModel.\n");
+    // log
   }
   if (!m_view) {
-    fmt::print(stderr, "Error: AppLogPresenter received null IAppLogWidget.\n");
+    // log
   }
 
   if (m_model) {
     m_model->connectLogMessageAdded(this, SLOT(handleLogMessageAdded(QString)));
-    fmt::print("Presenter: Connected logMessageAdded signal to slot via "
-               "interface method.\n");
   }
 
   qDebug() << "AppLogPresenter initialized and subscribed to LogEvents.";
 }
 
 void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
-  qDebug() << "AppLogPresenter received LogEvent: "
-           << QString::fromStdString(event.message);
   if (m_model) {
     m_model->addLogMessage(QString::fromStdString(event.message));
   }
 }
 
 void AppLogPresenter::handleLogMessageAdded(const QString &message) {
-  qDebug() << "AppLogPresenter: handleLogMessageAdded called via signal.";
   if (m_view) {
     m_view->displayLogMessage(message);
-    fmt::print("Presenter: Displayed log message in view.\n");
   }
 }

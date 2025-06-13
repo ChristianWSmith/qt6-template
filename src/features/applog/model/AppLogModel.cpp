@@ -4,7 +4,7 @@
 #include <fmt/core.h>
 
 AppLogModel::AppLogModel(QObject *parent) : IAppLogModel(parent) {
-  fmt::print("AppLogModel initialized.\n");
+  // log
 }
 
 void AppLogModel::addLogMessage(const QString &message) {
@@ -18,8 +18,6 @@ void AppLogModel::addLogMessage(const QString &message) {
   if (m_logMessages.size() > m_maxLogMessages) {
     m_logMessages.removeFirst();
   }
-
-  fmt::print("Model added message: {}\n", timestampedMessage.toStdString());
 
   emit logMessageAdded(timestampedMessage);
 }

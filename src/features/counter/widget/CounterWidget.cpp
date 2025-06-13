@@ -12,10 +12,7 @@ void CounterWidget::displayCounter(int value) {
   ui->counterLabel->setText(QString::number(value));
 }
 
-void CounterWidget::on_incrementButton_clicked() {
-  fmt::print("on_incrementButton_clicked (emitting signal)\n");
-  emit incrementRequested();
-}
+void CounterWidget::on_incrementButton_clicked() { emit incrementRequested(); }
 
 QMetaObject::Connection
 CounterWidget::connectIncrementRequested(QObject *receiver,

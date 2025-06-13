@@ -17,6 +17,4 @@ void AppLogWidget::displayLogMessage(const QString &message) {
   if (sb) {
     sb->setValue(sb->maximum());
   }
-  fmt::print("AppLogWidget: Displayed log message: {}\n",
-             message.toStdString());
 }
