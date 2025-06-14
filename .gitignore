@@ -88,6 +88,9 @@ CMakeLists.txt.user*
 Qt/
 aqtinstall.log
 
+# Ctest
+.cache/
+
 # Conan
 CMakeUserPresets.json
 .mypy_cache/
