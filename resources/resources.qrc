@@ -1,5 +1,6 @@
 <RCC>
-    <qresource prefix="/icons">
+    <qresource prefix="/">
+        <file>i18n/en_US.qm</file>
         <file>icons/app_icon.icns</file>
         <file>icons/app_icon.ico</file>
         <file>icons/app_icon.png</file>

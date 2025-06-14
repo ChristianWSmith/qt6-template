@@ -96,7 +96,6 @@ cat > "${VSCODE_DIR}/extensions.json" <<EOF
         "theqtcompany.qt-core",
         "ms-vscode.cmake-tools",
         "theqtcompany.qt-cpp",
-        "theqtcompany.qt-ui",
         "llvm-vs-code-extensions.vscode-clangd",
         "vadimcn.vscode-lldb",
         "notskm.clang-tidy",

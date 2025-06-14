@@ -12,7 +12,8 @@ class MyConanApp(ConanFile):
     requires = [
         "fmt/[>=0]",
         "vulkan-loader/[>=0]",
-        "vulkan-headers/[>=0]"
+        "vulkan-headers/[>=0]",
+        "cxxopts/[>=0]",
     ]
 
     def layout(self):
@@ -23,6 +24,7 @@ class MyConanApp(ConanFile):
         cmake.configure(variables={
             "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
             "APP_NAME": os.environ.get("APP_NAME", "MyConanApp"),
+            "APP_DESCRIPTION": os.environ.get("APP_DESCRIPTION", "My Conan App Description"),
             "APP_VERSION": os.environ.get("APP_VERSION", "0.1.0"),
             "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
             "QT_DEBUG_FIND_PACKAGE": "ON"

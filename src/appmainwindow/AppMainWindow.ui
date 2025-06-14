@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AppMainWindow</class>
+ <widget class="QMainWindow" name="AppMainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width> <!-- Increased width to accommodate both widgets side-by-side -->
+    <height>400</height> <!-- Adjusted height -->
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string/>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout"> <!-- Changed to QHBoxLayout -->
+    <item>
+     <!-- Placeholder for CounterWidget. This will be replaced at runtime. -->
+     <widget class="QWidget" name="counterPlaceholderWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horStretch>1</horStretch> <!-- Give it a stretch factor so it resizes -->
+        <verStretch>0</verStretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <!-- Placeholder for AppLogWidget. This will be replaced at runtime. -->
+     <widget class="QWidget" name="appLogPlaceholderWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horStretch>1</horStretch> <!-- Give it a stretch factor so it resizes -->
+        <verStretch>0</verStretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

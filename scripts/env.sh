@@ -65,6 +65,8 @@ export CONAN_PROFILES_DIR="${PROJECT_ROOT}/conan/profiles"
 export CONAN_PROFILE="${CONAN_PROFILES_DIR}/${PLATFORM}"
 export CONAN_LOCK="${PROJECT_ROOT}/conan.lock"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
+export SRC_DIR="${PROJECT_ROOT}/src"
+export FEATURES_DIR="${SRC_DIR}/features"
 
 if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
