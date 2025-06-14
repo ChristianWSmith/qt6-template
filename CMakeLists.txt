@@ -96,3 +96,8 @@ install(TARGETS ${APP_NAME}
 )
 
 qt_finalize_executable(${APP_NAME})
+
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
