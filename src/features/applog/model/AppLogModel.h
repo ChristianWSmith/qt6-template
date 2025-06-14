@@ -18,7 +18,7 @@ public:
                                                  const char *member) override;
 
 signals:
-  void logMessageAdded(const QString &message) override;
+  void logMessageAdded(const QString &message);
 
 private:
   QVector<QString> m_logMessages;
