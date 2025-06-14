@@ -72,7 +72,13 @@ jobs:
     - name: Configure and Build (All)
       shell: bash
       run: |
-        ./scripts/build.sh ${{ env.BUILD_TYPE }}
+        ./scripts/build.sh ${{ env.BUILD_TYPE }} ON
+
+    - name: Unit Tests (All)
+      shell: bash
+        source ./scripts/env.sh
+        cd "${BUILD_DIR}"
+        ctest
 
     - name: Static Analysis (Linux)
       if: runner.os == 'Linux'
