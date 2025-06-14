@@ -76,6 +76,7 @@ jobs:
 
     - name: Unit Tests (All)
       shell: bash
+      run: |
         source ./scripts/env.sh
         cd "${BUILD_DIR}"
         ctest
