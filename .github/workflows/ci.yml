@@ -167,14 +167,14 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        mkdir -p "\${HOME}/.local/share/applications"
-        mkdir -p "\${HOME}/.local/share/icons"
-        cp "\${APPDIR}/${APP_ID}.desktop" "\${HOME}/.local/share/applications"
-        sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${APP_ID}.desktop"
-        cp "\${APPDIR}/${APP_ID}.png" "\${HOME}/.local/share/icons"
+        # mkdir -p "\${HOME}/.local/share/applications"
+        # mkdir -p "\${HOME}/.local/share/icons"
+        # cp "\${APPDIR}/${APP_ID}.desktop" "\${HOME}/.local/share/applications"
+        # sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${APP_ID}.desktop"
+        # cp "\${APPDIR}/${APP_ID}.png" "\${HOME}/.local/share/icons"
         "\${APPDIR}/usr/bin/${APP_NAME}" "\$@"
-        rm "\${HOME}/.local/share/applications/${APP_ID}.desktop"
-        rm "\${HOME}/.local/share/icons/${APP_ID}.png"
+        # rm "\${HOME}/.local/share/applications/${APP_ID}.desktop"
+        # rm "\${HOME}/.local/share/icons/${APP_ID}.png"
         EOF
         chmod +x "${APP_DIR}/AppRun"
 
