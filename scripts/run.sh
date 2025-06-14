@@ -9,8 +9,9 @@ export CMAKE_BUILD_TYPE="${1:-Debug}"
 source ${SCRIPT_DIR}/build.sh "${CMAKE_BUILD_TYPE}"
 
 if [ "${PLATFORM}" == "windows" ]; then 
-    ${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe
+    if [ "$#" -gt 0 ]; then shift; fi
+    ${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe "${@}"
 else
-    shift
+    if [ "$#" -gt 0 ]; then shift; fi
     ${BUILD_DIR}/${APP_NAME} "${@}"
 fi

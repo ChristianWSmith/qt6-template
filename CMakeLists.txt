@@ -21,7 +21,7 @@ find_package(Vulkan REQUIRED)
 find_package(cxxopts REQUIRED)
 
 file(GLOB_RECURSE TS_FILES CONFIGURE_DEPENDS resources/i18n/*.ts)
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.ui)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.ui src/*.hpp)
 file(GLOB_RECURSE RESOURCES CONFIGURE_DEPENDS resources/*.qrc)
 
 qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
