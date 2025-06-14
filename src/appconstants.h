@@ -13,4 +13,8 @@
 #define APP_ID "com.example.MyC++App"
 #endif
 
+#ifndef APP_DESCRIPTION
+#define APP_DESCRIPTION "My C++ App Description"
+#endif
+
 #endif

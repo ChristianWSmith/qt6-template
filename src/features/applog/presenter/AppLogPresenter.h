@@ -5,7 +5,7 @@
 #include "../widget/IAppLogWidget.h"
 #include "IAppLogPresenter.h"
 
-#include "../../../events/LogEvent.hpp"
+#include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
 
 #include <QObject>

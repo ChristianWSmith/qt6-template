@@ -11,5 +11,6 @@ source ${SCRIPT_DIR}/build.sh "${CMAKE_BUILD_TYPE}"
 if [ "${PLATFORM}" == "windows" ]; then 
     ${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe
 else
-    ${BUILD_DIR}/${APP_NAME}
+    shift
+    ${BUILD_DIR}/${APP_NAME} "${@}"
 fi

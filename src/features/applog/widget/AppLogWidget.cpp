@@ -5,6 +5,7 @@
 AppLogWidget::AppLogWidget(QWidget *parent)
     : IAppLogWidget(parent), ui(new Ui::AppLogWidget) {
   ui->setupUi(this);
+  qDebug() << "AppLogWidget instantiated";
 }
 
 AppLogWidget::~AppLogWidget() { delete ui; }

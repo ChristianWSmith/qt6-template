@@ -22,7 +22,6 @@ signals:
 
 private:
   QVector<QString> m_logMessages;
-  const int m_maxLogMessages = 500;
 };
 
 #endif

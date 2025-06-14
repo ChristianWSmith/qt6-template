@@ -4,6 +4,7 @@ project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_definitions(-DAPP_NAME="${APP_NAME}")
+add_definitions(-DAPP_DESCRIPTION="${APP_DESCRIPTION}")
 add_definitions(-DAPP_VERSION="${APP_VERSION}")
 add_definitions(-DAPP_ID="${APP_ID}")
 
@@ -19,6 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(fmt REQUIRED)
 find_package(Vulkan REQUIRED)
+find_package(cxxopts REQUIRED)
 
 file(GLOB_RECURSE TS_FILES CONFIGURE_DEPENDS resources/ts/*.ts)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.ui)
@@ -63,6 +65,7 @@ endif()
 target_link_libraries(${APP_NAME} PRIVATE Qt6::Widgets)
 target_link_libraries(${APP_NAME} PRIVATE fmt::fmt)
 target_link_libraries(${APP_NAME} PRIVATE Vulkan::Vulkan)
+target_link_libraries(${APP_NAME} PRIVATE cxxopts::cxxopts)
 
 qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 

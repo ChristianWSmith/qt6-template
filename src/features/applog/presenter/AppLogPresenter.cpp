@@ -1,6 +1,7 @@
 #include "AppLogPresenter.h"
 #include <QDebug>
 #include <fmt/core.h>
+#include <qlogging.h>
 
 AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
                                  QObject *parent)
@@ -11,17 +12,16 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
                                       Qt::QueuedConnection, Q_ARG(LogEvent, e));
           })) {
   if (!m_model) {
-    // log
+    qWarning() << "AppLogPresenter instantiated without model";
   }
   if (!m_view) {
-    // log
+    qWarning() << "AppLogPresenter instantiated without view";
   }
 
   if (m_model) {
     m_model->connectLogMessageAdded(this, SLOT(handleLogMessageAdded(QString)));
   }
-
-  qDebug() << "AppLogPresenter initialized and subscribed to LogEvents.";
+  qDebug() << "AppLogPresenter instantiated";
 }
 
 void AppLogPresenter::onLogEventReceived(const LogEvent &event) {

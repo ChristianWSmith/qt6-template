@@ -5,6 +5,7 @@
 #include <any>
 #include <atomic>
 #include <cstdint>
+#include <fmt/core.h>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -27,14 +28,16 @@ class BusRegistry {
 public:
   template <typename T> static EventBus<T> &getBus() {
     const std::type_index type = std::type_index(typeid(T));
-
     std::unique_lock lock(instance().mutex_);
+
     auto it = instance().buses_.find(type);
     if (it != instance().buses_.end()) {
+
       return *std::any_cast<std::shared_ptr<EventBus<T>>>(it->second);
     }
 
     auto newBus = std::make_shared<EventBus<T>>();
+
     instance().buses_[type] = newBus;
     return *newBus;
   }

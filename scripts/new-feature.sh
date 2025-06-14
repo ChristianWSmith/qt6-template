@@ -170,6 +170,13 @@ cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
                                    QObject *parent)
     : I${FEATURE_NAME_TITLE}Presenter(parent), m_model(model), m_view(view) {
+
+  if (!m_model) {
+    qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without model";
+  }
+  if (!m_view) {
+    qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without view";
+  }
   // Connects view/model signals to presenter slots
 }
 

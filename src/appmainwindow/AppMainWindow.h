@@ -28,11 +28,11 @@ private:
   Ui::AppMainWindow *ui;
 
   ICounterModel *m_counterModel;
-  ICounterWidget *m_counterWidgetView;
+  ICounterWidget *m_counterWidget;
   ICounterPresenter *m_counterPresenter;
 
   IAppLogModel *m_appLogModel;
-  IAppLogWidget *m_appLogWidgetView;
+  IAppLogWidget *m_appLogWidget;
   IAppLogPresenter *m_appLogPresenter;
 };
 
