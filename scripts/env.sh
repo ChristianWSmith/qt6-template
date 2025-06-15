@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_SOURCED="${ENV_SOURCED:-}"
-if [ ! -z "${ENV_SOURCED}" ]; then 
-  return 0
-fi
-export ENV_SOURCED=1
-
 installPipenv() {
   PIPENV_INSTALLED="${PIPENV_INSTALLED:-}"
   if [ ! -z "${PIPENV_INSTALLED}" ]; then 
@@ -15,6 +9,12 @@ installPipenv() {
   export PIPENV_INSTALLED=1
   pipenv install --dev
 }
+
+ENV_SOURCED="${ENV_SOURCED:-}"
+if [ ! -z "${ENV_SOURCED}" ]; then 
+  return 0
+fi
+export ENV_SOURCED=1
 
 # --- SCRIPT DIR ---
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )

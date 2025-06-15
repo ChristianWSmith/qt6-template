@@ -9,6 +9,8 @@ on:
 env:
   UPLOAD_DIR: upload
   BUILD_TYPE: Release
+  BUILD_TEST: ON
+  UPDATE_TRANSLATIONS: ON
 
 jobs:
   build:
@@ -72,7 +74,10 @@ jobs:
     - name: Configure and Build (All)
       shell: bash
       run: |
-        ./scripts/build.sh ${{ env.BUILD_TYPE }} ON
+        ./scripts/build.sh \
+          --build-type ${{ env.BUILD_TYPE }} \
+          --test ${{ env.BUILD_TEST }} \
+          --update-translations ${{ env.UPDATE_TRANSLATIONS }}
 
     - name: Unit Tests (All)
       shell: bash
