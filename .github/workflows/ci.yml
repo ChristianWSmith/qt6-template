@@ -81,6 +81,7 @@ jobs:
     - name: Configure and Build (All)
       shell: bash
       run: |
+        export QT_QPA_PLATFORM=offscreen
         ./scripts/build.sh \
           --build-type ${{ env.BUILD_TYPE }} \
           --test ${{ env.BUILD_TEST }} \
@@ -90,6 +91,7 @@ jobs:
       shell: bash
       if: env.BUILD_TEST == 'ON'
       run: |
+        export QT_QPA_PLATFORM=offscreen
         source ./scripts/env.sh
         cd "${BUILD_DIR}"
         ctest
@@ -97,6 +99,7 @@ jobs:
     - name: Smoke Test (All)
       shell: bash
       run: |
+        export QT_QPA_PLATFORM=offscreen
         ./scripts/run.sh --smoke-test
 
     - name: Static Analysis (Linux)
