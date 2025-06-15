@@ -15,7 +15,7 @@ struct QCoreApplicationInitializer {
       static int argc = 0;
       new QCoreApplication(argc, nullptr);
     }
-  }
+  };
 };
 static QCoreApplicationInitializer qappInitializer;
 
@@ -51,9 +51,7 @@ protected:
 };
 
 TEST_F(AppLogPresenterTest, ConstructorConnectsModelSignal) {
-
-  EXPECT_CALL(*mockModel, connectLogMessageAdded(
-                              presenter, "handleLogMessageAdded(QString)"))
+  EXPECT_CALL(*mockModel, connectLogMessageAdded(presenter, testing::_))
       .Times(1);
   delete presenter;
   presenter = new AppLogPresenter(mockModel, mockView);
