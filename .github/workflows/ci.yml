@@ -48,9 +48,16 @@ jobs:
         export PATH="${PYTHON_BIN}:${PATH}"
         pipenv install
 
-    - name: Install OpenGL (Linux)
+    - name: Install System Dependencies (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libgl1-mesa-dev \
+          libxkbcommon-x11-0 \
+          libxcb-cursor-dev \
+          clang-tidy
 
     - name: Confirm OpenGL (macOS)
       if: runner.os == 'macOS'
