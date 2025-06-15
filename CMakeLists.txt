@@ -64,10 +64,12 @@ elseif(WIN32)
     )
 endif()
 
-target_link_libraries(${APP_NAME} PRIVATE Qt6::Widgets)
-target_link_libraries(${APP_NAME} PRIVATE fmt::fmt)
-target_link_libraries(${APP_NAME} PRIVATE Vulkan::Vulkan)
-target_link_libraries(${APP_NAME} PRIVATE cxxopts::cxxopts)
+target_link_libraries(${APP_NAME} PRIVATE 
+  Qt6::Widgets
+  fmt::fmt
+  Vulkan::Vulkan
+  cxxopts::cxxopts
+)
 
 include(GNUInstallDirs)
 
