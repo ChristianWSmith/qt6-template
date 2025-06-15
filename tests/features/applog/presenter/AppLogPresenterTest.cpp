@@ -7,17 +7,17 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using ::testing::NiceMock;
-
 struct QCoreApplicationInitializer {
   QCoreApplicationInitializer() {
     if (!QCoreApplication::instance()) {
       static int argc = 0;
       new QCoreApplication(argc, nullptr);
     }
-  };
+  }
 };
 static QCoreApplicationInitializer qappInitializer;
+
+using ::testing::NiceMock;
 
 class MockAppLogModel : public IAppLogModel {
 public:
@@ -51,7 +51,12 @@ protected:
 };
 
 TEST_F(AppLogPresenterTest, ConstructorConnectsModelSignal) {
-  EXPECT_CALL(*mockModel, connectLogMessageAdded(presenter, testing::_))
+  EXPECT_CALL(*mockModel,
+              connectLogMessageAdded(
+                  presenter, testing::Truly([](const char *signal) {
+                    return std::string(signal).find("handleLogMessageAdded") !=
+                           std::string::npos;
+                  })))
       .Times(1);
   delete presenter;
   presenter = new AppLogPresenter(mockModel, mockView);
