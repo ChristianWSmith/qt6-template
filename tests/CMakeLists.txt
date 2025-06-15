@@ -1,4 +1,5 @@
 find_package(GTest REQUIRED)
+find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Test)
 enable_testing()
 
@@ -13,6 +14,7 @@ target_link_libraries(unit_tests PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::Test
+    fmt::fmt
 )
 
 target_include_directories(unit_tests PRIVATE
