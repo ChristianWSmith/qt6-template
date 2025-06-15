@@ -53,7 +53,7 @@ protected:
 TEST_F(AppLogPresenterTest, ConstructorConnectsModelSignal) {
 
   EXPECT_CALL(*mockModel, connectLogMessageAdded(
-                              presenter, "1handleLogMessageAdded(QString)"))
+                              presenter, "handleLogMessageAdded(QString)"))
       .Times(1);
   delete presenter;
   presenter = new AppLogPresenter(mockModel, mockView);
