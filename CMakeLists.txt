@@ -24,31 +24,47 @@ qt_standard_project_setup(
     I18N_TRANSLATED_LANGUAGES en es de fr
 )
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.ui src/*.hpp)
+file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.hpp src/*.ui)
+
 file(GLOB_RECURSE RESOURCES CONFIGURE_DEPENDS resources/*.qrc)
 
-set(PROJECT_SOURCES
-    ${SOURCES}
-    ${RESOURCES}
+add_library(${APP_NAME}_lib STATIC
+    ${LIB_SOURCES}
 )
 
-if(WIN32)
-    list(APPEND PROJECT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/win_resources.rc)
-elseif(APPLE)
+target_link_libraries(${APP_NAME}_lib PRIVATE
+    Qt6::Widgets
+    fmt::fmt
+    Vulkan::Vulkan
+    cxxopts::cxxopts
+)
+
+target_compile_definitions(${APP_NAME}_lib PRIVATE
+    APP_NAME="${APP_NAME}"
+    APP_DESCRIPTION="${APP_DESCRIPTION}"
+    APP_VERSION="${APP_VERSION}"
+    APP_ID="${APP_ID}"
+)
+
+if(APPLE)
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/app_icon.icns PROPERTIES
         MACOSX_PACKAGE_LOCATION "Resources"
     )
-    list(APPEND PROJECT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/app_icon.icns)
+    list(APPEND RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/app_icon.icns)
+elseif(WIN32)
+    list(APPEND RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/win_resources.rc)
 endif()
 
 qt_add_executable(${APP_NAME}
     MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
+    ${RESOURCES}
 )
 
 qt_add_translations(${APP_NAME}
     TS_FILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n"
 )
+
+target_link_libraries(${APP_NAME} PRIVATE ${APP_NAME}_lib)
 
 if(APPLE)
     set_target_properties(${APP_NAME} PROPERTIES
@@ -63,13 +79,6 @@ elseif(WIN32)
         WIN32_EXECUTABLE TRUE
     )
 endif()
-
-target_link_libraries(${APP_NAME} PRIVATE 
-  Qt6::Widgets
-  fmt::fmt
-  Vulkan::Vulkan
-  cxxopts::cxxopts
-)
 
 include(GNUInstallDirs)
 
