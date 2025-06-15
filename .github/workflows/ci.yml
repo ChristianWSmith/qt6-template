@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         include:
-            - os: ubuntu-latest
+            # - os: ubuntu-latest
             - os: windows-latest
             # - os: macos-latest
 
@@ -99,6 +99,13 @@ jobs:
       if: env.BUILD_TEST == 'ON'
       run: |
         source ./scripts/env.sh
+        
+        if [ "${PLATFORM}" == "windows" ]; then
+          export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
+          export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/unit_tests.exe")
+          ${WINDEPLOYQT} "${EXE_PATH}"
+        fi
+
         cd "${BUILD_DIR}"
         ctest
 
