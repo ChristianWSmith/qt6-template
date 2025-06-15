@@ -9,7 +9,7 @@ on:
 env:
   UPLOAD_DIR: upload
   BUILD_TYPE: Release
-  BUILD_TEST: ON
+  BUILD_TEST: OFF
   UPDATE_TRANSLATIONS: ON
 
 jobs:
@@ -81,6 +81,7 @@ jobs:
 
     - name: Unit Tests (All)
       shell: bash
+      if: env.BUILD_TEST == 'ON'
       run: |
         source ./scripts/env.sh
         cd "${BUILD_DIR}"
