@@ -67,6 +67,7 @@ export CONAN_LOCK="${PROJECT_ROOT}/conan.lock"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 export SRC_DIR="${PROJECT_ROOT}/src"
 export FEATURES_DIR="${SRC_DIR}/features"
+export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
 
 if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
