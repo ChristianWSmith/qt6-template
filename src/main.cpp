@@ -16,7 +16,8 @@ int main(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
   options.add_options()("l, log", "Log level (debug, info, warn, error, none)",
                         cxxopts::value<std::string>()->default_value("info"))(
-      "h, help", "Print help");
+      "h, help", "Print help")(
+      "smoke-test", "Run in smoke test mode (exits immediately after setup)");
   cxxopts::ParseResult result = options.parse(argc, argv);
 
   if (result.count("help")) {
@@ -47,6 +48,11 @@ int main(int argc, char *argv[]) {
   }
 
   AppMainWindow appMainWindow;
+
+  if (result.count("smoke-test")) {
+    qInfo() << "Smoke test successful: Application initialized and exiting.";
+    return 0;
+  }
 
   appMainWindow.show();
 
