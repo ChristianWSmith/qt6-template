@@ -107,7 +107,7 @@ jobs:
         fi
 
         cd "${BUILD_DIR}"
-        ctest
+        ./tests/unit_tests --gtest_output=stderr
 
     - name: Smoke Test (All)
       shell: bash
