@@ -72,7 +72,7 @@ cat > "${VSCODE_DIR}/tasks.json" <<EOF
       "problemMatcher": []
     },
     {
-      "label": "Build MyApp (Release)",
+      "label": "Build ${APP_NAME} (Release)",
       "type": "shell",
       "command": "${PROJECT_ROOT}/scripts/build.sh Release",
       "group": "build",
