@@ -5,7 +5,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/env.sh
 
 export CMAKE_BUILD_TYPE="${1:-Release}"
-export BUILD_TESTING="${2:-OFF}"
+export BUILD_TESTING="${2:-ON}"
+export UPDATE_TRANSLATIONS="${3:-ON}"
 
 if [ ! -e "${QT_ROOT}" ]; then
   ${SCRIPT_DIR}/install_qt.sh

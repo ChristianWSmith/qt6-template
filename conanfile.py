@@ -32,3 +32,5 @@ class MyConanApp(ConanFile):
             "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),
         })
         cmake.build()
+        if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":
+            cmake.build(target="update_translations")

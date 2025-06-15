@@ -2,6 +2,7 @@
 
 #include "logging/logging.h"
 #include <QApplication>
+#include <QDir>
 #include <QFile>
 #include <QGuiApplication>
 #include <QIcon>
@@ -33,23 +34,16 @@ int main(int argc, char *argv[]) {
 
   QGuiApplication::setDesktopFileName(APP_ID);
 
+  QLocale locale = QLocale::system();
+  QString langCode = locale.name();
+  QString baseLang = langCode.section('_', 0, 0);
+
   QTranslator translator;
-
-  const QStringList uiLanguages = QLocale::system().uiLanguages();
-
-  for (const QString &locale : uiLanguages) {
-    const QString fileName = ":/i18n/" + QLocale(locale).name() + ".qm";
-
-    if (QFile::exists(fileName)) {
-      if (translator.load(fileName)) {
-        a.installTranslator(&translator);
-        break;
-      } else {
-        qWarning() << "Failed to load translation file:" << fileName;
-      }
-    } else {
-      qWarning() << "No translation file:" << fileName;
-    }
+  if (translator.load(QString("%1_%2.qm").arg(APP_NAME).arg(baseLang),
+                      ":/i18n")) {
+    QCoreApplication::installTranslator(&translator);
+  } else {
+    qWarning() << "Failed to load translation for" << baseLang;
   }
 
   AppMainWindow appMainWindow;
