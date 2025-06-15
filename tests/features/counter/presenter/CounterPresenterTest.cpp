@@ -1,14 +1,22 @@
-#include "features/counter/model/ICounterModel.h"
 #include "features/counter/presenter/CounterPresenter.h"
+#include "features/counter/model/ICounterModel.h"
 #include "features/counter/widget/ICounterWidget.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include <QCoreApplication>
 #include <QDebug>
 #include <QMetaObject>
 #include <QObject>
 
-class MockCounterModel;
-class MockCounterWidget;
+struct QCoreApplicationInitializer {
+  QCoreApplicationInitializer() {
+    if (!QCoreApplication::instance()) {
+      static int argc = 0;
+      new QCoreApplication(argc, nullptr);
+    }
+  }
+};
+static QCoreApplicationInitializer qappInitializer;
 
 class MockCounterModel : public ICounterModel {
 public:

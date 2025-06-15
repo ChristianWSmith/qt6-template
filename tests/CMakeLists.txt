@@ -1,4 +1,5 @@
 find_package(GTest REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Test)
 enable_testing()
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS *.cpp)
@@ -11,6 +12,7 @@ target_link_libraries(unit_tests PRIVATE
     ${APP_NAME}_lib
     Qt6::Core
     Qt6::Widgets
+    Qt6::Test
 )
 
 target_include_directories(unit_tests PRIVATE
