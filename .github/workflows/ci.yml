@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         include:
-            # - os: ubuntu-latest
+            - os: ubuntu-latest
             - os: windows-latest
-            # - os: macos-latest
+            - os: macos-latest
 
     steps:
     - name: Checkout code
@@ -112,7 +112,7 @@ jobs:
     - name: Smoke Test (All)
       shell: bash
       run: |
-        ./scripts/run.sh --smoke-test
+        ./scripts/run.sh --build-type ${{ env.BUILD_TYPE }} --smoke-test
 
     - name: Static Analysis (Linux)
       if: runner.os == 'Linux'

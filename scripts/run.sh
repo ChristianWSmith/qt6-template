@@ -51,6 +51,7 @@ export UPDATE_TRANSLATIONS
 
 if [ "${PLATFORM}" == "windows" ]; then
   APP_FINAL_TARGET="${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe"
+  APP_FINAL_TARGET="$(cygpath -w "${APP_FINAL_TARGET}")"
 elif [ "${PLATFORM}" == "darwin" ]; then
   APP_FINAL_TARGET="${BUILD_DIR}/${APP_NAME}.app"
 else
