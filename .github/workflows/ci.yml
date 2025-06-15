@@ -9,8 +9,8 @@ on:
 env:
   UPLOAD_DIR: upload
   BUILD_TYPE: Release
-  BUILD_TEST: OFF
-  UPDATE_TRANSLATIONS: ON
+  BUILD_TEST: ON
+  UPDATE_TRANSLATIONS: OFF
 
 jobs:
   build:
@@ -90,12 +90,7 @@ jobs:
     - name: Smoke Test (All)
       shell: bash
       run: |
-        source ./scripts/env.sh
-        if [ "${PLATFORM}" == "windows" ]; then
-          "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${APP_NAME}.exe" --smoke-test
-        else
-          "${BUILD_DIR}/${APP_NAME}" --smoke-test
-        fi
+        ./scripts/run.sh --smoke-test
 
     - name: Static Analysis (Linux)
       if: runner.os == 'Linux'

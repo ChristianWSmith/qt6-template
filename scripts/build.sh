@@ -7,9 +7,14 @@ source ${SCRIPT_DIR}/env.sh
 CMAKE_BUILD_TYPE="Release"
 BUILD_TESTING="ON"
 UPDATE_TRANSLATIONS="ON"
+CLEAN="OFF"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --clean)
+      CLEAN="$2"
+      shift 2
+      ;;
     --build-type)
       CMAKE_BUILD_TYPE="$2"
       shift 2
@@ -35,6 +40,10 @@ export UPDATE_TRANSLATIONS
 
 if [ ! -e "${QT_ROOT}" ]; then
   ${SCRIPT_DIR}/install_qt.sh
+fi
+
+if [ "${CLEAN}" == "ON" ]; then 
+    ${SCRIPT_DIR}/clean.sh build
 fi
 
 installPipenv
