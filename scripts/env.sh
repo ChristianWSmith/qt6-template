@@ -71,6 +71,8 @@ export TESTS_DIR="${PROJECT_ROOT}/tests"
 export FEATURES_DIR="${SRC_DIR}/features"
 export TESTS_FEATURES_DIR="${TESTS_DIR}/features"
 export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
+export ROOT_CMAKE_LISTS="${PROJECT_ROOT}/CMakeLists.txt"
+export TEST_CMAKE_LISTS="${TESTS_DIR}/CMakeLists.txt"
 
 if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"

@@ -38,29 +38,54 @@ This will set you up with a `.vscode` directory with some sensible default setti
 ### 2. Install Qt Version
 
 ```bash
-./scripts/install_qt.sh
+./scripts/install-qt.sh
 ```
 This will install the version of Qt specified in `app.env`.  It'll be installed to the `Qt/` directory, which is gitignored.
 
-### 2. Build the Project
+### 3. Build the Project
 
 ```bash
-./scripts/build.sh [Debug|Release]
+./scripts/build.sh [--build-type Debug|Release] [--clean ON|OFF] [--test ON|OFF] [--update-translations ON|OFF]
 ```
-This will build the application and put it in `${BUILD_DIR}/${APP_NAME}` (`build/MyApp` by default)
 
-Defaults to `Release` if unspecified.  Installs Qt if not found.
+This script builds the application using Conan and CMake.
+
+- **Default build type**: `Release`
+- **Default options**: `--test ON`, `--update-translations ON`, `--clean OFF`
+- **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
+- **Qt installation**: Automatically installs Qt if it's not already available
+- **CMake re-glob workaround**: Touches `CMakeLists.txt` to ensure newly added source files are picked up
+
+#### Example
+
+```bash
+./scripts/build.sh --build-type Debug --clean ON
+```
+
+This performs a clean debug build with tests and translations enabled.
 
 ### 4. Run the App
 
 ```bash
-./run.sh [Debug|Release]
+./run.sh [--build-type Debug|Release] [--clean ON|OFF] [--rebuild ON|OFF] [--test ON|OFF] [--update-translations ON|OFF] [-- <app args>]
 ```
-This will build and run the application.
 
-Defaults to `Debug` if unspecified.  Installs Qt if not found.
+This will optionally build and then run the application.
 
----
+- **Default build type**: `Debug`
+- **Default options**: `--clean OFF`, `--rebuild OFF`, `--test OFF`, `--update-translations OFF`
+- **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
+- **Qt installation**: Automatically installs Qt if not found
+- **Platform-aware**: Handles `.exe` on Windows and `.app` bundles on macOS
+- **CMake re-glob workaround**: Touches `CMakeLists.txt` during build phase
+
+#### Example
+
+```bash
+./run.sh --build-type Release --rebuild ON --windowed --lang en
+```
+
+This performs a Release build if needed and passes `--windowed --lang en` as arguments to the running app (not implemented here).
 
 ## 📁 Project Structure
 
@@ -85,7 +110,40 @@ Defaults to `Debug` if unspecified.  Installs Qt if not found.
 └── .github/              # GitHub Actions workflows
 ```
 
----
+## Architecture & Feature Design
+
+🚨 **THIS IS COMPLETELY OPTIONAL AND CAN BE IGNORED/REMOVED PER DEVELOPER PREFERENCE** 🚨
+
+This project follows a **strictly modular feature-first architecture**. Each feature exists as a self-contained unit under the `features/` directory, with a standard structure:
+
+- `model/`: The data/state layer (e.g. `FooModel`, `IFooModel`)
+- `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`, `IFooPresenter`)
+- `widget/`: The view/UI layer (e.g. `FooWidget`, `IFooWidget`)
+- Tests are mirrored under `tests/features/` using the same hierarchy.
+
+All communication between features must happen **exclusively via the centralized event system** (see `src/events/`), not via direct references. This ensures loose coupling and high testability.
+
+To standardize and accelerate feature development, the repo includes a script:
+
+### `scripts/new-feature.sh`
+
+This script bootstraps all required source and test files for a new feature module. It:
+
+- Validates the feature name
+- Creates the necessary `model/`, `presenter/`, and `widget/` subdirectories
+- Generates interface and implementation headers and `.cpp` files
+- Sets up a Qt `.ui` file scaffold
+- Adds placeholder tests for each layer using Google Test
+- Applies `clang-format` to all generated files if available
+
+Usage:
+```bash
+./scripts/new-feature.sh FeatureName
+```
+
+The `FeatureName` must be in **TitleCase** and form a valid C++ identifier.
+
+This ensures each feature is properly scaffolded with minimal friction and adheres to architectural standards by default.
 
 ## 🧪 Developer Workflows
 
@@ -100,12 +158,6 @@ requires = [
 ]
 ```
 
-Then re-run:
-
-```bash
-./scripts/build.sh
-```
-
 Then re-lock as shown below.
 
 ### Update Dependency Lock
@@ -114,7 +166,13 @@ Then re-lock as shown below.
 ./scripts/conan-lock-update.sh
 ```
 
-The project uses flexible version constraints (e.g., `fmt/[>=0]`) to always resolve the latest compatible version across platforms. During the lockfile generation process, Conan creates a separate lockfile per platform and attempts to merge them. If this merge fails, it indicates that no single version satisfies all platforms in the given version range. In such cases, you’ll need to determine a version that works universally and explicitly pin it in your `conanfile.py`. This is unlikely, however.
+Then re-run:
+
+```bash
+./scripts/build.sh
+```
+
+The project uses flexible version constraints (e.g., `fmt/[>=11.2.0 <12]`) to always resolve the latest compatible version across platforms. During the lockfile generation process, Conan creates a separate lockfile per platform and attempts to merge them. If this merge fails, it indicates that no single version satisfies all platforms in the given version range. In such cases, you’ll need to determine a version that works universally and explicitly pin it in your `conanfile.py`. This is unlikely, however.
 
 ### Change App Name / ID / Version
 
@@ -147,17 +205,24 @@ Each PR or push triggers a cross-platform build.  For Windows, the artifact will
 ## ✨ UI Development
 
 - Edit `.ui` files using **Qt Designer**
+- Edit `.ts` files in **Qt Linguist**.  You can always update these using `lupdate`/`lrelease`, or you can just have the included `scripts/build.sh` handle it automatically.
 - Add images or resources to `resources.qrc`
-- Use `lupdate` and `lrelease` for translations (`*.ts` files)
 
 ---
 
 ## 💡 Tips
 
-- Use `pipenv run` for consistent tool execution.
+- Use `pipenv run` for consistent tool execution.  All included helper scripts do this automatically as needed.
 - The `env.sh` and `app.env` combo ensures your config stays centralized and clean.
 - Want to rename the app? Just update `app.env`. No renaming needed elsewhere.
 - `app_icon.ico` is used for Windows, `app_icon.png` is used for Linux, `app_icon.icns` is for macOS, and `app_icon.svg` is not used, but is included for posterity.
+- Delete/rename `.ts` files in `resources/i18n/` after updating the `APP_NAME` in `app.env`.
+- You can modify which languages you want to bundle translations for in `CMakeLists.txt` here:
+```cmake
+qt_standard_project_setup(
+    I18N_TRANSLATED_LANGUAGES en es de fr
+)
+```
 
 ---
 

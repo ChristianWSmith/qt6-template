@@ -39,7 +39,7 @@ export BUILD_TESTING
 export UPDATE_TRANSLATIONS
 
 if [ ! -e "${QT_ROOT}" ]; then
-  ${SCRIPT_DIR}/install_qt.sh
+  ${SCRIPT_DIR}/install-qt.sh
 fi
 
 if [ "${CLEAN}" == "ON" ]; then 
@@ -47,6 +47,9 @@ if [ "${CLEAN}" == "ON" ]; then
 fi
 
 installPipenv
+
+touch "${ROOT_CMAKE_LISTS}"
+touch "${TEST_CMAKE_LISTS}"
 
 pipenv run conan build "${PROJECT_ROOT}" \
   --output-folder "${BUILD_DIR}" \
