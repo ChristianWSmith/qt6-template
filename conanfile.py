@@ -10,9 +10,11 @@ class MyConanApp(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "VCVars", "CMakeToolchain"
     requires = [
-        "fmt/[>=0]",
-        "vulkan-loader/[>=0]",
-        "vulkan-headers/[>=0]"
+        "fmt/[>=11.2.0 <12]",
+        "vulkan-loader/[>=1.4.309.0 <2]",
+        "vulkan-headers/[>=1.4.309.0 <2]",
+        "cxxopts/[>=3.3.1 <4]",
+        "gtest/[>=1.16.0 <2]",
     ]
 
     def layout(self):
@@ -23,8 +25,13 @@ class MyConanApp(ConanFile):
         cmake.configure(variables={
             "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
             "APP_NAME": os.environ.get("APP_NAME", "MyConanApp"),
+            "APP_DESCRIPTION": os.environ.get("APP_DESCRIPTION", "My Conan App Description"),
             "APP_VERSION": os.environ.get("APP_VERSION", "0.1.0"),
             "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
-            "QT_DEBUG_FIND_PACKAGE": "ON"
+            "QT_DEBUG_FIND_PACKAGE": "ON",
+            "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),
+            "UT_NAME": os.environ.get("UT_NAME", "UnitTests"),
         })
         cmake.build()
+        if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":
+            cmake.build(target="update_translations")

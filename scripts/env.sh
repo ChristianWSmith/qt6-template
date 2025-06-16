@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_SOURCED="${ENV_SOURCED:-}"
-if [ ! -z "${ENV_SOURCED}" ]; then 
-  return 0
-fi
-export ENV_SOURCED=1
-
 installPipenv() {
   PIPENV_INSTALLED="${PIPENV_INSTALLED:-}"
   if [ ! -z "${PIPENV_INSTALLED}" ]; then 
@@ -16,12 +10,19 @@ installPipenv() {
   pipenv install --dev
 }
 
+ENV_SOURCED="${ENV_SOURCED:-}"
+if [ ! -z "${ENV_SOURCED}" ]; then 
+  return 0
+fi
+export ENV_SOURCED=1
+
 # --- SCRIPT DIR ---
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export PROJECT_ROOT="${SCRIPT_DIR}/.."
 
 # --- APP/QT ---
 source "${PROJECT_ROOT}/app.env"
+export UT_NAME="UnitTests"
 
 # --- OS DETECTION ---
 export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
@@ -65,6 +66,13 @@ export CONAN_PROFILES_DIR="${PROJECT_ROOT}/conan/profiles"
 export CONAN_PROFILE="${CONAN_PROFILES_DIR}/${PLATFORM}"
 export CONAN_LOCK="${PROJECT_ROOT}/conan.lock"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
+export SRC_DIR="${PROJECT_ROOT}/src"
+export TESTS_DIR="${PROJECT_ROOT}/tests"
+export FEATURES_DIR="${SRC_DIR}/features"
+export TESTS_FEATURES_DIR="${TESTS_DIR}/features"
+export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
+export ROOT_CMAKE_LISTS="${PROJECT_ROOT}/CMakeLists.txt"
+export TEST_CMAKE_LISTS="${TESTS_DIR}/CMakeLists.txt"
 
 if [ "${PLATFORM}" == "windows" ]; then
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"

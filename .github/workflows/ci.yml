@@ -9,6 +9,8 @@ on:
 env:
   UPLOAD_DIR: upload
   BUILD_TYPE: Release
+  BUILD_TEST: ON
+  UPDATE_TRANSLATIONS: OFF
 
 jobs:
   build:
@@ -46,9 +48,16 @@ jobs:
         export PATH="${PYTHON_BIN}:${PATH}"
         pipenv install
 
-    - name: Install OpenGL (Linux)
+    - name: Install System Dependencies (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libgl1-mesa-dev \
+          libxkbcommon-x11-0 \
+          libxcb-cursor-dev \
+          clang-tidy
 
     - name: Confirm OpenGL (macOS)
       if: runner.os == 'macOS'
@@ -67,12 +76,44 @@ jobs:
     - name: Install Qt (All)
       shell: bash
       run: |
-        ./scripts/install_qt.sh
+        ./scripts/install-qt.sh
+
+    - name: Set Qt PATH for Test Discovery
+      shell: bash
+      if: env.BUILD_TEST == 'ON'
+      run: |
+        source ./scripts/env.sh
+        echo "PATH=${QT_BIN}:${PATH}" >> ${GITHUB_ENV}
+        echo "QT_QPA_PLATFORM=offscreen" >> ${GITHUB_ENV}
 
     - name: Configure and Build (All)
       shell: bash
       run: |
-        ./scripts/build.sh ${{ env.BUILD_TYPE }}
+        ./scripts/build.sh \
+          --build-type ${{ env.BUILD_TYPE }} \
+          --test ${{ env.BUILD_TEST }} \
+          --update-translations ${{ env.UPDATE_TRANSLATIONS }}
+
+    - name: Unit Tests (All)
+      shell: bash
+      if: env.BUILD_TEST == 'ON'
+      run: |
+        source ./scripts/env.sh
+        
+        if [ "${PLATFORM}" == "windows" ]; then
+          export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
+          export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${UT_NAME}.exe")
+          ${WINDEPLOYQT} "${EXE_PATH}"
+        "${EXE_PATH}" --gtest_output=stderr
+        else
+          "${BUILD_DIR}/tests/${UT_NAME}" --gtest_output=stderr
+        fi
+
+
+    - name: Smoke Test (All)
+      shell: bash
+      run: |
+        ./scripts/run.sh --build-type ${{ env.BUILD_TYPE }} --smoke-test
 
     - name: Static Analysis (Linux)
       if: runner.os == 'Linux'
@@ -167,14 +208,7 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        mkdir -p "\${HOME}/.local/share/applications"
-        mkdir -p "\${HOME}/.local/share/icons"
-        cp "\${APPDIR}/${APP_ID}.desktop" "\${HOME}/.local/share/applications"
-        sed -i '/^\[Desktop Entry\]/a NoDisplay=true' "\${HOME}/.local/share/applications/${APP_ID}.desktop"
-        cp "\${APPDIR}/${APP_ID}.png" "\${HOME}/.local/share/icons"
         "\${APPDIR}/usr/bin/${APP_NAME}" "\$@"
-        rm "\${HOME}/.local/share/applications/${APP_ID}.desktop"
-        rm "\${HOME}/.local/share/icons/${APP_ID}.png"
         EOF
         chmod +x "${APP_DIR}/AppRun"
 
