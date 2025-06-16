@@ -30,6 +30,7 @@ class MyConanApp(ConanFile):
             "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
             "QT_DEBUG_FIND_PACKAGE": "ON",
             "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),
+            "UT_NAME": os.environ.get("UT_NAME", "UnitTests"),
         })
         cmake.build()
         if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":

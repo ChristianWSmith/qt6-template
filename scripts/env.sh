@@ -22,6 +22,7 @@ export PROJECT_ROOT="${SCRIPT_DIR}/.."
 
 # --- APP/QT ---
 source "${PROJECT_ROOT}/app.env"
+export UT_NAME="UnitTests"
 
 # --- OS DETECTION ---
 export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"

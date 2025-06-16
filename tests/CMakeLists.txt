@@ -5,9 +5,9 @@ enable_testing()
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS *.cpp)
 
-add_executable(unit_tests ${TEST_SOURCES})
+add_executable(${UT_NAME} ${TEST_SOURCES})
 
-target_link_libraries(unit_tests PRIVATE
+target_link_libraries(${UT_NAME} PRIVATE
     GTest::gtest_main
     GTest::gmock
     ${APP_NAME}_lib
@@ -17,13 +17,13 @@ target_link_libraries(unit_tests PRIVATE
     fmt::fmt
 )
 
-target_include_directories(unit_tests PRIVATE
+target_include_directories(${UT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
 )
 
-set_target_properties(unit_tests PROPERTIES
+set_target_properties(${UT_NAME} PROPERTIES
     AUTOMOC ON
 )
 
 include(GoogleTest)
-gtest_discover_tests(unit_tests)
+gtest_discover_tests(${UT_NAME})

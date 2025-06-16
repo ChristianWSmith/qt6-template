@@ -102,11 +102,11 @@ jobs:
         
         if [ "${PLATFORM}" == "windows" ]; then
           export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
-          export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/unit_tests.exe")
+          export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${UT_NAME}.exe")
           ${WINDEPLOYQT} "${EXE_PATH}"
         "${EXE_PATH}" --gtest_output=stderr
         else
-          "${BUILD_DIR}/unit_tests" --gtest_output=stderr
+          "${BUILD_DIR}/${UT_NAME}" --gtest_output=stderr
         fi
 
 

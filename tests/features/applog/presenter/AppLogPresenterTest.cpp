@@ -51,17 +51,17 @@ protected:
 };
 
 TEST_F(AppLogPresenterTest, ConstructorConnectsModelSignal) {
-  std::cerr << "+++ConstructorConnectsModelSignal+++";
   EXPECT_CALL(*mockModel, connectLogMessageAdded(testing::_, testing::_))
       .WillOnce([](QObject *receiver, const char *signal) {
         std::cerr << "connectLogMessageAdded called with signal: " << signal
                   << "\n";
-        return QMetaObject::Connection(); // Return dummy connection
+        std::string actual(signal);
+        EXPECT_EQ(actual, "1handleLogMessageAdded(QString)");
+        return QMetaObject::Connection();
       });
 
   delete presenter;
   presenter = new AppLogPresenter(mockModel, mockView);
-  std::cerr << "---ConstructorConnectsModelSignal---";
 }
 
 TEST_F(AppLogPresenterTest, HandleLogMessageAddedForwardsToView) {
