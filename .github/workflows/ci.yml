@@ -104,10 +104,11 @@ jobs:
           export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
           export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/unit_tests.exe")
           ${WINDEPLOYQT} "${EXE_PATH}"
+        "${EXE_PATH}" --gtest_output=stderr
+        else
+          "${BUILD_DIR}/unit_tests" --gtest_output=stderr
         fi
 
-        cd "${BUILD_DIR}"
-        ./tests/unit_tests --gtest_output=stderr
 
     - name: Smoke Test (All)
       shell: bash
