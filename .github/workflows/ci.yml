@@ -268,8 +268,8 @@ jobs:
         Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
         [Icons]
-        Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"
-        Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"; IconFilename: "{app}\\${APP_ICON}"
+        Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
+        Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
         EOF
 
         cat "${ISS_PATH}"
