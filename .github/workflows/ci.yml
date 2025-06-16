@@ -106,7 +106,7 @@ jobs:
           ${WINDEPLOYQT} "${EXE_PATH}"
         "${EXE_PATH}" --gtest_output=stderr
         else
-          "${BUILD_DIR}/${UT_NAME}" --gtest_output=stderr
+          "${BUILD_DIR}/tests/${UT_NAME}" --gtest_output=stderr
         fi
 
 
