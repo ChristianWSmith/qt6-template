@@ -1,4 +1,5 @@
 #include "features/applog/model/AppLogModel.h"
+#include "features/applog/widget/AppLogWidget.h"
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
