@@ -29,9 +29,23 @@ FEATURE_NAME_LOWER="$(echo "${FEATURE_NAME_TITLE}" | tr '[:upper:]' '[:lower:]')
 
 FEATURE_DIR="${FEATURES_DIR}/${FEATURE_NAME_LOWER}"
 
+if [[ -e "${FEATURE_DIR}" ]]; then
+  echo "Feature already exists."
+  exit 1
+fi
+
 MODEL_DIR="${FEATURE_DIR}/model"
 PRESENTER_DIR="${FEATURE_DIR}/presenter"
 WIDGET_DIR="${FEATURE_DIR}/widget"
+
+TEST_FEATURE_DIR="${TESTS_FEATURES_DIR}/${FEATURE_NAME_LOWER}"
+TEST_MODEL_DIR="${TEST_FEATURE_DIR}/model"
+TEST_PRESENTER_DIR="${TEST_FEATURE_DIR}/presenter"
+TEST_WIDGET_DIR="${TEST_FEATURE_DIR}/widget"
+
+MODEL_DIR_RELATIVE=${MODEL_DIR#"${SRC_DIR}/"}
+PRESENTER_DIR_RELATIVE=${PRESENTER_DIR#"${SRC_DIR}/"}
+WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
 
 # COMMON
 mkdir -p "${FEATURE_DIR}"
@@ -46,7 +60,7 @@ cat > "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h" <<EOF
 EOF
 format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 
-# MODEL
+# MODEL INTERFACE
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h" <<EOF
 #ifndef I${FEATURE_NAME_UPPER}MODEL_H
@@ -73,6 +87,7 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_I
 EOF
 format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
 
+# MODEL HEADER
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}MODEL_H
 #define ${FEATURE_NAME_UPPER}MODEL_H
@@ -98,6 +113,7 @@ private:
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
 
+# MODEL CPP
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Model.h"
 
@@ -109,7 +125,7 @@ ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent)
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 
-# PRESENTER
+# PRESENTER INTERFACE
 mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h" <<EOF
 #ifndef I${FEATURE_NAME_UPPER}PRESENTER_H
@@ -135,6 +151,7 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
 EOF
 format "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h"
 
+# PRESENTER HEADER
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}PRESENTER_H
 #define ${FEATURE_NAME_UPPER}PRESENTER_H
@@ -164,6 +181,7 @@ private:
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
 
+# PRESENTER CPP
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Presenter.h"
 
@@ -185,7 +203,7 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 
-# WIDGET
+# WIDGET INTERFACE
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #ifndef I${FEATURE_NAME_UPPER}WIDGET_H
@@ -211,6 +229,7 @@ Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_
 EOF
 format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
 
+# WIDGET HEADER
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #ifndef ${FEATURE_NAME_UPPER}WIDGET_H
 #define ${FEATURE_NAME_UPPER}WIDGET_H
@@ -245,6 +264,7 @@ private:
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h"
 
+# WIDGET CPP
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Widget.h"
 
@@ -262,6 +282,7 @@ ${FEATURE_NAME_TITLE}Widget::~${FEATURE_NAME_TITLE}Widget() { delete ui; }
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp"
 
+# WIDGET UI
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.ui" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
@@ -282,3 +303,103 @@ cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.ui" <<EOF
 </ui>
 
 EOF
+
+# MODEL TEST
+mkdir -p "${TEST_MODEL_DIR}"
+cat > "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" <<EOF
+#include <gtest/gtest.h>
+#include "${MODEL_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Model.h"
+
+class ${FEATURE_NAME_TITLE}ModelTest : public ::testing::Test {
+protected:
+  ${FEATURE_NAME_TITLE}Model *model;
+
+  void SetUp() override { model = new ${FEATURE_NAME_TITLE}Model(); }
+
+  void TearDown() override { delete model; }
+};
+
+TEST_F(${FEATURE_NAME_TITLE}ModelTest, Placeholder) {
+  // Add your model tests here
+  EXPECT_TRUE(true);
+}
+EOF
+format "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" 
+
+# PRESENTER TEST
+mkdir -p "${TEST_PRESENTER_DIR}"
+cat > "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp" <<EOF
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include "${PRESENTER_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Presenter.h"
+#include "${MODEL_DIR_RELATIVE}/I${FEATURE_NAME_TITLE}Model.h"
+#include "${WIDGET_DIR_RELATIVE}/I${FEATURE_NAME_TITLE}Widget.h"
+
+using ::testing::NiceMock;
+
+class Mock${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
+public:
+  // Mock model methods
+};
+
+class Mock${FEATURE_NAME_TITLE}Widget : public I${FEATURE_NAME_TITLE}Widget {
+public:
+  // Mock widget methods
+};
+
+class ${FEATURE_NAME_TITLE}PresenterTest : public ::testing::Test {
+protected:
+  Mock${FEATURE_NAME_TITLE}Model *mockModel;
+  Mock${FEATURE_NAME_TITLE}Widget *mockWidget;
+  ${FEATURE_NAME_TITLE}Presenter *presenter;
+
+  void SetUp() override {
+    mockModel = new Mock${FEATURE_NAME_TITLE}Model();
+    mockWidget = new Mock${FEATURE_NAME_TITLE}Widget();
+    presenter = new ${FEATURE_NAME_TITLE}Presenter(mockModel, mockWidget);
+  }
+
+  void TearDown() override {
+    delete presenter;
+    delete mockModel;
+    delete mockWidget;
+  }
+
+};
+
+// Add your presenter tests here
+TEST_F(${FEATURE_NAME_TITLE}PresenterTest, Placeholder) {
+  EXPECT_TRUE(true);
+}
+
+EOF
+format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
+
+# WIDGET TEST
+mkdir -p "${TEST_WIDGET_DIR}"
+cat > "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp" <<EOF
+#include <gtest/gtest.h>
+#include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
+
+class ${FEATURE_NAME_TITLE}WidgetTest : public ::testing::Test {
+protected:
+  ${FEATURE_NAME_TITLE}Widget *widget = nullptr;
+
+  void SetUp() override {
+    widget = new ${FEATURE_NAME_TITLE}Widget();
+    widget->show();
+  }
+
+  void TearDown() override { 
+    widget->hide();
+    delete widget; 
+  }
+};
+
+// Add your widget tests here
+TEST_F(${FEATURE_NAME_TITLE}WidgetTest, Placeholder) {
+  EXPECT_TRUE(true);
+}
+
+EOF
+format "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp"

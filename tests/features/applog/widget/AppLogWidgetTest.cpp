@@ -9,7 +9,7 @@ protected:
 
   void SetUp() override {
     widget = new AppLogWidget();
-    widget->show(); // Ensure widget layouting and scrollbar behavior
+    widget->show();
   }
 
   void TearDown() override {
@@ -48,7 +48,7 @@ TEST_F(AppLogWidgetTest, ScrollsToBottomOnLogMessage) {
     widget->displayLogMessage(QString("Line %1").arg(i));
   }
 
-  scrollBar->setValue(0); // Manually scroll to top
+  scrollBar->setValue(0);
 
   widget->displayLogMessage("Final log line");
 

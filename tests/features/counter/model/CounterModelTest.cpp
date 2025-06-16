@@ -3,16 +3,6 @@
 #include <QCoreApplication>
 #include <QSignalSpy>
 
-struct QCoreApplicationInitializer {
-  QCoreApplicationInitializer() {
-    if (!QCoreApplication::instance()) {
-      static int argc = 0;
-      new QCoreApplication(argc, nullptr);
-    }
-  };
-};
-static QCoreApplicationInitializer qappInitializer;
-
 class CounterModelTest : public ::testing::Test {
 protected:
   CounterModel *model;

@@ -11,10 +11,13 @@ protected:
 
   void SetUp() override {
     widget = new CounterWidget();
-    widget->show(); // ensure UI components are initialized properly
+    widget->show();
   }
 
-  void TearDown() override { delete widget; }
+  void TearDown() override {
+    widget->hide();
+    delete widget;
+  }
 };
 
 TEST_F(CounterWidgetTest, DisplayCounterUpdatesLabel) {
@@ -38,7 +41,6 @@ TEST_F(CounterWidgetTest, ClickingIncrementEmitsSignal) {
 TEST_F(CounterWidgetTest, ConnectIncrementRequestedBindsSignal) {
   qDebug() << "Starting ConnectIncrementRequestedBindsSignal test";
 
-  // Use a QObject* to test
   QObject *receiver = new QObject();
 
   bool wasCalled = false;
@@ -47,8 +49,6 @@ TEST_F(CounterWidgetTest, ConnectIncrementRequestedBindsSignal) {
     wasCalled = true;
   });
 
-  // Connect incrementRequested signal to receiver's deleteLater slot using
-  // modern syntax
   auto conn = QObject::connect(widget, &CounterWidget::incrementRequested,
                                receiver, &QObject::deleteLater);
 
@@ -68,7 +68,6 @@ TEST_F(CounterWidgetTest, ConnectIncrementRequestedBindsSignal) {
 
   EXPECT_TRUE(wasCalled);
 
-  // Clean up in case deleteLater didn't delete immediately (shouldn't happen)
   if (!wasCalled) {
     delete receiver;
   }

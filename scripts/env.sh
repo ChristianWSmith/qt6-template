@@ -67,7 +67,9 @@ export CONAN_PROFILE="${CONAN_PROFILES_DIR}/${PLATFORM}"
 export CONAN_LOCK="${PROJECT_ROOT}/conan.lock"
 export CONAN_TOOLCHAIN="${BUILD_DIR}/conan_toolchain.cmake"
 export SRC_DIR="${PROJECT_ROOT}/src"
+export TESTS_DIR="${PROJECT_ROOT}/tests"
 export FEATURES_DIR="${SRC_DIR}/features"
+export TESTS_FEATURES_DIR="${TESTS_DIR}/features"
 export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
 
 if [ "${PLATFORM}" == "windows" ]; then

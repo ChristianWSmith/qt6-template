@@ -7,16 +7,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-struct QCoreApplicationInitializer {
-  QCoreApplicationInitializer() {
-    if (!QCoreApplication::instance()) {
-      static int argc = 0;
-      new QCoreApplication(argc, nullptr);
-    }
-  }
-};
-static QCoreApplicationInitializer qappInitializer;
-
 using ::testing::NiceMock;
 
 class MockAppLogModel : public IAppLogModel {

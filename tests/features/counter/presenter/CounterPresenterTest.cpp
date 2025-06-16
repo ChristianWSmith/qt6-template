@@ -8,16 +8,6 @@
 #include <QMetaObject>
 #include <QObject>
 
-struct QCoreApplicationInitializer {
-  QCoreApplicationInitializer() {
-    if (!QCoreApplication::instance()) {
-      static int argc = 0;
-      new QCoreApplication(argc, nullptr);
-    }
-  }
-};
-static QCoreApplicationInitializer qappInitializer;
-
 class MockCounterModel : public ICounterModel {
 public:
   MOCK_METHOD(void, increment, (), (override));
