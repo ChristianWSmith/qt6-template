@@ -76,7 +76,7 @@ jobs:
     - name: Install Qt (All)
       shell: bash
       run: |
-        ./scripts/install_qt.sh
+        ./scripts/install-qt.sh
 
     - name: Set Qt PATH for Test Discovery
       shell: bash
