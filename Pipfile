@@ -6,6 +6,7 @@ name = "pip_conf_index_global"
 [packages]
 aqtinstall = "*"
 conan = "*"
+icnsutil = "*"
 
 [dev-packages]
 
