@@ -23,11 +23,6 @@ RUN apt-get update && apt-get install -y \
     qt6-tools-dev \
     qt6-tools-dev-tools \
     qt6-l10n-tools \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install --no-cache-dir pipenv
-
-RUN apt-get update && apt-get install -y \
     make \
     libssl-dev \
     zlib1g-dev \
@@ -42,29 +37,31 @@ RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
     libffi-dev \
     liblzma-dev \
+    sudo \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir pipenv
     
-RUN curl https://pyenv.run | bash && \
-    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc && \
+RUN curl https://pyenv.run | bash
+
+RUN echo 'if [ ! -d /workspace/.pyenv ]; then' >> ~/.bashrc && \
+    echo '  mv $HOME/.pyenv /workspace/.pyenv' >> ~/.bashrc && \
+    echo 'fi' >> ~/.bashrc && \
+    echo 'export PYENV_ROOT="/workspace/.pyenv"' >> ~/.bashrc && \
     echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc && \
-    echo 'eval "$(pyenv init --path)"' >> ~/.bashrc && \
+    echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc && \
     echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc && \
-    echo '' >> ~/.bashrc && \
-    echo '# Auto-switch Python version based on Pipfile' >> ~/.bashrc && \
     echo 'if [ -f "/workspace/Pipfile" ]; then' >> ~/.bashrc && \
-    echo '  PY_VER=$(grep -Po "(?<=python_version\\s*=\\s*\")[^\"]+" "/workspace/Pipfile")' >> ~/.bashrc && \
+    echo '  PY_VER=$(awk -F\" '"'"'/python_version/ { print $2 }'"'"' "/workspace/Pipfile")' >> ~/.bashrc && \
     echo '  if [ -n "$PY_VER" ]; then' >> ~/.bashrc && \
     echo '    if ! pyenv versions --bare | grep -qx "$PY_VER"; then' >> ~/.bashrc && \
-    echo '      echo "[pyenv] Installing Python $PY_VER..."' >> ~/.bashrc && \
-    echo '      pyenv install "$PY_VER"' >> ~/.bashrc && \
+    echo '      echo "[pyenv] Checking for Python $PY_VER..."' >> ~/.bashrc && \
+    echo '      pyenv install --skip-existing "$PY_VER"' >> ~/.bashrc && \
     echo '    fi' >> ~/.bashrc && \
-    echo '    pyenv shell "$PY_VER"' >> ~/.bashrc && \
+    echo '    if [ "$(pyenv version-name)" != "$PY_VER" ]; then' >> ~/.bashrc && \
+    echo '      pyenv shell "$PY_VER"' >> ~/.bashrc && \
+    echo '    fi' >> ~/.bashrc && \
     echo '  fi' >> ~/.bashrc && \
     echo 'fi' >> ~/.bashrc
-
-RUN apt-get update && \
-    apt-get install -y sudo && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
