@@ -2,6 +2,7 @@
 set -euo pipefail
 
 installPipenv() {
+  export PIPENV_VENV_IN_PROJECT=1
   PIPENV_INSTALLED="${PIPENV_INSTALLED:-}"
   if [ ! -z "${PIPENV_INSTALLED}" ]; then 
     return 0

@@ -96,30 +96,37 @@ USER devuser
 
 RUN curl https://pyenv.run | bash
 
-RUN echo 'export PIPENV_VENV_IN_PROJECT=1' >> ~/.bashrc && \
-    echo 'parse_git_branch() {' >> ~/.bashrc && \
-    echo '  if git rev-parse --is-inside-work-tree &>/dev/null; then' >> ~/.bashrc && \
-    echo '    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || echo "detached")' >> ~/.bashrc && \
-    echo '    echo " ($branch)"' >> ~/.bashrc && \
-    echo '  fi' >> ~/.bashrc && \
-    echo '}' >> ~/.bashrc && \
-    echo 'export PS1="\[\033[1;34m\]\$(pwd | sed '\''s|^${WORKSPACE%/}|[workspace]|'\'')\[\033[0m\]\[\033[1;32m\]\$(parse_git_branch)\[\033[0m\] \$ "' >> ~/.bashrc && \
-    echo 'if [ ! -d "${WORKSPACE}/.pyenv" ]; then' >> ~/.bashrc && \
-    echo '  mv "${HOME}/.pyenv" "${WORKSPACE}/.pyenv"' >> ~/.bashrc && \
-    echo 'fi' >> ~/.bashrc && \
-    echo 'export PYENV_ROOT="${WORKSPACE}/.pyenv"' >> ~/.bashrc && \
-    echo 'export PATH="${PYENV_ROOT}/bin:${PATH}"' >> ~/.bashrc && \
-    echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc && \
-    echo 'eval "$(pyenv virtualenv-init -)"' >> ~/.bashrc && \
-    echo 'if [ -f "${WORKSPACE}/Pipfile" ]; then' >> ~/.bashrc && \
-    echo '  PY_VER=$(awk -F\" '"'"'/python_version/ { print $2 }'"'"' "${WORKSPACE}/Pipfile")' >> ~/.bashrc && \
-    echo '  if [ -n "${PY_VER}" ]; then' >> ~/.bashrc && \
-    echo '    if ! pyenv versions --bare | grep -qx "${PY_VER}"; then' >> ~/.bashrc && \
-    echo '      echo "[pyenv] Checking for Python ${PY_VER}..."' >> ~/.bashrc && \
-    echo '      pyenv install --skip-existing "${PY_VER}"' >> ~/.bashrc && \
-    echo '    fi' >> ~/.bashrc && \
-    echo '    if [ "$(pyenv version-name)" != "${PY_VER}" ]; then' >> ~/.bashrc && \
-    echo '      pyenv shell "${PY_VER}"' >> ~/.bashrc && \
-    echo '    fi' >> ~/.bashrc && \
-    echo '  fi' >> ~/.bashrc && \
-    echo 'fi' >> ~/.bashrc
+RUN curl -fsSL https://starship.rs/install.sh | sh -s -- --yes
+
+RUN mkdir -p "${HOME}/.config" && \
+    cat > "${HOME}/.config/starship.toml" <<'EOF'
+[directory]
+style = "cyan"
+truncate_to_repo = true
+EOF
+
+RUN cat > "${HOME}/.bashrc" <<'EOF'
+eval "$(starship init bash)"
+
+if [ ! -d "${WORKSPACE}/.pyenv" ]; then
+  mv "${HOME}/.pyenv" "${WORKSPACE}/.pyenv"
+fi
+
+export PYENV_ROOT="${WORKSPACE}/.pyenv"
+export PATH="${PYENV_ROOT}/bin:${WORKSPACE}/scripts:${PATH}"
+eval "$(pyenv init - bash)"
+eval "$(pyenv virtualenv-init -)"
+
+if [ -f "${WORKSPACE}/Pipfile" ]; then
+  PY_VER=$(awk -F\" '/python_version/ { print $2 }' "${WORKSPACE}/Pipfile")
+  if [ -n "${PY_VER}" ]; then
+    if ! pyenv versions --bare | grep -qx "${PY_VER}"; then
+      echo "[pyenv] Checking for Python ${PY_VER}..."
+      pyenv install --skip-existing "${PY_VER}"
+    fi
+    if [ "$(pyenv version-name)" != "${PY_VER}" ]; then
+      pyenv shell "${PY_VER}"
+    fi
+  fi
+fi
+EOF
