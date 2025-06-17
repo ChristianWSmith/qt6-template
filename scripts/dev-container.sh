@@ -60,10 +60,12 @@ esac
 
 docker run \
   ${GUI_ARGS} \
-  -e LANG="${LANG}" \
+  -e LANG="${LANG:-en_US.UTF-8}" \
+  -e LC_ALL="${LC_ALL:-${LANG:-en_US.UTF-8}}" \
+  -e WORKSPACE="${PROJECT_ROOT}" \
   --rm -it \
-  -v "${PROJECT_ROOT}":/workspace \
-  -w /workspace \
+  -v "${PROJECT_ROOT}":"${PROJECT_ROOT}" \
+  -w "${PROJECT_ROOT}" \
   "${CONTAINER_NAME}" bash
 
 if [[ "${USING_XHOST}" == "true" ]]; then
