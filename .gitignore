@@ -98,5 +98,6 @@ CMakeUserPresets.json
 # vscode
 .vscode
 
-# pyenv
+# pyenv / pipenv
 .pyenv/
+.venv/

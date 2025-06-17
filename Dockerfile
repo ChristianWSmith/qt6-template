@@ -41,13 +41,69 @@ RUN apt-get update && apt-get install -y \
     locales \
     locales-all \
     inkscape \
+    libfontenc-dev \
+    libice-dev \
+    libsm-dev \
+    libx11-xcb-dev \
+    libxaw7-dev \
+    libxcb-composite0 \
+    libxcb-composite0-dev \
+    libxcb-dri2-0-dev \
+    libxcb-dri3-dev \
+    libxcb-ewmh-dev \
+    libxcb-ewmh2 \
+    libxcb-glx0-dev \
+    libxcb-icccm4-dev \
+    libxcb-keysyms1-dev \
+    libxcb-present-dev \
+    libxcb-randr0-dev \
+    libxcb-res0 \
+    libxcb-res0-dev \
+    libxcb-shape0-dev \
+    libxcb-sync-dev \
+    libxcb-xfixes0-dev \
+    libxcb-xinerama0 \
+    libxcb-xinerama0-dev \
+    libxcb-xkb-dev \
+    libxcomposite-dev \
+    libxcursor-dev \
+    libxdamage-dev \
+    libxfixes-dev \
+    libxi-dev \
+    libxinerama-dev \
+    libxkbfile-dev \
+    libxmu-dev \
+    libxmu-headers \
+    libxmuu-dev \
+    libxpm-dev \
+    libxrandr-dev \
+    libxres-dev \
+    libxres1 \
+    libxt-dev \
+    libxtst-dev \
+    libxv-dev \
+    libxxf86vm-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir pipenv
-    
+RUN pip3 install --no-cache-dir --upgrade pip pipenv
+
+RUN groupadd -g 1000 devgroup && \
+    useradd -m -u 1000 -g devgroup devuser && \
+    echo 'devuser ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers && \
+    chmod 0440 /etc/sudoers
+
+USER devuser
+
 RUN curl https://pyenv.run | bash
 
-RUN echo 'locale-gen "${LANG}"' >> ~/.bashrc && \
+RUN echo 'export PIPENV_VENV_IN_PROJECT=1' >> ~/.bashrc && \
+    echo 'parse_git_branch() {' >> ~/.bashrc && \
+    echo '  if git rev-parse --is-inside-work-tree &>/dev/null; then' >> ~/.bashrc && \
+    echo '    branch=$(git symbolic-ref --short HEAD 2>/dev/null || git describe --tags --exact-match 2>/dev/null || echo "detached")' >> ~/.bashrc && \
+    echo '    echo " ($branch)"' >> ~/.bashrc && \
+    echo '  fi' >> ~/.bashrc && \
+    echo '}' >> ~/.bashrc && \
+    echo 'export PS1="\[\033[1;34m\]\$(pwd | sed '\''s|^${WORKSPACE%/}|[workspace]|'\'')\[\033[0m\]\[\033[1;32m\]\$(parse_git_branch)\[\033[0m\] \$ "' >> ~/.bashrc && \
     echo 'if [ ! -d "${WORKSPACE}/.pyenv" ]; then' >> ~/.bashrc && \
     echo '  mv "${HOME}/.pyenv" "${WORKSPACE}/.pyenv"' >> ~/.bashrc && \
     echo 'fi' >> ~/.bashrc && \

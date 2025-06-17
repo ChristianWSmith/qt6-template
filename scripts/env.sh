@@ -18,7 +18,7 @@ export ENV_SOURCED=1
 
 # --- SCRIPT DIR ---
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-export PROJECT_ROOT="${SCRIPT_DIR}/.."
+export PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/..")"
 
 # --- APP/QT ---
 source "${PROJECT_ROOT}/app.env"
