@@ -14,11 +14,10 @@ export APP_BIN="${BIN_DIR}/${APP_NAME}"
 export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
 if [ ! -f "${PROJECT_ROOT}/appimagetool" ]; then
-  wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
-  chmod +x appimagetool
-if
+    wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
+    chmod +x "${PROJECT_ROOT}/appimagetool"
+fi
 
-echo "Setting up AppDir..."
 mkdir -p "${BIN_DIR}"
 mkdir -p "${LIB_DIR}"
 mkdir -p "${APP_PLUGINS_DIR}"
@@ -32,20 +31,19 @@ deps=()
 gather_deps() {
     local bin="$1"
     while IFS= read -r dep; do
-    [[ -z "${dep}" ]] && continue
+        [[ -z "${dep}" ]] && continue
 
-    if [[ ! -e "${dep}" ]]; then
-        echo "ERROR: Dependency not found or broken symlink: ${dep}" >&2
-        exit 1
-    fi
+        if [[ ! -e "${dep}" ]]; then
+            exit 1
+        fi
 
-    for existing in "${seen_deps[@]}"; do
-        [[ "${existing}" == "${dep}" ]] && continue 2
-    done
+        for existing in "${seen_deps[@]}"; do
+            [[ "${existing}" == "${dep}" ]] && continue 2
+        done
 
-    seen_deps+=("${dep}")
-    deps+=("${dep}")
-    gather_deps "${dep}"
+        seen_deps+=("${dep}")
+        deps+=("${dep}")
+        gather_deps "${dep}"
     done < <(ldd "${bin}" | awk '/=>/ {print $3}' | grep -v '^(')
 }
 
@@ -67,6 +65,7 @@ for dep in "${deps[@]}"; do
     if [[ ! "${base}" =~ ${BLACKLIST_REGEX} ]]; then
     cp -v "${dep}" "${LIB_DIR}/" || true
     else
+    echo "Skipping blacklisted dependency: ${base}"
     fi
 done
 

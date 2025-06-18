@@ -104,3 +104,6 @@ CMakeUserPresets.json
 
 # appimagetool
 appimagetool
+
+# dist
+dist/
