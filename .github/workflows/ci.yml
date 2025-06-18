@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         include:
-            - os: ubuntu-latest
+            # - os: ubuntu-latest
             - os: windows-latest
-            - os: macos-latest
+            # - os: macos-latest
 
     steps:
     - name: Checkout code
@@ -134,6 +134,7 @@ jobs:
 
         export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
         export APP_PLATFORMS_DIR="${APP_PLUGINS_DIR}/platforms"
+        export APP_PLATFORMTHEMES_DIR="${APP_PLUGINS_DIR}/platformthemes"
         export APP_WAYLAND_DIR="${APP_PLUGINS_DIR}/wayland-shell-integration"
 
         echo "Installing system dependencies..."
@@ -147,9 +148,11 @@ jobs:
         mkdir -p "${BIN_DIR}"
         mkdir -p "${LIB_DIR}"
         mkdir -p "${APP_PLATFORMS_DIR}"
+        mkdir -p "${APP_PLATFORMTHEMES_DIR}"
         mkdir -p "${APP_WAYLAND_DIR}"
         cp -r "${QT_WAYLAND_DIR}/." "${APP_WAYLAND_DIR}/"
         cp -r "${QT_PLATFORMS_DIR}/." "${APP_PLATFORMS_DIR}/"
+        cp -r "${QT_PLATFORMTHEMES_DIR}/." "${APP_PLATFORMTHEMES_DIR}/"
         cp "${BUILD_DIR}/${APP_NAME}" "${APP_BIN}"
         chmod +x "${APP_BIN}"
 
@@ -208,6 +211,7 @@ jobs:
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
         export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
+        export QT_QPA_PLATFORMTHEME=xdgdesktopportal
         "\${APPDIR}/usr/bin/${APP_NAME}" "\$@"
         EOF
         chmod +x "${APP_DIR}/AppRun"
