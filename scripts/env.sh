@@ -56,6 +56,7 @@ esac
 
 # --- DERIVED PATHS ---
 export BUILD_DIR="${PROJECT_ROOT}/build"
+export DIST_DIR="${PROJECT_ROOT}/dist"
 export QT_INSTALL_DIR="${PROJECT_ROOT}/Qt"
 export QT_ROOT="${QT_INSTALL_DIR}/${QT_VERSION}/${COMPILER_DIR}"
 export QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
@@ -78,6 +79,7 @@ export RESOURCES_DIR="${PROJECT_ROOT}/resources"
 export ICONS_DIR="${RESOURCES_DIR}/icons"
 
 if [ "${PLATFORM}" == "windows" ]; then
+    export DIST_DIR="$(cygpath -w "${DIST_DIR}")"
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
     export QT_INSTALL_DIR="$(cygpath -w "${QT_INSTALL_DIR}")"
     export QT_ROOT="$(cygpath -w "${QT_ROOT}")"

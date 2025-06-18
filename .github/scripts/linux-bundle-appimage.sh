@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/../../scripts/env.sh
 
+mkdir -p "${DIST_DIR}"
+
 export APP_DIR="${PROJECT_ROOT}/${APP_NAME}.AppDir"
 export BIN_DIR="${APP_DIR}/usr/bin"
 export LIB_DIR="${APP_DIR}/usr/lib"
@@ -11,9 +13,10 @@ export APP_BIN="${BIN_DIR}/${APP_NAME}"
 
 export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
-echo "Installing appimagetool..."
-wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O appimagetool
-chmod +x appimagetool
+if [ ! -f "${PROJECT_ROOT}/appimagetool" ]; then
+  wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
+  chmod +x appimagetool
+if
 
 echo "Setting up AppDir..."
 mkdir -p "${BIN_DIR}"
@@ -46,10 +49,8 @@ gather_deps() {
     done < <(ldd "${bin}" | awk '/=>/ {print $3}' | grep -v '^(')
 }
 
-echo "Gathering dependencies..."
 gather_deps "${APP_BIN}"
 
-echo "Getting dependency blacklist..."
 EXCLUDELIST_PATH="$(mktemp)"
 wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
 BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \
@@ -60,21 +61,17 @@ BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \
     sed 's/$/$/' | \
     paste -sd'|' -)
 
-echo "Copying dependencies..."
 for dep in "${deps[@]}"; do
     real_dep=$(readlink -f "${dep}")
     base=$(basename "${real_dep}")
     if [[ ! "${base}" =~ ${BLACKLIST_REGEX} ]]; then
     cp -v "${dep}" "${LIB_DIR}/" || true
     else
-    echo "Skipping blacklisted dependency: ${base}"
     fi
 done
 
-echo "Patching RPATH..."
 patchelf --set-rpath '$ORIGIN/../lib' "${APP_BIN}"
 
-echo "Finalizing AppDir..."
 cat > "${APP_DIR}/AppRun" <<EOF
 #!/bin/sh
 export QT_PLUGIN_PATH="\${APPDIR}/usr/plugins"
@@ -95,9 +92,8 @@ EOF
 
 convert "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
 
-echo "Building AppImage..."
 rm -rf "${APP_NAME}-x86_64.AppImage"
 rm -rf "${APP_NAME}.AppImage"
 "${PROJECT_ROOT}/appimagetool" "${APP_DIR}"
 rm -rf "${APP_DIR}"
-mv "${PROJECT_ROOT}/${APP_NAME}-x86_64.AppImage" "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.AppImage"
+mv "${PROJECT_ROOT}/${APP_NAME}-x86_64.AppImage" "${DIST_DIR}/${APP_NAME}-${APP_VERSION}.AppImage"

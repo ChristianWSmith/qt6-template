@@ -19,14 +19,14 @@ jobs:
       matrix:
         include:
             - os: ubuntu-latest
-            # - os: windows-latest
-            # - os: macos-latest
+            - os: windows-latest
+            - os: macos-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout code (All)
       uses: actions/checkout@v4
 
-    - name: Extract Python Version from Pipfile
+    - name: Extract Python Version from Pipfile (All)
       id: extract_python
       shell: bash
       run: |
@@ -34,12 +34,12 @@ jobs:
         echo "Found Python version: ${PYTHON_VERSION}"
         echo "python-version=${PYTHON_VERSION}" >> "$GITHUB_OUTPUT"
 
-    - name: Set up Python
+    - name: Set up Python (All)
       uses: actions/setup-python@v5
       with:
         python-version: ${{ steps.extract_python.outputs.python-version }}
 
-    - name: Install Pipenv
+    - name: Install Pipenv (All)
       shell: bash
       run: |
         pip install --user pipenv
@@ -82,7 +82,7 @@ jobs:
       run: |
         ./scripts/install-qt.sh
 
-    - name: Set Qt PATH for Test Discovery
+    - name: Set Qt PATH for Test Discovery (All)
       shell: bash
       if: env.BUILD_TEST == 'ON'
       run: |
@@ -108,11 +108,10 @@ jobs:
           export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
           export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${UT_NAME}.exe")
           ${WINDEPLOYQT} "${EXE_PATH}"
-        "${EXE_PATH}" --gtest_output=stderr
+          "${EXE_PATH}" --gtest_output=stderr
         else
           "${BUILD_DIR}/tests/${UT_NAME}" --gtest_output=stderr
         fi
-
 
     - name: Smoke Test (All)
       shell: bash
@@ -124,7 +123,8 @@ jobs:
       shell: bash
       run: |
         source ./scripts/env.sh
-        clang-tidy -p "${BUILD_DIR}" $(find "${PROJECT_ROOT}/src" -type f -regextype posix-extended -regex ".*\.(cpp|h)")
+        clang-tidy -p "${BUILD_DIR}" \
+          $(find "${PROJECT_ROOT}/src" -type f -regextype posix-extended -regex ".*\.(cpp|h)")
 
     - name: Bundle Application Native (Linux)
       if: runner.os == 'Linux'
@@ -140,66 +140,19 @@ jobs:
       if: runner.os == 'macOS'
       shell: bash
       run: |
-        source ./scripts/env.sh
-        export APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
-        "${QT_BIN}/macdeployqt" "${APP_PATH}"
+        ./.github/scripts/mac-bundle-app.sh
 
     - name: Bundle Application (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        source ./scripts/env.sh
-        export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
-        export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${{ env.BUILD_TYPE }}/${APP_NAME}.exe")
-
-        ${WINDEPLOYQT} "${EXE_PATH}"
-        
-        export ISS_PATH=$(cygpath -w "${{ github.workspace }}/inno.iss")
-        cat > "${ISS_PATH}" <<EOF
-        [Setup]
-        AppName=${APP_NAME}
-        AppVersion=${APP_VERSION}
-        DefaultDirName={commonpf}\\${APP_NAME}
-        OutputDir=${BUILD_DIR}
-        OutputBaseFilename=${APP_NAME}Installer
-        Compression=lzma
-        SolidCompression=yes
-        SetupIconFile=${APP_ICON}
-
-        [Files]
-        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\${APP_NAME}.exe"; DestDir: "{app}"; Flags: ignoreversion
-        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-        Source: "${BUILD_DIR}\\${{ env.BUILD_TYPE }}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
-
-        [Icons]
-        Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
-        Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
-        EOF
-
-        cat "${ISS_PATH}"
-        iscc "${ISS_PATH}"
+        ./.github/scripts/windows-bundle-installer.sh ${{ env.BUILD_TYPE }}
 
     - name: Move Artifact to Uploads
       shell: bash
       run: |
         source ./scripts/env.sh
-        mkdir -p "${{ env.UPLOAD_DIR }}"
-        
-        if [ -e "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.AppImage" ]; then
-          mv -v "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.AppImage" "${{ env.UPLOAD_DIR }}"
-        fi
-        
-        if [ -e "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.tar.gz" ]; then
-          mv -v "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.tar.gz" "${{ env.UPLOAD_DIR }}"
-        fi
-
-        if [ -e "${BUILD_DIR}/${APP_NAME}.app" ]; then
-          mv -v "${BUILD_DIR}/${APP_NAME}.app" "${{ env.UPLOAD_DIR }}"
-        fi
-
-        if [ -e "${BUILD_DIR}/${APP_NAME}Installer.exe" ]; then
-          mv -v "${BUILD_DIR}/${APP_NAME}Installer.exe" "${{ env.UPLOAD_DIR }}"
-        fi
+        mv "${DIST_DIR}" "${{ env.UPLOAD_DIR }}"
 
     - name: Upload Executable
       uses: actions/upload-artifact@v4
