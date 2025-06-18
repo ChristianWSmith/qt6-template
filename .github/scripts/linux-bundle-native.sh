@@ -7,27 +7,19 @@ source ${SCRIPT_DIR}/../../scripts/env.sh
 mkdir -p "${DIST_DIR}"
 
 ARCHIVE_NAME="${APP_NAME}-${APP_VERSION}"
-
 SOURCE_BINARY_PATH="${BUILD_DIR}/${APP_NAME}"
-
 SOURCE_ICONS_DIR="${ICONS_DIR}"
-
 SOURCE_LICENSE_PATH="${PROJECT_ROOT}/LICENSE"
-
 SOURCE_README_PATH="${PROJECT_ROOT}/README.md"
-
 DESKTOP_TEMPLATE_NAME="${APP_ID}.desktop.in"
 DESKTOP_ENTRY_NAME="${APP_ID}.desktop"
 DESKTOP_ENTRY_CATEGORY="${APP_CATEGORIES}"
 DESKTOP_ENTRY_COMMENT="${APP_DESCRIPTION}"
-
 MAKEFILE_PREFIX="/usr/local"
 MAKEFILE_USER_PREFIX="\$(HOME)/.local"
-
-
 TARGET_ROOT_DIR="${PROJECT_ROOT}/${ARCHIVE_NAME}"
-mkdir -p "${TARGET_ROOT_DIR}"
 
+mkdir -p "${TARGET_ROOT_DIR}"
 mkdir -p "${TARGET_ROOT_DIR}/bin"
 mkdir -p "${TARGET_ROOT_DIR}/share/applications"
 mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/scalable/apps"
@@ -39,7 +31,6 @@ mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/64x64/apps"
 mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/128x128/apps"
 mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/256x256/apps"
 mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/512x512/apps"
-echo "Created subdirectories."
 
 cp "${SOURCE_BINARY_PATH}" "${TARGET_ROOT_DIR}/bin/${APP_NAME}"
 chmod +x "${TARGET_ROOT_DIR}/bin/${APP_NAME}"
@@ -55,16 +46,6 @@ Icon=${APP_ID}
 Categories=${APP_CATEGORIES}
 StartupWMClass=${APP_NAME}
 EOF
-echo "Created desktop template file: ${DESKTOP_TEMPLATE_NAME}"
-
-echo "Copying and resizing icons from ${SOURCE_ICONS_DIR}..."
-
-if ! command -v magick &> /dev/null && ! command -v convert &> /dev/null
-then
-    echo "Error: ImageMagick 'magick' or 'convert' command not found. Cannot resize PNG icons."
-    echo "Please install ImageMagick (e.g., 'sudo apt install imagemagick' or 'sudo dnf install ImageMagick')."
-    exit 1
-fi
 
 IMAGEMAGICK_CMD="magick"
 if ! command -v magick &> /dev/null; then
@@ -74,14 +55,14 @@ fi
 PNG_SIZES=(16x16 24x24 32x32 48x48 64x64 128x128 256x256 512x512)
 
 SOURCE_SVG_ICON="${SOURCE_ICONS_DIR}/app_icon.svg"
-SOURCE_PNG_1024_ICON="${SOURCE_ICONS_DIR}/app_icon.png"
+SOURCE_PNG_ICON="${SOURCE_ICONS_DIR}/app_icon.png"
 
 cp "${SOURCE_SVG_ICON}" "${TARGET_ROOT_DIR}/share/icons/hicolor/scalable/apps/${APP_ID}.svg"
 
 for size in "${PNG_SIZES[@]}"; do
     ICON_DIR="${TARGET_ROOT_DIR}/share/icons/hicolor/${size}/apps"
     mkdir -p "${ICON_DIR}"
-    "${IMAGEMAGICK_CMD}" "${SOURCE_PNG_1024_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
+    "${IMAGEMAGICK_CMD}" "${SOURCE_PNG_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
 done
 
 cp "${SOURCE_LICENSE_PATH}" "${TARGET_ROOT_DIR}/LICENSE"
@@ -205,7 +186,6 @@ uninstall-user:
 clean:
 	
 EOF
-echo "Created Makefile."
 
 tar -czvf "${ARCHIVE_NAME}.tar.gz" -C "$(dirname "${TARGET_ROOT_DIR}")" "$(basename "${TARGET_ROOT_DIR}")"
 mv "${PROJECT_ROOT}/${ARCHIVE_NAME}.tar.gz" "${DIST_DIR}/${ARCHIVE_NAME}.tar.gz"

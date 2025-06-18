@@ -89,7 +89,12 @@ Categories=${APP_CATEGORIES}
 StartupWMClass=${APP_NAME}
 EOF
 
-convert "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
+IMAGEMAGICK_CMD="magick"
+if ! command -v magick &> /dev/null; then
+    IMAGEMAGICK_CMD="convert"
+fi
+
+"${IMAGEMAGICK_CMD}" "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
 
 rm -rf "${APP_NAME}-x86_64.AppImage"
 rm -rf "${APP_NAME}.AppImage"
