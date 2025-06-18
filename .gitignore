@@ -97,3 +97,13 @@ CMakeUserPresets.json
 
 # vscode
 .vscode
+
+# pyenv / pipenv
+.pyenv/
+.venv/
+
+# appimagetool
+appimagetool
+
+# dist
+dist/

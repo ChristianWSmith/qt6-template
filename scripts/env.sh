@@ -2,6 +2,7 @@
 set -euo pipefail
 
 installPipenv() {
+  export PIPENV_VENV_IN_PROJECT=1
   PIPENV_INSTALLED="${PIPENV_INSTALLED:-}"
   if [ ! -z "${PIPENV_INSTALLED}" ]; then 
     return 0
@@ -18,7 +19,7 @@ export ENV_SOURCED=1
 
 # --- SCRIPT DIR ---
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-export PROJECT_ROOT="${SCRIPT_DIR}/.."
+export PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/..")"
 
 # --- APP/QT ---
 source "${PROJECT_ROOT}/app.env"
@@ -55,6 +56,7 @@ esac
 
 # --- DERIVED PATHS ---
 export BUILD_DIR="${PROJECT_ROOT}/build"
+export DIST_DIR="${PROJECT_ROOT}/dist"
 export QT_INSTALL_DIR="${PROJECT_ROOT}/Qt"
 export QT_ROOT="${QT_INSTALL_DIR}/${QT_VERSION}/${COMPILER_DIR}"
 export QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
@@ -73,8 +75,11 @@ export TESTS_FEATURES_DIR="${TESTS_DIR}/features"
 export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
 export ROOT_CMAKE_LISTS="${PROJECT_ROOT}/CMakeLists.txt"
 export TEST_CMAKE_LISTS="${TESTS_DIR}/CMakeLists.txt"
+export RESOURCES_DIR="${PROJECT_ROOT}/resources"
+export ICONS_DIR="${RESOURCES_DIR}/icons"
 
 if [ "${PLATFORM}" == "windows" ]; then
+    export DIST_DIR="$(cygpath -w "${DIST_DIR}")"
     export BUILD_DIR="$(cygpath -w "${BUILD_DIR}")"
     export QT_INSTALL_DIR="$(cygpath -w "${QT_INSTALL_DIR}")"
     export QT_ROOT="$(cygpath -w "${QT_ROOT}")"

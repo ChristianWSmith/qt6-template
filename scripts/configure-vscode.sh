@@ -18,6 +18,7 @@ cat > "${VSCODE_DIR}/settings.json" <<EOF
   "editor.detectIndentation": false,
   "files.associations": {
     "*.h": "cpp"
+    "*.ts": "xml"
   },
   "files.watcherExclude": {
     "${BUILD_DIR}/**": true
@@ -67,21 +68,35 @@ cat > "${VSCODE_DIR}/tasks.json" <<EOF
     {
       "label": "Build ${APP_NAME} (Debug)",
       "type": "shell",
-      "command": "${PROJECT_ROOT}/scripts/build.sh Debug",
+      "command": "${SCRIPT_DIR}/build.sh --build-type Debug --test OFF",
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "Build ${APP_NAME} (Release)",
       "type": "shell",
-      "command": "${PROJECT_ROOT}/scripts/build.sh Release",
+      "command": "${SCRIPT_DIR}/build.sh --build-type Release --test OFF",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build ${APP_NAME} (Debug w/ Tests)",
+      "type": "shell",
+      "command": "${SCRIPT_DIR}/build.sh --build-type Debug --test ON",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build ${APP_NAME} (Release w/ Tests)",
+      "type": "shell",
+      "command": "${SCRIPT_DIR}/build.sh --build-type Release --test ON",
       "group": "build",
       "problemMatcher": []
     },
     {
       "label": "Clean",
       "type": "shell",
-      "command": "${PROJECT_ROOT}/scripts/clean.sh",
+      "command": "${SCRIPT_DIR}/clean.sh",
       "group": "build",
       "problemMatcher": []
     }
@@ -94,7 +109,6 @@ cat > "${VSCODE_DIR}/extensions.json" <<EOF
 {
     "recommendations": [
         "theqtcompany.qt-core",
-        "ms-vscode.cmake-tools",
         "theqtcompany.qt-cpp",
         "llvm-vs-code-extensions.vscode-clangd",
         "vadimcn.vscode-lldb",
