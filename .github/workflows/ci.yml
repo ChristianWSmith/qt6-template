@@ -473,8 +473,8 @@ jobs:
           mv -v "${BUILD_DIR}/${APP_NAME}.AppImage" "${{ env.UPLOAD_DIR }}"
         fi
         
-        if [ -e "${BUILD_DIR}/${APP_NAME}-${APP_VERSION}.tar.gz" ]; then
-          mv -v "${BUILD_DIR}/${APP_NAME}-${APP_VERSION}.tar.gz" "${{ env.UPLOAD_DIR }}"
+        if [ -e "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.tar.gz" ]; then
+          mv -v "${PROJECT_ROOT}/${APP_NAME}-${APP_VERSION}.tar.gz" "${{ env.UPLOAD_DIR }}"
         fi
 
         if [ -e "${BUILD_DIR}/${APP_NAME}.app" ]; then
