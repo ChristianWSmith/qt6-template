@@ -66,13 +66,23 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
                               .toString("yyyy-MM-dd hh:mm:ss.zzz")
                               .toStdString();
 
+  std::string logMessage;
+
 #ifdef QT_MESSAGELOGCONTEXT
-  std::string logMessage = fmt::format("[{}][{}] {} ({}:{}:{})", timestamp,
-                                       prefix, msg.toStdString(), context.file,
-                                       context.line, context.function);
+  try {
+    logMessage = fmt::format("[{}][{}] {} ({}:{}:{})", timestamp, prefix,
+                             msg.toStdString(), context.file, context.line,
+                             context.function);
+  } catch (...) {
+    logMessage = msg.toStdString();
+  }
 #else
-  std::string logMessage =
-      fmt::format("[{}][{}] {}", timestamp, prefix, msg.toStdString());
+  try {
+    logMessage =
+        fmt::format("[{}][{}] {}", timestamp, prefix, msg.toStdString());
+  } catch (...) {
+    logMessage = msg.toStdString();
+  }
 #endif
 
   if (type == QtDebugMsg || type == QtInfoMsg) {
