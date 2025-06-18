@@ -11,8 +11,7 @@ This is a modern, cross-platform C++ Qt application template using CMake, Conan,
 - Debug/Release builds with proper toolchain handling
 - Modular, maintainable layout
 - Single source of truth for app name, ID, and version (`app.env`)
-
----
+- Dev container for maximum dev/CI parity
 
 ## 🧰 Getting Started
 
@@ -28,6 +27,10 @@ See that green `Use this template ▼` button in the upper right corner of this 
 - CMake
 - C++ compiler (MSVC, Clang, or GCC)
 - `clangd` and `clang-tidy` if using vscode integrations
+
+OR
+
+- Docker 🐋
 
 ### 1.5. Configure VSCode
 ```bash
@@ -200,15 +203,51 @@ These values will flow automatically into:
 
 Each PR or push triggers a cross-platform build.  For Windows, the artifact will be an application installer.  For Linux, you'll get an AppImage.  For macOS, you'll get a .app folder.
 
----
-
 ## ✨ UI Development
 
 - Edit `.ui` files using **Qt Designer**
 - Edit `.ts` files in **Qt Linguist**.  You can always update these using `lupdate`/`lrelease`, or you can just have the included `scripts/build.sh` handle it automatically.
 - Add images or resources to `resources.qrc`
 
----
+## 🐳 Dev Container
+
+This project includes a robust and opinionated **dev container** setup designed for maximum parity between local development and CI/CD.
+
+Highlights:
+
+- 🧠 Intelligent `.bashrc` with with [starship](https://github.com/starship/starship)
+- ⚡ Fast startup with persistent Python tooling
+- 🛠️ Automatic virtualenv setup and activation inside the container
+- 🖥️ Cross-platform GUI forwarding (may require XQuartz/VcXsrv setup for macOS/Windows)
+
+To try it:
+
+'''bash
+./scripts/dev-container.sh
+'''
+
+## 🖼 Icon Generator
+
+The `scripts/app-icon.sh` script creates a full suite of app icons from a single source SVG or PNG. It outputs all necessary platform-specific icon formats, including:
+
+- `.ico` for Windows
+- `.icns` for macOS
+- `.png` for Linux
+- Optional `.svg` copy for source tracking
+
+This ensures:
+
+- Platform-native icons in installers and app bundles
+- Centralized source of truth (edit once, regenerate everywhere)
+- Consistent visual identity across platforms
+
+Usage:
+
+'''bash
+./scripts/app-icon.sh path/to/source_icon.svg
+'''
+
+Resulting icons are placed in `resources/icons/` and are automatically picked up by the build system.
 
 ## 💡 Tips
 
