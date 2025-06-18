@@ -133,9 +133,6 @@ jobs:
         export APP_BIN="${BIN_DIR}/${APP_NAME}"
 
         export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
-        export APP_PLATFORMS_DIR="${APP_PLUGINS_DIR}/platforms"
-        export APP_PLATFORMTHEMES_DIR="${APP_PLUGINS_DIR}/platformthemes"
-        export APP_WAYLAND_DIR="${APP_PLUGINS_DIR}/wayland-shell-integration"
 
         echo "Installing system dependencies..."
         sudo apt install -y fuse libfuse2 imagemagick patchelf
@@ -147,12 +144,8 @@ jobs:
         echo "Setting up AppDir..."
         mkdir -p "${BIN_DIR}"
         mkdir -p "${LIB_DIR}"
-        mkdir -p "${APP_PLATFORMS_DIR}"
-        mkdir -p "${APP_PLATFORMTHEMES_DIR}"
-        mkdir -p "${APP_WAYLAND_DIR}"
-        cp -r "${QT_WAYLAND_DIR}/." "${APP_WAYLAND_DIR}/"
-        cp -r "${QT_PLATFORMS_DIR}/." "${APP_PLATFORMS_DIR}/"
-        cp -r "${QT_PLATFORMTHEMES_DIR}/." "${APP_PLATFORMTHEMES_DIR}/"
+        mkdir -p "${APP_PLUGINS_DIR}"
+        cp -r "${QT_PLUGINS_DIR}/." "${APP_PLUGINS_DIR}/"
         cp "${BUILD_DIR}/${APP_NAME}" "${APP_BIN}"
         chmod +x "${APP_BIN}"
 
@@ -210,8 +203,7 @@ jobs:
         echo "Finalizing AppDir..."
         cat > "${APP_DIR}/AppRun" <<EOF
         #!/bin/sh
-        export QT_QPA_PLATFORM_PLUGIN_PATH="\${APPDIR}/usr/plugins/platforms"
-        export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+        export QT_PLUGIN_PATH="\${APPDIR}/usr/plugins"
         "\${APPDIR}/usr/bin/${APP_NAME}" "\$@"
         EOF
         chmod +x "${APP_DIR}/AppRun"
