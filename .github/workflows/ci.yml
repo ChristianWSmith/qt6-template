@@ -186,7 +186,7 @@ jobs:
         for size in "${PNG_SIZES[@]}"; do
             ICON_DIR="${TARGET_ROOT_DIR}/share/icons/hicolor/${size}/apps"
             mkdir -p "${ICON_DIR}"
-            magick "${SOURCE_PNG_1024_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
+            convert "${SOURCE_PNG_1024_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
             echo "  Resized and copied PNG: ${APP_ID}.png to ${size}"
         done
 
@@ -412,8 +412,7 @@ jobs:
         StartupWMClass=${APP_NAME}
         EOF
 
-        magick "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
-
+        convert "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
 
         echo "Building AppImage..."
         rm -rf "${APP_NAME}-x86_64.AppImage"
