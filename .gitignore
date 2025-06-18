@@ -101,3 +101,6 @@ CMakeUserPresets.json
 # pyenv / pipenv
 .pyenv/
 .venv/
+
+# appimagetool
+appimagetool
