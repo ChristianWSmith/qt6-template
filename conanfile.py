@@ -2,6 +2,7 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeDeps, CMakeToolchain, CMake
 from conan.tools.microsoft import VCVars
 import os
+from conan.tools.cmake import cmake_layout
 
 
 class MyConanApp(ConanFile):
@@ -15,6 +16,7 @@ class MyConanApp(ConanFile):
         "vulkan-headers/[>=1.4.309.0 <2]",
         "cxxopts/[>=3.3.1 <4]",
         "gtest/[>=1.16.0 <2]",
+        "zlib/[>=1.3.1 <2]",
     ]
 
     def layout(self):

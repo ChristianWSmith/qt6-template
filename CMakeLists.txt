@@ -19,6 +19,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(fmt REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(cxxopts REQUIRED)
+find_package(ZLIB REQUIRED)
 
 qt_standard_project_setup(
     I18N_TRANSLATED_LANGUAGES en es de fr
@@ -37,6 +38,7 @@ target_link_libraries(${APP_NAME}_lib PRIVATE
     fmt::fmt
     Vulkan::Vulkan
     cxxopts::cxxopts
+    ZLIB::ZLIB
 )
 
 target_compile_definitions(${APP_NAME}_lib PRIVATE
