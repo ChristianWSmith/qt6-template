@@ -57,6 +57,10 @@ jobs:
           libgl1-mesa-dev \
           libxkbcommon-x11-0 \
           libxcb-cursor-dev \
+          fuse \
+          libfuse2 \
+          imagemagick \
+          patchelf \
           clang-tidy
 
     - name: Confirm OpenGL (macOS)
@@ -182,7 +186,7 @@ jobs:
         for size in "${PNG_SIZES[@]}"; do
             ICON_DIR="${TARGET_ROOT_DIR}/share/icons/hicolor/${size}/apps"
             mkdir -p "${ICON_DIR}"
-            convert "${SOURCE_PNG_1024_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
+            magick "${SOURCE_PNG_1024_ICON}" -resize "${size}" "${ICON_DIR}/${APP_ID}.png"
             echo "  Resized and copied PNG: ${APP_ID}.png to ${size}"
         done
 
@@ -326,9 +330,6 @@ jobs:
 
         export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
-        echo "Installing system dependencies..."
-        sudo apt install -y fuse libfuse2 imagemagick patchelf
-
         echo "Installing appimagetool..."
         wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O appimagetool
         chmod +x appimagetool
@@ -411,7 +412,7 @@ jobs:
         StartupWMClass=${APP_NAME}
         EOF
 
-        convert "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
+        magick "${APP_ICON}" "${APP_DIR}/${APP_ID}.png"
 
 
         echo "Building AppImage..."
