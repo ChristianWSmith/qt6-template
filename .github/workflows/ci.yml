@@ -142,11 +142,17 @@ jobs:
       run: |
         ./.github/scripts/mac-bundle-app.sh
 
-    - name: Bundle Application (Windows)
+    - name: Bundle Application Installer (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
         ./.github/scripts/windows-bundle-installer.sh ${{ env.BUILD_TYPE }}
+
+    - name: Bundle Application Portable (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        ./.github/scripts/windows-bundle-portable.sh ${{ env.BUILD_TYPE }}
 
     - name: Move Artifact to Uploads
       shell: bash
