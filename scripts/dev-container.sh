@@ -67,8 +67,9 @@ docker run \
   -e LANG="${LANG:-en_US.UTF-8}" \
   -e LC_ALL="${LC_ALL:-${LANG:-en_US.UTF-8}}" \
   -e WORKSPACE="${PROJECT_ROOT}" \
+  -e CONAN_USER_HOME="${CONAN_HOME}" \
   --rm -it \
-  -v "${CONAN_HOME}":"/home/devuser/.conan2" \
+  -v "${CONAN_HOME}":"${CONAN_HOME}" \
   -v "${PROJECT_ROOT}":"${PROJECT_ROOT}" \
   -w "${PROJECT_ROOT}" \
   "${CONTAINER_NAME}" bash
