@@ -83,6 +83,11 @@ RUN apt-get update && apt-get install -y \
     libxtst-dev \
     libxv-dev \
     libxxf86vm-dev \
+    libvulkan1 \
+    vulkan-tools \
+    vulkan-validationlayers \
+    libvulkan-dev \
+    lldb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir --upgrade pip pipenv

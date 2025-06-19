@@ -58,12 +58,17 @@ case "$PLATFORM" in
     ;;
 esac
 
+CONAN_HOME="${PROJECT_ROOT}/.conan2"
+mkdir -p "${CONAN_HOME}"
+LLDB_PORT="${LLDB_PORT:-12345}"
+
 docker run \
   ${GUI_ARGS} \
   -e LANG="${LANG:-en_US.UTF-8}" \
   -e LC_ALL="${LC_ALL:-${LANG:-en_US.UTF-8}}" \
   -e WORKSPACE="${PROJECT_ROOT}" \
   --rm -it \
+  -v "${CONAN_HOME}":"/home/devuser/.conan2" \
   -v "${PROJECT_ROOT}":"${PROJECT_ROOT}" \
   -w "${PROJECT_ROOT}" \
   "${CONTAINER_NAME}" bash
