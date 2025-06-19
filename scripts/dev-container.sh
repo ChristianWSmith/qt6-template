@@ -60,7 +60,6 @@ esac
 
 CONAN_HOME="${PROJECT_ROOT}/.conan2"
 mkdir -p "${CONAN_HOME}"
-LLDB_PORT="${LLDB_PORT:-12345}"
 
 docker run \
   ${GUI_ARGS} \
