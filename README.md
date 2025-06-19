@@ -201,7 +201,7 @@ These values will flow automatically into:
 
 - **Branches `main/develop` →** Release builds
 
-Each PR or push triggers a cross-platform build.  For Windows, the artifact will be an application installer.  For Linux, you'll get an AppImage.  For macOS, you'll get a .app folder.
+Each PR or push triggers a cross-platform build.  For Windows, the artifact will be an application installer as well as a portable version.  For Linux, you'll get an AppImage and a tarball.  For macOS, you'll get a .app folder.
 
 ## ✨ UI Development
 
