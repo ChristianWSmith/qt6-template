@@ -28,7 +28,6 @@ SetupIconFile=${APP_ICON}
 [Files]
 Source: "${BUILD_DIR}\\${BUILD_TYPE}\\${APP_NAME}.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "${BUILD_DIR}\\${BUILD_TYPE}\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
-Source: "${BUILD_DIR}\\shared_libs\\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 Source: "${BUILD_DIR}\\${BUILD_TYPE}\\platforms\\*"; DestDir: "{app}\\platforms"; Flags: ignoreversion recursesubdirs
 
 [Icons]
