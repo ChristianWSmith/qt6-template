@@ -17,12 +17,7 @@ class MyConanApp(ConanFile):
         "vulkan-headers/[>=1.4.309.0 <2]",
         "cxxopts/[>=3.3.1 <4]",
         "gtest/[>=1.16.0 <2]",
-        "zlib/[>=1.3.1 <2]",
     ]
-    default_options = {
-        "zlib/*:shared": True
-    }
-
 
     def layout(self):
         self.folders.build = os.environ.get("BUILD_DIR", "build")
