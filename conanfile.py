@@ -2,6 +2,8 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeDeps, CMakeToolchain, CMake
 from conan.tools.microsoft import VCVars
 import os
+from pathlib import Path
+from conan.tools.files import copy
 
 
 class MyConanApp(ConanFile):
@@ -35,3 +37,19 @@ class MyConanApp(ConanFile):
         cmake.build()
         if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":
             cmake.build(target="update_translations")
+        self.copy_shared_libs()
+
+    def copy_shared_libs(self):
+        out_dir = self.build_folder
+        if self.settings.os == "Windows":
+            exts = ["*.dll"]
+            out_dir = os.path.join(self.build_folder, self.settings.get_safe("build_type"))
+        elif self.settings.os == "Macos":
+            exts = ["*.dylib"]
+        else:
+            return
+
+        for dep in self.dependencies.values():
+            for bindir in dep.cpp_info.bindirs:
+                for pattern in exts:
+                    copy(self, pattern, bindir, out_dir)

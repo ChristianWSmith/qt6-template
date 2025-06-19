@@ -6,7 +6,6 @@ source ${SCRIPT_DIR}/env.sh
 
 installPipenv
 
-rm "${CONAN_LOCK}"
 LOCKFILE_ARGS=""
 
 for PROFILE in $(find "${CONAN_PROFILES_DIR}" -type f); do
@@ -18,5 +17,5 @@ for PROFILE in $(find "${CONAN_PROFILES_DIR}" -type f); do
     --lockfile-out="${LOCK}"
 done
 
-rm "${CONAN_LOCK}"
+rm -f "${CONAN_LOCK}"
 pipenv run conan lock merge ${LOCKFILE_ARGS} --lockfile-out="${CONAN_LOCK}"

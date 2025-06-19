@@ -101,3 +101,5 @@ rm -rf "${APP_NAME}.AppImage"
 "${PROJECT_ROOT}/appimagetool" "${APP_DIR}"
 rm -rf "${APP_DIR}"
 mv "${PROJECT_ROOT}/${APP_NAME}-x86_64.AppImage" "${DIST_DIR}/${APP_NAME}-${APP_VERSION}.AppImage"
+
+"${DIST_DIR}/${APP_NAME}-${APP_VERSION}.AppImage" --smoke-test
