@@ -7,7 +7,8 @@ source "${SCRIPT_DIR}/../../scripts/env.sh"
 PORTABLE_APP_DIR="${DIST_DIR}/${APP_NAME}-${APP_VERSION}-Portable"
 mkdir -p "${PORTABLE_APP_DIR}"
 
-BUILD_TYPE="${1}"
+BUILD_TYPE="${1:-Release}"
+MAKE_INSTALLER="${2:-false}"
 
 export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
 export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe")
@@ -21,6 +22,10 @@ cp "${BUILD_DIR}/${BUILD_TYPE}"/*.dll "${PORTABLE_APP_DIR}/" || true
 shopt -u nullglob
 
 "${PORTABLE_APP_DIR}/${APP_NAME}.exe" --smoke-test
+
+if [[ "${MAKE_INSTALLER}" == "false" ]]; then
+  exit 0
+fi
 
 export ISS_PATH=$(cygpath -w "${PROJECT_ROOT}/inno.iss")
 cat > "${ISS_PATH}" <<EOF

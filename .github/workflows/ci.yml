@@ -103,7 +103,6 @@ jobs:
       if: env.BUILD_TEST == 'ON'
       run: |
         source ./scripts/env.sh
-        ls ${BUILD_DIR}
         
         if [ "${PLATFORM}" == "windows" ]; then
           export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
@@ -142,7 +141,7 @@ jobs:
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        ./.github/scripts/windows-bundle.sh ${{ env.BUILD_TYPE }}
+        ./.github/scripts/windows-bundle.sh ${{ env.BUILD_TYPE }} true
 
     - name: Move Artifact to Uploads
       shell: bash
