@@ -12,8 +12,8 @@ BUILD_TYPE="${1}"
 export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
 export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe")
 
-"${WINDEPLOYQT}" "${EXE_PATH}"
+cp "${EXE_PATH}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
-cp "${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe" "${PORTABLE_APP_DIR}/"
+"${WINDEPLOYQT}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
+
 cp "${BUILD_DIR}/${BUILD_TYPE}"/*.dll "${PORTABLE_APP_DIR}/"
-cp -r "${BUILD_DIR}/${BUILD_TYPE}/platforms" "${PORTABLE_APP_DIR}/"
