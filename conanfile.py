@@ -40,3 +40,19 @@ class MyConanApp(ConanFile):
         cmake.build()
         if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":
             cmake.build(target="update_translations")
+        self.copy_shared_libs()
+
+    def copy_shared_libs(self):
+        if self.settings.os == "Windows":
+            exts = ["*.dll"]
+        elif self.settings.os == "Linux":
+            exts = ["*.so", "*.so.*"]
+        elif self.settings.os == "Macos":
+            exts = ["*.dylib"]
+        else:
+            return
+
+        for dep in self.dependencies.values():
+            for bindir in dep.cpp_info.bindirs:
+                for pattern in exts:
+                    copy(self, pattern, bindir, self.build_folder)

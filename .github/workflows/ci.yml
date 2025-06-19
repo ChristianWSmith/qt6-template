@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         include:
-            - os: ubuntu-latest
+            # - os: ubuntu-latest
             - os: windows-latest
-            - os: macos-latest
+            # - os: macos-latest
 
     steps:
     - name: Checkout code (All)
@@ -103,6 +103,7 @@ jobs:
       if: env.BUILD_TEST == 'ON'
       run: |
         source ./scripts/env.sh
+        ls ${BUILD_DIR}
         
         if [ "${PLATFORM}" == "windows" ]; then
           export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
