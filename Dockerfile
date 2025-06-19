@@ -65,6 +65,7 @@ RUN apt-get update && apt-get install -y \
     libxcb-xinerama0 \
     libxcb-xinerama0-dev \
     libxcb-xkb-dev \
+    libxcb-util-dev \
     libxcomposite-dev \
     libxcursor-dev \
     libxdamage-dev \

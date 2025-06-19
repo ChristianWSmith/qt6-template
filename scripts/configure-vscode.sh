@@ -17,7 +17,7 @@ cat > "${VSCODE_DIR}/settings.json" <<EOF
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
   "files.associations": {
-    "*.h": "cpp"
+    "*.h": "cpp",
     "*.ts": "xml"
   },
   "files.watcherExclude": {
