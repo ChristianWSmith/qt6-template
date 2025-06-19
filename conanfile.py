@@ -49,8 +49,6 @@ class MyConanApp(ConanFile):
         if self.settings.os == "Windows":
             exts = ["*.dll"]
             out_dir = os.path.join(self.build_folder, self.settings.get_safe("build_type"))
-        elif self.settings.os == "Linux":
-            exts = ["*.so", "*.so.*"]
         elif self.settings.os == "Macos":
             exts = ["*.dylib"]
         else:

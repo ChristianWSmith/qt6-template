@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         include:
-            # - os: ubuntu-latest
+            - os: ubuntu-latest
             - os: windows-latest
-            # - os: macos-latest
+            - os: macos-latest
 
     steps:
     - name: Checkout code (All)
@@ -143,17 +143,11 @@ jobs:
       run: |
         ./.github/scripts/mac-bundle-app.sh
 
-    - name: Bundle Application Installer (Windows)
+    - name: Bundle Application Installer + Portable (Windows)
       if: runner.os == 'Windows'
       shell: bash
       run: |
-        ./.github/scripts/windows-bundle-installer.sh ${{ env.BUILD_TYPE }}
-
-    - name: Bundle Application Portable (Windows)
-      if: runner.os == 'Windows'
-      shell: bash
-      run: |
-        ./.github/scripts/windows-bundle-portable.sh ${{ env.BUILD_TYPE }}
+        ./.github/scripts/windows-bundle.sh ${{ env.BUILD_TYPE }}
 
     - name: Move Artifact to Uploads
       shell: bash
