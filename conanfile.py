@@ -2,6 +2,7 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeDeps, CMakeToolchain, CMake
 from conan.tools.microsoft import VCVars
 import os
+from conan.tools.files import copy
 
 
 class MyConanApp(ConanFile):
