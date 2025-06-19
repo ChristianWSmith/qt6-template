@@ -50,3 +50,5 @@ done
 
 echo "✅ Done fixing dylibs."
 mv "${APP_PATH}" "${DIST_DIR}/${APP_NAME}.app"
+
+open -n "${DIST_DIR}/${APP_NAME}.app" --args "--smoke-test"

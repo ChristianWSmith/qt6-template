@@ -114,11 +114,6 @@ jobs:
           "${BUILD_DIR}/tests/${UT_NAME}" --gtest_output=stderr
         fi
 
-    - name: Smoke Test (All)
-      shell: bash
-      run: |
-        ./scripts/run.sh --build-type ${{ env.BUILD_TYPE }} --smoke-test
-
     - name: Static Analysis (Linux)
       if: runner.os == 'Linux'
       shell: bash

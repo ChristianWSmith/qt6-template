@@ -16,7 +16,11 @@ cp "${EXE_PATH}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
 "${WINDEPLOYQT}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
-cp "${BUILD_DIR}/${BUILD_TYPE}"/*.dll "${PORTABLE_APP_DIR}/"
+shopt -s nullglob
+cp "${BUILD_DIR}/${BUILD_TYPE}"/*.dll "${PORTABLE_APP_DIR}/" || true
+shopt -u nullglob
+
+"${PORTABLE_APP_DIR}/${APP_NAME}.exe" --smoke-test
 
 export ISS_PATH=$(cygpath -w "${PROJECT_ROOT}/inno.iss")
 cat > "${ISS_PATH}" <<EOF
