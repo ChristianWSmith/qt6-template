@@ -4,7 +4,7 @@
 namespace ConsoleLogService {
 
 void handle(const LogEvent &event) {
-  qInfo() << "ConsoleLogService:" << event.message;
+  qInfo() << "ConsoleLogService:" << QString::fromStdString(event.message);
 }
 
 } // namespace ConsoleLogService
