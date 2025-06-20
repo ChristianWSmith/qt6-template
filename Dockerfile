@@ -135,4 +135,8 @@ if [ -f "${WORKSPACE}/Pipfile" ]; then
     fi
   fi
 fi
+
+lldb-debug() {
+  lldb-server platform --server --listen "0.0.0.0:${LLDB_PORT}" & run.sh
+}
 EOF

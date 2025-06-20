@@ -61,8 +61,37 @@ esac
 CONAN_HOME="${PROJECT_ROOT}/.conan2"
 mkdir -p "${CONAN_HOME}"
 
+ACTION="${1:-}"
+
+if [[ "${ACTION}" != "" ]]; then
+  shift
+fi
+
+if [[ "${ACTION}" == "debug" ]]; then
+  if [[ "${PLATFORM}" == "linux" ]] && [[ "$(cat /proc/sys/kernel/yama/ptrace_scope)" == "1" ]]; then
+    echo -e "${RED}Debugging will not work unless host ptrace_scope is set to 0!${NEUTRAL}"
+    echo -e "${RED}    echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope${NEUTRAL}"
+    COMMAND=(bash)
+  else
+    COMMAND=(bash -c "source ~/.bashrc; lldb-debug")
+  fi
+elif [[ "${ACTION}" == "build" ]]; then
+  COMMAND=(bash -c "source ~/.bashrc; build.sh" "$@")
+elif [[ "${ACTION}" == "run" ]]; then
+  COMMAND=(bash -c "source ~/.bashrc; run.sh" "$@")
+else
+  COMMAND=(bash)
+fi
+
+CONAN_HOME="${PROJECT_ROOT}/.conan2"
+mkdir -p "${CONAN_HOME}"
 docker run \
   ${GUI_ARGS} \
+  --security-opt seccomp=unconfined \
+  --cap-add=SYS_PTRACE \
+  --privileged \
+  --network host \
+  -e LLDB_PORT="${LLDB_PORT}" \
   -e LANG="${LANG:-en_US.UTF-8}" \
   -e LC_ALL="${LC_ALL:-${LANG:-en_US.UTF-8}}" \
   -e WORKSPACE="${PROJECT_ROOT}" \
@@ -71,7 +100,7 @@ docker run \
   -v "${CONAN_HOME}":"${CONAN_HOME}" \
   -v "${PROJECT_ROOT}":"${PROJECT_ROOT}" \
   -w "${PROJECT_ROOT}" \
-  "${CONTAINER_NAME}" bash
+  "${CONTAINER_NAME}" "${COMMAND[@]}"
 
 if [[ "${USING_XHOST}" == "true" ]]; then
   xhost -local:docker >/dev/null 2>&1;

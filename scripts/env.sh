@@ -25,6 +25,9 @@ export PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/..")"
 source "${PROJECT_ROOT}/app.env"
 export UT_NAME="UnitTests"
 
+# --- LLDB ---
+export LLDB_PORT="${LLDB_PORT:-12345}"
+
 # --- OS DETECTION ---
 export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
 
