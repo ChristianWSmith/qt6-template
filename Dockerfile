@@ -65,6 +65,7 @@ RUN apt-get update && apt-get install -y \
     libxcb-xinerama0 \
     libxcb-xinerama0-dev \
     libxcb-xkb-dev \
+    libxcb-util-dev \
     libxcomposite-dev \
     libxcursor-dev \
     libxdamage-dev \
@@ -83,6 +84,11 @@ RUN apt-get update && apt-get install -y \
     libxtst-dev \
     libxv-dev \
     libxxf86vm-dev \
+    libvulkan1 \
+    vulkan-tools \
+    vulkan-validationlayers \
+    libvulkan-dev \
+    lldb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir --upgrade pip pipenv
@@ -129,4 +135,8 @@ if [ -f "${WORKSPACE}/Pipfile" ]; then
     fi
   fi
 fi
+
+lldb-debug() {
+  lldb-server platform --server --listen "0.0.0.0:${LLDB_PORT}" & run.sh
+}
 EOF

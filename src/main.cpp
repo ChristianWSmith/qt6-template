@@ -1,6 +1,7 @@
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
+#include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
 #include <QDir>
 #include <QFile>
@@ -12,29 +13,24 @@
 #include <fmt/core.h>
 #include <qdebug.h>
 
-int main(int argc, char *argv[]) {
+cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
-  options.add_options()("l, log", "Log level (debug, info, warn, error, none)",
+  options.add_options()("l,log", "Log level (debug, info, warn, error, none)",
                         cxxopts::value<std::string>()->default_value("info"))(
-      "h, help", "Print help")(
-      "smoke-test", "Run in smoke test mode (exits immediately after setup)");
-  cxxopts::ParseResult result = options.parse(argc, argv);
+      "smoke-test", "Run in smoke test mode (exits immediately after setup)")(
+      "h,help", "Print help");
 
-  if (result.count("help")) {
+  cxxopts::ParseResult parsedArgs = options.parse(argc, argv);
+
+  if (parsedArgs.count("help")) {
     fprintf(stdout, "%s\n", options.help().c_str());
-    return 0;
+    exit(0);
   }
 
-  setLogLevel(parseLogLevel(result["log"].as<std::string>()));
-  qInstallMessageHandler(messageHandler);
+  return parsedArgs;
+}
 
-  qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
-  QApplication a(argc, argv);
-
-  a.setWindowIcon(QIcon(":/icons/app_icon.png"));
-
-  QGuiApplication::setDesktopFileName(APP_ID);
-
+void setupLocalization() {
   QLocale locale = QLocale::system();
   QString langCode = locale.name();
   QString baseLang = langCode.section('_', 0, 0);
@@ -46,15 +42,32 @@ int main(int argc, char *argv[]) {
   } else {
     qWarning() << "Failed to load translation for" << baseLang;
   }
+}
 
-  AppMainWindow appMainWindow;
+int main(int argc, char *argv[]) {
+  cxxopts::ParseResult parsedArgs = parseCommandLine(argc, argv);
 
-  if (result.count("smoke-test")) {
+  setLogLevel(parseLogLevel(parsedArgs["log"].as<std::string>()));
+  qInstallMessageHandler(messageHandler);
+
+  qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
+
+  services::ServiceRegistry::registerAll();
+
+  QApplication app(argc, argv);
+  app.setWindowIcon(QIcon(":/icons/app_icon.png"));
+  QGuiApplication::setDesktopFileName(APP_ID);
+
+  setupLocalization();
+
+  AppMainWindow mainWindow;
+
+  if (parsedArgs.count("smoke-test")) {
     qInfo() << "Smoke test successful: Application initialized and exiting.";
     return 0;
   }
 
-  appMainWindow.show();
+  mainWindow.show();
 
-  return a.exec();
+  return app.exec();
 }
