@@ -1,6 +1,7 @@
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
+#include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
 #include <QDir>
 #include <QFile>
@@ -29,6 +30,7 @@ int main(int argc, char *argv[]) {
   qInstallMessageHandler(messageHandler);
 
   qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
+  services::ServiceRegistry::registerAll();
   QApplication a(argc, argv);
 
   a.setWindowIcon(QIcon(":/icons/app_icon.png"));
