@@ -201,7 +201,9 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 
 // Implements presenter slots
 
-void ${FEATURE_NAME_TITLE}Presenter::shutdown() {}
+void ${FEATURE_NAME_TITLE}Presenter::shutdown() {
+  // Perform feature shutdown actions
+}
 
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
