@@ -18,6 +18,11 @@ public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
 
+  AppLogWidget(const AppLogWidget &) = delete;
+  AppLogWidget &operator=(const AppLogWidget &) = delete;
+  AppLogWidget(AppLogWidget &&) = delete;
+  AppLogWidget &operator=(AppLogWidget &&) = delete;
+
 public slots:
   void displayLogMessage(const QString &message) override;
 

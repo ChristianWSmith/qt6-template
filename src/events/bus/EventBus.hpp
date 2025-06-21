@@ -15,8 +15,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "Subscription.hpp"
-
 namespace events {
 
 template <typename T> class EventBus;
@@ -30,10 +28,10 @@ public:
     const std::type_index type = std::type_index(typeid(T));
     std::unique_lock lock(instance().mutex_);
 
-    auto it = instance().buses_.find(type);
-    if (it != instance().buses_.end()) {
+    auto busIterator = instance().buses_.find(type);
+    if (busIterator != instance().buses_.end()) {
 
-      return *std::any_cast<std::shared_ptr<EventBus<T>>>(it->second);
+      return *std::any_cast<std::shared_ptr<EventBus<T>>>(busIterator->second);
     }
 
     auto newBus = std::make_shared<EventBus<T>>();
@@ -54,8 +52,8 @@ private:
 } // namespace detail
 
 template <typename T>
-Subscription<T> subscribe(std::function<void(const T &)> fn) {
-  return detail::BusRegistry::getBus<T>().subscribe(std::move(fn));
+Subscription<T> subscribe(std::function<void(const T &)> func) {
+  return detail::BusRegistry::getBus<T>().subscribe(std::move(func));
 }
 
 template <typename T> void publish(const T &event) {
@@ -71,16 +69,16 @@ public:
   using Callback = std::function<void(const T &)>;
   using SubscriptionId = uint64_t;
 
-  Subscription<T> subscribe(Callback cb) {
+  Subscription<T> subscribe(Callback callback) {
     std::unique_lock lock(mutex_);
-    SubscriptionId id = nextId_++;
-    subscribers_[id] = std::move(cb);
-    return Subscription<T>(this, id);
+    SubscriptionId subscriptionId = nextId_++;
+    subscribers_[subscriptionId] = std::move(callback);
+    return Subscription<T>(this, subscriptionId);
   }
 
-  void unsubscribe(SubscriptionId id) {
+  void unsubscribe(SubscriptionId subscriptionId) {
     std::unique_lock lock(mutex_);
-    subscribers_.erase(id);
+    subscribers_.erase(subscriptionId);
   }
 
   void publish(const T &event) {
@@ -90,8 +88,8 @@ public:
     }
 
     std::shared_lock lock(mutex_);
-    for (const auto &[_, fn] : subscribers_) {
-      std::thread(fn, event).detach();
+    for (const auto &[subscriptionId, func] : subscribers_) {
+      std::thread(func, event).detach();
     }
   }
 

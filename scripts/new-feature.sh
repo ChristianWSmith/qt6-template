@@ -73,10 +73,17 @@ class I${FEATURE_NAME_TITLE}Model : public QObject {
 public:
   explicit I${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Model() = default;
+
+  I${FEATURE_NAME_TITLE}Model(const I${FEATURE_NAME_TITLE}Model &) = delete;
+  I${FEATURE_NAME_TITLE}Model &operator=(const I${FEATURE_NAME_TITLE}Model &) = delete;
+  I${FEATURE_NAME_TITLE}Model(I${FEATURE_NAME_TITLE}Model &&) = delete;
+  I${FEATURE_NAME_TITLE}Model &operator=(I${FEATURE_NAME_TITLE}Model &&) = delete;
+
   // Model API methods and connections
 };
 
-Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
+Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model,
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
 
 EOF
 format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
@@ -132,6 +139,11 @@ class I${FEATURE_NAME_TITLE}Presenter : public QObject, public IPresenter {
 public:
   explicit I${FEATURE_NAME_TITLE}Presenter(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Presenter() = default;
+
+  I${FEATURE_NAME_TITLE}Presenter(const I${FEATURE_NAME_TITLE}Presenter &) = delete;
+  I${FEATURE_NAME_TITLE}Presenter &operator=(const I${FEATURE_NAME_TITLE}Presenter &) = delete;
+  I${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Presenter &&) = delete;
+  I${FEATURE_NAME_TITLE}Presenter &operator=(I${FEATURE_NAME_TITLE}Presenter &&) = delete;
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
@@ -153,8 +165,9 @@ class ${FEATURE_NAME_TITLE}Presenter : public I${FEATURE_NAME_TITLE}Presenter {
   Q_INTERFACES(I${FEATURE_NAME_TITLE}Presenter)
 
 public:
-  explicit ${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
-                            QObject *parent = nullptr);
+  explicit ${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model,
+                                I${FEATURE_NAME_TITLE}Widget *view,
+                                QObject *parent = nullptr);
   void shutdown() override;
 
 private slots:
@@ -172,14 +185,15 @@ format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Presenter.h"
 
-${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
-                                   QObject *parent)
+${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model,
+                                           I${FEATURE_NAME_TITLE}Widget *view,
+                                           QObject *parent)
     : I${FEATURE_NAME_TITLE}Presenter(parent), m_model(model), m_view(view) {
 
-  if (!m_model) {
+  if (m_model == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without model";
   }
-  if (!m_view) {
+  if (m_view == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without view";
   }
   // Connects view/model signals to presenter slots
@@ -207,10 +221,16 @@ class I${FEATURE_NAME_TITLE}Widget : public QWidget {
 public:
   explicit I${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Widget() = default;
+
+  I${FEATURE_NAME_TITLE}Widget(const I${FEATURE_NAME_TITLE}Widget &) = delete;
+  I${FEATURE_NAME_TITLE}Widget &operator=(const I${FEATURE_NAME_TITLE}Widget &) = delete;
+  I${FEATURE_NAME_TITLE}Widget(I${FEATURE_NAME_TITLE}Widget &&) = delete;
+  I${FEATURE_NAME_TITLE}Widget &operator=(I${FEATURE_NAME_TITLE}Widget &&) = delete;
   // Widget API methods and connections
 };
 
-Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
+Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget,
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
 
 EOF
 format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
@@ -232,6 +252,11 @@ class ${FEATURE_NAME_TITLE}Widget : public I${FEATURE_NAME_TITLE}Widget {
 public:
   explicit ${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr);
   ~${FEATURE_NAME_TITLE}Widget();
+
+  ${FEATURE_NAME_TITLE}Widget(const ${FEATURE_NAME_TITLE}Widget &) = delete;
+  ${FEATURE_NAME_TITLE}Widget &operator=(const ${FEATURE_NAME_TITLE}Widget &) = delete;
+  ${FEATURE_NAME_TITLE}Widget(${FEATURE_NAME_TITLE}Widget &&) = delete;
+  ${FEATURE_NAME_TITLE}Widget &operator=(${FEATURE_NAME_TITLE}Widget &&) = delete;
   // Implements I${FEATURE_NAME_TITLE}Widget methods
 
 signals:

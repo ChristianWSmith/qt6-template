@@ -23,6 +23,7 @@ cat > "${VSCODE_DIR}/settings.json" <<EOF
   "files.watcherExclude": {
     "${BUILD_DIR}/**": true
   },
+  "clangd.enable": true,
   "clangd.arguments": [
     "--compile-commands-dir=${BUILD_DIR}",
     "--clang-tidy"

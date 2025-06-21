@@ -21,6 +21,12 @@ class AppMainWindow : public QMainWindow {
 public:
   explicit AppMainWindow(QWidget *parent = nullptr);
   ~AppMainWindow();
+
+  AppMainWindow(const AppMainWindow &) = delete;
+  AppMainWindow &operator=(const AppMainWindow &) = delete;
+  AppMainWindow(AppMainWindow &&) = delete;
+  AppMainWindow &operator=(AppMainWindow &&) = delete;
+
   void closeEvent(QCloseEvent *event);
 
 private:

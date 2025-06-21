@@ -14,8 +14,8 @@ void AppLogWidget::displayLogMessage(const QString &message) {
 
   ui->logTextEdit->append(message);
 
-  QScrollBar *sb = ui->logTextEdit->verticalScrollBar();
-  if (sb) {
-    sb->setValue(sb->maximum());
+  QScrollBar *verticalScrollBar = ui->logTextEdit->verticalScrollBar();
+  if (verticalScrollBar != nullptr) {
+    verticalScrollBar->setValue(verticalScrollBar->maximum());
   }
 }

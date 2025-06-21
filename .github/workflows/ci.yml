@@ -118,8 +118,7 @@ jobs:
       shell: bash
       run: |
         source ./scripts/env.sh
-        clang-tidy -p "${BUILD_DIR}" \
-          $(find "${PROJECT_ROOT}/src" -type f -regextype posix-extended -regex ".*\.(cpp|h)")
+        pipenv run run-clang-tidy -p "${BUILD_DIR}" $(find "${PROJECT_ROOT}/src" -type f -regextype posix-extended -regex ".*\.(cpp|h|hpp)")          
 
     - name: Bundle Application Native (Linux)
       if: runner.os == 'Linux'

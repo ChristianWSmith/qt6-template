@@ -16,7 +16,15 @@
 #include <qsettings.h>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::AppMainWindow) {
+    : QMainWindow(parent), ui(new Ui::AppMainWindow),
+      m_appLogModel(new AppLogModel(this)),
+      m_appLogPresenter(
+          new AppLogPresenter(m_appLogModel, m_appLogWidget, this)),
+      m_appLogWidget(new AppLogWidget(this)),
+      m_counterModel(new CounterModel(this)),
+      m_counterPresenter(
+          new CounterPresenter(m_counterModel, m_counterWidget, this)),
+      m_counterWidget(new CounterWidget(this)) {
 
   ui->setupUi(this);
 
@@ -26,18 +34,11 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 
   setWindowTitle(APP_NAME);
 
-  m_counterModel = new CounterModel(this);
-  m_counterWidget = new CounterWidget(this);
-  m_counterPresenter =
-      new CounterPresenter(m_counterModel, m_counterWidget, this);
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  auto *containerWidget = new QWidget(this);
 
-  m_appLogModel = new AppLogModel(this);
-  m_appLogWidget = new AppLogWidget(this);
-  m_appLogPresenter = new AppLogPresenter(m_appLogModel, m_appLogWidget, this);
-
-  QWidget *containerWidget = new QWidget(this);
-
-  QHBoxLayout *mainLayout = new QHBoxLayout(containerWidget);
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  auto *mainLayout = new QHBoxLayout(containerWidget);
 
   mainLayout->addWidget(m_counterWidget);
 

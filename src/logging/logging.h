@@ -7,7 +7,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 
-enum class LogLevel { Debug, Info, Warn, Error, None };
+enum class LogLevel : std::uint8_t { Debug, Info, Warn, Error, None };
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg);

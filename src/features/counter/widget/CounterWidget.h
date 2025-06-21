@@ -13,6 +13,12 @@ class CounterWidget : public ICounterWidget {
 public:
   explicit CounterWidget(QWidget *parent = nullptr);
   ~CounterWidget();
+
+  CounterWidget(const CounterWidget &) = delete;
+  CounterWidget &operator=(const CounterWidget &) = delete;
+  CounterWidget(CounterWidget &&) = delete;
+  CounterWidget &operator=(CounterWidget &&) = delete;
+
   void displayCounter(int value) override;
   QMetaObject::Connection
   connectIncrementRequested(QObject *receiver, const char *member) override;

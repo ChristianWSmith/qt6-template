@@ -13,6 +13,11 @@ public:
   explicit IAppLogWidget(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~IAppLogWidget() = default;
 
+  IAppLogWidget(const IAppLogWidget &) = delete;
+  IAppLogWidget &operator=(const IAppLogWidget &) = delete;
+  IAppLogWidget(IAppLogWidget &&) = delete;
+  IAppLogWidget &operator=(IAppLogWidget &&) = delete;
+
 public slots:
   virtual void displayLogMessage(const QString &message) = 0;
 };

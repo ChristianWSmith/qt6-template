@@ -7,13 +7,13 @@ class CounterModel : public ICounterModel {
 
 public:
   explicit CounterModel(QObject *parent = nullptr);
-  int value() const override;
+  [[nodiscard]] int value() const override;
   void increment() override;
   QMetaObject::Connection connectValueChanged(QObject *receiver,
                                               const char *member) override;
 signals:
-  void valueChanged(int newValue);
+  void valueChanged(int _t1);
 
 private:
-  int m_value;
+  int m_value{0};
 };

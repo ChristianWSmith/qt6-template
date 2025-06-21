@@ -3,8 +3,7 @@
 #include "../../../events/bus/EventBus.hpp"
 #include <fmt/core.h>
 
-CounterModel::CounterModel(QObject *parent)
-    : ICounterModel(parent), m_value(0) {
+CounterModel::CounterModel(QObject *parent) : ICounterModel(parent) {
   qDebug() << "CounterModel instantiated";
 }
 

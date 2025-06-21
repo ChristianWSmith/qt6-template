@@ -12,6 +12,11 @@ class IAppLogPresenter : public QObject, public IPresenter {
 public:
   explicit IAppLogPresenter(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~IAppLogPresenter() = default;
+
+  IAppLogPresenter(const IAppLogPresenter &) = delete;
+  IAppLogPresenter &operator=(const IAppLogPresenter &) = delete;
+  IAppLogPresenter(IAppLogPresenter &&) = delete;
+  IAppLogPresenter &operator=(IAppLogPresenter &&) = delete;
 };
 
 Q_DECLARE_INTERFACE(IAppLogPresenter,

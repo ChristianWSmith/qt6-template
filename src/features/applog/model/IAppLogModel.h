@@ -14,6 +14,11 @@ public:
   explicit IAppLogModel(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~IAppLogModel() = default;
 
+  IAppLogModel(const IAppLogModel &) = delete;
+  IAppLogModel &operator=(const IAppLogModel &) = delete;
+  IAppLogModel(IAppLogModel &&) = delete;
+  IAppLogModel &operator=(IAppLogModel &&) = delete;
+
   virtual void addLogMessage(const QString &message) = 0;
 
   virtual QMetaObject::Connection

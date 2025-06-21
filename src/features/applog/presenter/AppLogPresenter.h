@@ -17,6 +17,7 @@ class AppLogPresenter : public IAppLogPresenter {
 public:
   explicit AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
                            QObject *parent = nullptr);
+
   void shutdown() override;
 
 private slots:
