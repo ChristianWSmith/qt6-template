@@ -1,5 +1,4 @@
-#ifndef ICOUNTERMODEL_H
-#define ICOUNTERMODEL_H
+#pragma once
 #include "../../featurescommon.h"
 #include "../countercommon.h"
 #include <QMetaMethod>
@@ -19,5 +18,3 @@ public:
 };
 
 Q_DECLARE_INTERFACE(ICounterModel, COUNTER_FEATURE_ID FEATURE_MODEL_SUFFIX)
-
-#endif

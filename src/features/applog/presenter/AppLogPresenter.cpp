@@ -35,3 +35,5 @@ void AppLogPresenter::handleLogMessageAdded(const QString &message) {
     m_view->displayLogMessage(message);
   }
 }
+
+void AppLogPresenter::shutdown() { qInfo() << "AppLogPresenter::shutdown()"; }

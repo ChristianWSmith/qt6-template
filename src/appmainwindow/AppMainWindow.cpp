@@ -7,14 +7,22 @@
 #include "../features/applog/model/AppLogModel.h"
 #include "../features/applog/presenter/AppLogPresenter.h"
 #include "../features/applog/widget/AppLogWidget.h"
+#include <QCloseEvent>
+#include <QMainWindow>
+#include <QSettings>
 
 #include <QHBoxLayout>
 #include <QWidget>
+#include <qsettings.h>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AppMainWindow) {
 
   ui->setupUi(this);
+
+  QSettings settings(APP_ID, APP_NAME);
+  restoreGeometry(settings.value("window/geometry").toByteArray());
+  restoreState(settings.value("window/state").toByteArray());
 
   setWindowTitle(APP_NAME);
 
@@ -39,3 +47,14 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 }
 
 AppMainWindow::~AppMainWindow() { delete ui; }
+
+void AppMainWindow::closeEvent(QCloseEvent *event) {
+  QSettings settings(APP_ID, APP_NAME);
+  settings.setValue("window/geometry", saveGeometry());
+  settings.setValue("window/state", saveState());
+
+  m_counterPresenter->shutdown();
+  m_appLogPresenter->shutdown();
+
+  QMainWindow::closeEvent(event);
+}

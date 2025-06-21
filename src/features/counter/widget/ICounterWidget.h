@@ -1,5 +1,4 @@
-#ifndef ICOUNTERWIDGET_H
-#define ICOUNTERWIDGET_H
+#pragma once
 #include "../../featurescommon.h"
 #include "../countercommon.h"
 #include <QWidget>
@@ -17,5 +16,3 @@ public:
 };
 
 Q_DECLARE_INTERFACE(ICounterWidget, COUNTER_FEATURE_ID FEATURE_WIDGET_SUFFIX)
-
-#endif

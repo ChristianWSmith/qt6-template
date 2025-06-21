@@ -1,5 +1,4 @@
-#ifndef APPLOGMODEL_H
-#define APPLOGMODEL_H
+#pragma once
 
 #include "IAppLogModel.h"
 #include <QString>
@@ -23,5 +22,3 @@ signals:
 private:
   QVector<QString> m_logMessages;
 };
-
-#endif

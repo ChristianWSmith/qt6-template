@@ -1,5 +1,4 @@
-#ifndef COUNTERMODEL_H
-#define COUNTERMODEL_H
+#pragma once
 #include "ICounterModel.h"
 
 class CounterModel : public ICounterModel {
@@ -18,5 +17,3 @@ signals:
 private:
   int m_value;
 };
-
-#endif

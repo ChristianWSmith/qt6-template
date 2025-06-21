@@ -42,3 +42,5 @@ void CounterPresenter::handleCounterValueChanged(int newValue) {
     m_view->displayCounter(newValue);
   }
 }
+
+void CounterPresenter::shutdown() { qInfo() << "CounterPresenter::shutdown()"; }

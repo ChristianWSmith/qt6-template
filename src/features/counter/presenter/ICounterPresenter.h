@@ -1,11 +1,11 @@
-#ifndef ICOUNTERPRESENTER_H
-#define ICOUNTERPRESENTER_H
+#pragma once
+#include "../../IPresenter.h"
 #include "../../featurescommon.h"
 #include "../countercommon.h"
 #include <QObject>
 #include <QtPlugin>
 
-class ICounterPresenter : public QObject {
+class ICounterPresenter : public QObject, public IPresenter {
   Q_OBJECT
 
 public:
@@ -15,5 +15,3 @@ public:
 
 Q_DECLARE_INTERFACE(ICounterPresenter,
                     COUNTER_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
-
-#endif

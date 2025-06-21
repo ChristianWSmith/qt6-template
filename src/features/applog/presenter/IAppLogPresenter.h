@@ -1,12 +1,12 @@
-#ifndef IAPPLOGPRESENTER_H
-#define IAPPLOGPRESENTER_H
+#pragma once
 
+#include "../../IPresenter.h"
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
 #include <QObject>
 #include <QtPlugin>
 
-class IAppLogPresenter : public QObject {
+class IAppLogPresenter : public QObject, public IPresenter {
   Q_OBJECT
 
 public:
@@ -16,5 +16,3 @@ public:
 
 Q_DECLARE_INTERFACE(IAppLogPresenter,
                     APPLOG_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
-
-#endif

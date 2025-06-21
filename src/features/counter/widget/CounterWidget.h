@@ -1,5 +1,4 @@
-#ifndef COUNTERWIDGET_H
-#define COUNTERWIDGET_H
+#pragma once
 #include "ICounterWidget.h"
 #include "ui_CounterWidget.h"
 
@@ -27,5 +26,3 @@ private slots:
 private:
   Ui::CounterWidget *ui;
 };
-
-#endif

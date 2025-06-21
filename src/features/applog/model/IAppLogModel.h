@@ -1,5 +1,4 @@
-#ifndef IAPPLOGMODEL_H
-#define IAPPLOGMODEL_H
+#pragma once
 
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
@@ -22,5 +21,3 @@ public:
 };
 
 Q_DECLARE_INTERFACE(IAppLogModel, APPLOG_FEATURE_ID FEATURE_MODEL_SUFFIX)
-
-#endif

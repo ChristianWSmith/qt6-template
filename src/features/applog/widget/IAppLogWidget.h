@@ -1,5 +1,4 @@
-#ifndef IAPPLOGWIDGET_H
-#define IAPPLOGWIDGET_H
+#pragma once
 
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
@@ -19,5 +18,3 @@ public slots:
 };
 
 Q_DECLARE_INTERFACE(IAppLogWidget, APPLOG_FEATURE_ID FEATURE_WIDGET_SUFFIX)
-
-#endif

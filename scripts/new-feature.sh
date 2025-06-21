@@ -50,12 +50,9 @@ WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
 # COMMON
 mkdir -p "${FEATURE_DIR}"
 cat > "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}COMMON_H
-#define ${FEATURE_NAME_UPPER}COMMON_H
+#pragma once
 
 #define ${FEATURE_NAME_UPPER}_FEATURE_ID APP_ID ".${FEATURE_NAME_TITLE}"
-
-#endif
 
 EOF
 format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
@@ -63,8 +60,7 @@ format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 # MODEL INTERFACE
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}MODEL_H
-#define I${FEATURE_NAME_UPPER}MODEL_H
+#pragma once
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QMetaMethod>
@@ -82,15 +78,12 @@ public:
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
 
-#endif
-
 EOF
 format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
 
 # MODEL HEADER
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}MODEL_H
-#define ${FEATURE_NAME_UPPER}MODEL_H
+#pragma once
 #include "I${FEATURE_NAME_TITLE}Model.h"
 
 class ${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
@@ -107,8 +100,6 @@ signals:
 private:
   // Private data members holding the Model's state
 };
-
-#endif
 
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
@@ -128,14 +119,14 @@ format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 # PRESENTER INTERFACE
 mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}PRESENTER_H
-#define I${FEATURE_NAME_UPPER}PRESENTER_H
+#pragma once
+#include "../../IPresenter.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QObject>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Presenter : public QObject {
+class I${FEATURE_NAME_TITLE}Presenter : public QObject, public IPresenter {
   Q_OBJECT
 
 public:
@@ -146,15 +137,12 @@ public:
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
                     ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
 
-#endif
-
 EOF
 format "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h"
 
 # PRESENTER HEADER
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}PRESENTER_H
-#define ${FEATURE_NAME_UPPER}PRESENTER_H
+#pragma once
 #include "../model/I${FEATURE_NAME_TITLE}Model.h"
 #include "../widget/I${FEATURE_NAME_TITLE}Widget.h"
 #include "I${FEATURE_NAME_TITLE}Presenter.h"
@@ -167,6 +155,7 @@ class ${FEATURE_NAME_TITLE}Presenter : public I${FEATURE_NAME_TITLE}Presenter {
 public:
   explicit ${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
                             QObject *parent = nullptr);
+  void shutdown() override;
 
 private slots:
   // Concrete slots for handling events
@@ -175,8 +164,6 @@ private:
   I${FEATURE_NAME_TITLE}Model *m_model;
   I${FEATURE_NAME_TITLE}Widget *m_view;
 };
-
-#endif
 
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
@@ -200,14 +187,15 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 
 // Implements presenter slots
 
+void ${FEATURE_NAME_TITLE}Presenter::shutdown() {}
+
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 
 # WIDGET INTERFACE
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}WIDGET_H
-#define I${FEATURE_NAME_UPPER}WIDGET_H
+#pragma once
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QWidget>
@@ -224,15 +212,12 @@ public:
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
 
-#endif
-
 EOF
 format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
 
 # WIDGET HEADER
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}WIDGET_H
-#define ${FEATURE_NAME_UPPER}WIDGET_H
+#pragma once
 #include "I${FEATURE_NAME_TITLE}Widget.h"
 #include "ui_${FEATURE_NAME_TITLE}Widget.h"
 
@@ -258,8 +243,6 @@ private slots:
 private:
   Ui::${FEATURE_NAME_TITLE}Widget *ui;
 };
-
-#endif
 
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h"

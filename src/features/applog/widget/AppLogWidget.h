@@ -1,5 +1,4 @@
-#ifndef APPLOGWIDGET_H
-#define APPLOGWIDGET_H
+#pragma once
 
 #include "IAppLogWidget.h"
 #include "ui_AppLogWidget.h"
@@ -29,5 +28,3 @@ private slots:
 private:
   Ui::AppLogWidget *ui;
 };
-
-#endif

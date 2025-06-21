@@ -1,5 +1,4 @@
-#ifndef MESSAGEOUTPUT_H
-#define MESSAGEOUTPUT_H
+#pragma once
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -16,5 +15,3 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
 void setLogLevel(LogLevel logLevel);
 
 LogLevel parseLogLevel(const std::string &levelStr);
-
-#endif
