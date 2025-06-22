@@ -22,8 +22,8 @@ public:
 
   virtual void addLogMessage(const QString &message) = 0;
 
-  virtual QMetaObject::Connection
-  connectLogMessageAdded(QObject *receiver, const char *member) = 0;
+  virtual QMetaObject::Connection connectLogChanged(QObject *receiver,
+                                                    const char *member) = 0;
 };
 
 Q_DECLARE_INTERFACE(IAppLogModel, APPLOG_FEATURE_ID FEATURE_MODEL_SUFFIX)

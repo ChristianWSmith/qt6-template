@@ -20,7 +20,7 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
   }
 
   if (m_model != nullptr) {
-    m_model->connectLogMessageAdded(this, SLOT(handleLogMessageAdded(QString)));
+    m_model->connectLogChanged(this, SLOT(handleLogChanged(LogChange)));
   }
   qDebug() << "AppLogPresenter instantiated";
 }
@@ -31,9 +31,9 @@ void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
   }
 }
 
-void AppLogPresenter::handleLogMessageAdded(const QString &message) {
+void AppLogPresenter::handleLogChanged(const LogChange &logChange) {
   if (m_view != nullptr) {
-    m_view->displayLogMessage(message);
+    m_view->handleLogChanged(logChange);
   }
 }
 

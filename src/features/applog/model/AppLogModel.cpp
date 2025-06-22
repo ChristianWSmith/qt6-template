@@ -7,6 +7,8 @@ AppLogModel::AppLogModel(QObject *parent) : IAppLogModel(parent) {
   qDebug() << "AppLogModel instantiated";
 }
 
+const static int MAX_LOG_SIZE = 100;
+
 void AppLogModel::addLogMessage(const QString &message) {
 
   QString timestampedMessage =
@@ -15,12 +17,18 @@ void AppLogModel::addLogMessage(const QString &message) {
 
   m_logMessages.append(timestampedMessage);
 
-  emit logMessageAdded(timestampedMessage);
+  bool trimmed = false;
+  if (m_logMessages.size() > MAX_LOG_SIZE) {
+    m_logMessages.removeFirst();
+    trimmed = true;
+  }
+
+  emit logChanged(LogChange{timestampedMessage, trimmed});
 }
 
-QMetaObject::Connection
-AppLogModel::connectLogMessageAdded(QObject *receiver, const char *member) {
-  return QObject::connect(this, SIGNAL(logMessageAdded(QString)), receiver,
+QMetaObject::Connection AppLogModel::connectLogChanged(QObject *receiver,
+                                                       const char *member) {
+  return QObject::connect(this, SIGNAL(logChanged(LogChange)), receiver,
                           member);
 }
 

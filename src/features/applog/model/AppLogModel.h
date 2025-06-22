@@ -14,11 +14,11 @@ public:
 
   void addLogMessage(const QString &message) override;
 
-  QMetaObject::Connection connectLogMessageAdded(QObject *receiver,
-                                                 const char *member) override;
+  QMetaObject::Connection connectLogChanged(QObject *receiver,
+                                            const char *member) override;
 
 signals:
-  void logMessageAdded(const QString &_t1);
+  void logChanged(const LogChange &_t1);
 
 private:
   QVector<QString> m_logMessages;

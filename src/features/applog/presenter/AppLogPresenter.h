@@ -23,7 +23,7 @@ public:
 private slots:
   void onLogEventReceived(const LogEvent &event);
 
-  void handleLogMessageAdded(const QString &message);
+  void handleLogChanged(const LogChange &logChange);
 
 private:
   IAppLogModel *m_model;

@@ -25,7 +25,7 @@ public:
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
 public slots:
-  void displayLogMessage(const QString &message) override;
+  void handleLogChanged(const LogChange &logChange) override;
 
 signals:
 
