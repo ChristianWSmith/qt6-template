@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 find_package(GTest REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Test)
@@ -34,3 +35,4 @@ target_link_libraries(${UT_NAME} PRIVATE
 
 include(GoogleTest)
 gtest_discover_tests(${UT_NAME})
+// NOLINTEND

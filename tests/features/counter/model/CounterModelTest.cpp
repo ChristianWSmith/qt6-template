@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 #include "features/counter/model/CounterModel.h"
 #include "gtest/gtest.h"
 #include <QCoreApplication>
@@ -51,3 +52,4 @@ TEST_F(CounterModelTest, IncrementMultipleTimesUpdatesValueCorrectly) {
   QList<QVariant> lastArgs = spy.takeLast();
   EXPECT_EQ(lastArgs.at(0).toInt(), 3);
 }
+// NOLINTEND

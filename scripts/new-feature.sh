@@ -334,6 +334,7 @@ EOF
 # MODEL TEST
 mkdir -p "${TEST_MODEL_DIR}"
 cat > "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include "${MODEL_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Model.h"
 
@@ -350,12 +351,15 @@ TEST_F(${FEATURE_NAME_TITLE}ModelTest, Placeholder) {
   // Add your model tests here
   EXPECT_TRUE(true);
 }
+// NOLINTEND
+
 EOF
 format "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" 
 
 # PRESENTER TEST
 mkdir -p "${TEST_PRESENTER_DIR}"
 cat > "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "${PRESENTER_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Presenter.h"
@@ -398,6 +402,7 @@ protected:
 TEST_F(${FEATURE_NAME_TITLE}PresenterTest, Placeholder) {
   EXPECT_TRUE(true);
 }
+// NOLINTEND
 
 EOF
 format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
@@ -405,6 +410,7 @@ format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
 # WIDGET TEST
 mkdir -p "${TEST_WIDGET_DIR}"
 cat > "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
 
@@ -427,6 +433,7 @@ protected:
 TEST_F(${FEATURE_NAME_TITLE}WidgetTest, Placeholder) {
   EXPECT_TRUE(true);
 }
+// NOLINTEND
 
 EOF
 format "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp"

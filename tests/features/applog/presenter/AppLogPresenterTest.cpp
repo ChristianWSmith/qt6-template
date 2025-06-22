@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 #include "features/applog/presenter/AppLogPresenter.h"
 #include "events/LogEvent.h"
 #include "features/applog/applogcommon.h"
@@ -75,3 +76,4 @@ TEST_F(AppLogPresenterTest, OnLogEventReceivedForwardsToModel) {
   QMetaObject::invokeMethod(presenter, "onLogEventReceived",
                             Qt::DirectConnection, Q_ARG(LogEvent, event));
 }
+// NOLINTEND

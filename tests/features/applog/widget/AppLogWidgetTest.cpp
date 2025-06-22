@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 #include "features/applog/widget/AppLogWidget.h"
 #include <QListWidget>
 #include <QScrollBar>
@@ -65,3 +66,4 @@ TEST_F(AppLogWidgetTest, ScrollsToBottomOnLogMessage) {
   // Expect scroll bar to be at the bottom
   EXPECT_EQ(scrollBar->value(), scrollBar->maximum());
 }
+// NOLINTEND

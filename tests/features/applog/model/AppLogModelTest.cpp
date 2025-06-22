@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 #include "features/applog/model/AppLogModel.h"
 #include "features/applog/applogcommon.h"
 #include <QCoreApplication>
@@ -51,3 +52,4 @@ TEST_F(AppLogModelTest, ConnectLogChangedReturnsValidConnection) {
   EXPECT_NE(conn, QMetaObject::Connection());
   QObject::disconnect(conn);
 }
+// NOLINTEND
