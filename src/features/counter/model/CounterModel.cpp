@@ -23,3 +23,5 @@ QMetaObject::Connection CounterModel::connectValueChanged(QObject *receiver,
                                                           const char *member) {
   return QObject::connect(this, SIGNAL(valueChanged(int)), receiver, member);
 }
+
+void CounterModel::shutdown() { qInfo() << "CounterModel::shutdown()"; }

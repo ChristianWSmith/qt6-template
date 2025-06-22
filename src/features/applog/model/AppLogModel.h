@@ -10,6 +10,7 @@ class AppLogModel : public IAppLogModel {
 
 public:
   explicit AppLogModel(QObject *parent = nullptr);
+  void shutdown() override;
 
   void addLogMessage(const QString &message) override;
 

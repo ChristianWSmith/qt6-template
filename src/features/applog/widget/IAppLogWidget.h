@@ -1,12 +1,13 @@
 #pragma once
 
+#include "../../IWidget.h"
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
 #include <QString>
 #include <QWidget>
 #include <QtPlugin>
 
-class IAppLogWidget : public QWidget {
+class IAppLogWidget : public QWidget, public IWidget {
   Q_OBJECT
 
 public:

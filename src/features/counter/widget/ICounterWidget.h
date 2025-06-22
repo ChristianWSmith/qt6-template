@@ -1,10 +1,11 @@
 #pragma once
+#include "../../IWidget.h"
 #include "../../featurescommon.h"
 #include "../countercommon.h"
 #include <QWidget>
 #include <QtPlugin>
 
-class ICounterWidget : public QWidget {
+class ICounterWidget : public QWidget, public IWidget {
   Q_OBJECT
 
 public:

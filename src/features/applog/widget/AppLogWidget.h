@@ -17,6 +17,7 @@ class AppLogWidget : public IAppLogWidget {
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
+  void shutdown() override;
 
   AppLogWidget(const AppLogWidget &) = delete;
   AppLogWidget &operator=(const AppLogWidget &) = delete;

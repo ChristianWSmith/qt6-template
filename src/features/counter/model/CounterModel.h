@@ -7,6 +7,7 @@ class CounterModel : public ICounterModel {
 
 public:
   explicit CounterModel(QObject *parent = nullptr);
+  void shutdown() override;
   [[nodiscard]] int value() const override;
   void increment() override;
   QMetaObject::Connection connectValueChanged(QObject *receiver,

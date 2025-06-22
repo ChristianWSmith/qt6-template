@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../IModel.h"
 #include "../../featurescommon.h"
 #include "../applogcommon.h"
 #include <QMetaMethod>
@@ -7,7 +8,7 @@
 #include <QString>
 #include <QtPlugin>
 
-class IAppLogModel : public QObject {
+class IAppLogModel : public QObject, public IModel {
   Q_OBJECT
 
 public:

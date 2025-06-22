@@ -18,6 +18,7 @@ public:
   CounterWidget &operator=(const CounterWidget &) = delete;
   CounterWidget(CounterWidget &&) = delete;
   CounterWidget &operator=(CounterWidget &&) = delete;
+  void shutdown() override;
 
   void displayCounter(int value) override;
   QMetaObject::Connection

@@ -61,13 +61,14 @@ format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h" <<EOF
 #pragma once
+#include "../../IModel.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Model : public QObject {
+class I${FEATURE_NAME_TITLE}Model : public QObject, public IModel {
   Q_OBJECT
 
 public:
@@ -99,6 +100,7 @@ class ${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
 
 public:
   explicit ${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr);
+  void shutdown() override;
   // Implements I${FEATURE_NAME_TITLE}Model methods
 
 signals:
@@ -119,6 +121,10 @@ ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent)
     : I${FEATURE_NAME_TITLE}Model(parent) {}
 
 // Implementation of I${FEATURE_NAME_TITLE}Model methods and internal connections
+
+void ${FEATURE_NAME_TITLE}Model::shutdown() {
+  // Perform model shutdown actions
+}
 
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
@@ -202,7 +208,12 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 // Implements presenter slots
 
 void ${FEATURE_NAME_TITLE}Presenter::shutdown() {
-  // Perform feature shutdown actions
+  if (m_view != nullptr) {
+    m_view->shutdown();
+  }
+  if (m_model != nullptr) {
+    m_model->shutdown();
+  }
 }
 
 EOF
@@ -212,12 +223,13 @@ format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #pragma once
+#include "../../IWidget.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QWidget>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Widget : public QWidget {
+class I${FEATURE_NAME_TITLE}Widget : public QWidget, public IWidget {
   Q_OBJECT
 
 public:
@@ -259,6 +271,9 @@ public:
   ${FEATURE_NAME_TITLE}Widget &operator=(const ${FEATURE_NAME_TITLE}Widget &) = delete;
   ${FEATURE_NAME_TITLE}Widget(${FEATURE_NAME_TITLE}Widget &&) = delete;
   ${FEATURE_NAME_TITLE}Widget &operator=(${FEATURE_NAME_TITLE}Widget &&) = delete;
+
+  void shutdown() override;
+
   // Implements I${FEATURE_NAME_TITLE}Widget methods
 
 signals:
@@ -288,6 +303,8 @@ ${FEATURE_NAME_TITLE}Widget::~${FEATURE_NAME_TITLE}Widget() { delete ui; }
 // Implements I${FEATURE_NAME_TITLE}Widget methods and internal connections
 
 // Implements UI slots, typically emitting signals to the Presenter
+
+void ${FEATURE_NAME_TITLE}Widget::shutdown() {}
 
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp"

@@ -23,3 +23,5 @@ AppLogModel::connectLogMessageAdded(QObject *receiver, const char *member) {
   return QObject::connect(this, SIGNAL(logMessageAdded(QString)), receiver,
                           member);
 }
+
+void AppLogModel::shutdown() { qInfo() << "AppLogModel::shutdown()"; }

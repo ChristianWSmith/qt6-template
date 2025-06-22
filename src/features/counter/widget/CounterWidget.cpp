@@ -30,3 +30,5 @@ CounterWidget::connectIncrementRequested(QObject *receiver,
                                          const char *member) {
   return QObject::connect(this, SIGNAL(incrementRequested()), receiver, member);
 }
+
+void CounterWidget::shutdown() { qInfo() << "CounterWidget::shutdown()"; }

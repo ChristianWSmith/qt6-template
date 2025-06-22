@@ -37,4 +37,12 @@ void AppLogPresenter::handleLogMessageAdded(const QString &message) {
   }
 }
 
-void AppLogPresenter::shutdown() { qInfo() << "AppLogPresenter::shutdown()"; }
+void AppLogPresenter::shutdown() {
+  qInfo() << "AppLogPresenter::shutdown()";
+  if (m_view != nullptr) {
+    m_view->shutdown();
+  }
+  if (m_model != nullptr) {
+    m_model->shutdown();
+  }
+}

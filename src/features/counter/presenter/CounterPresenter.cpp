@@ -43,4 +43,12 @@ void CounterPresenter::handleCounterValueChanged(int newValue) {
   }
 }
 
-void CounterPresenter::shutdown() { qInfo() << "CounterPresenter::shutdown()"; }
+void CounterPresenter::shutdown() {
+  qInfo() << "CounterPresenter::shutdown()";
+  if (m_view != nullptr) {
+    m_view->shutdown();
+  }
+  if (m_model != nullptr) {
+    m_model->shutdown();
+  }
+}

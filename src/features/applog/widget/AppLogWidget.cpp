@@ -19,3 +19,5 @@ void AppLogWidget::displayLogMessage(const QString &message) {
     verticalScrollBar->setValue(verticalScrollBar->maximum());
   }
 }
+
+void AppLogWidget::shutdown() { qInfo() << "AppLogWidget::shutdown()"; }

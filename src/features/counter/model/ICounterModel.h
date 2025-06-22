@@ -1,11 +1,12 @@
 #pragma once
+#include "../../IModel.h"
 #include "../../featurescommon.h"
 #include "../countercommon.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>
 
-class ICounterModel : public QObject {
+class ICounterModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
