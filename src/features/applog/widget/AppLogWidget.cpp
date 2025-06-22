@@ -10,15 +10,15 @@ AppLogWidget::AppLogWidget(QWidget *parent)
 
 AppLogWidget::~AppLogWidget() { delete ui; }
 
-void AppLogWidget::handleLogChanged(const LogChange &logChange) {
+void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
   QScrollBar *scrollBar = ui->logListWidget->verticalScrollBar();
   int oldMax = scrollBar->maximum();
   int oldValue = scrollBar->value();
   bool wasAtBottom = oldValue == oldMax;
 
-  ui->logListWidget->addItem(logChange.message);
+  ui->logListWidget->addItem(logDelta.message);
 
-  if (logChange.trimmed) {
+  if (logDelta.trimmed) {
     delete ui->logListWidget->takeItem(0);
   }
 

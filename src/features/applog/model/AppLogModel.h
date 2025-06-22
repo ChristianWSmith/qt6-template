@@ -18,7 +18,7 @@ public:
                                             const char *member) override;
 
 signals:
-  void logChanged(const LogChange &_t1);
+  void logChanged(const LogDelta &_t1);
 
 private:
   QVector<QString> m_logMessages;

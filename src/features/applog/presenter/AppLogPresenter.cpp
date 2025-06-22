@@ -20,7 +20,7 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
   }
 
   if (m_model != nullptr) {
-    m_model->connectLogChanged(this, SLOT(handleLogChanged(LogChange)));
+    m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
   }
   qDebug() << "AppLogPresenter instantiated";
 }
@@ -31,9 +31,9 @@ void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
   }
 }
 
-void AppLogPresenter::handleLogChanged(const LogChange &logChange) {
+void AppLogPresenter::handleLogChanged(const LogDelta &logDelta) {
   if (m_view != nullptr) {
-    m_view->handleLogChanged(logChange);
+    m_view->handleLogChanged(logDelta);
   }
 }
 

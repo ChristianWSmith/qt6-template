@@ -23,13 +23,12 @@ void AppLogModel::addLogMessage(const QString &message) {
     trimmed = true;
   }
 
-  emit logChanged(LogChange{timestampedMessage, trimmed});
+  emit logChanged(LogDelta{timestampedMessage, trimmed});
 }
 
 QMetaObject::Connection AppLogModel::connectLogChanged(QObject *receiver,
                                                        const char *member) {
-  return QObject::connect(this, SIGNAL(logChanged(LogChange)), receiver,
-                          member);
+  return QObject::connect(this, SIGNAL(logChanged(LogDelta)), receiver, member);
 }
 
 void AppLogModel::shutdown() { qInfo() << "AppLogModel::shutdown()"; }

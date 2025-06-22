@@ -20,7 +20,7 @@ public:
   IAppLogWidget &operator=(IAppLogWidget &&) = delete;
 
 public slots:
-  virtual void handleLogChanged(const LogChange &logChange) = 0;
+  virtual void handleLogChanged(const LogDelta &logDelta) = 0;
 };
 
 Q_DECLARE_INTERFACE(IAppLogWidget, APPLOG_FEATURE_ID FEATURE_WIDGET_SUFFIX)

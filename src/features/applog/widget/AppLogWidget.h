@@ -25,7 +25,7 @@ public:
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
 public slots:
-  void handleLogChanged(const LogChange &logChange) override;
+  void handleLogChanged(const LogDelta &logDelta) override;
 
 signals:
 
