@@ -9,9 +9,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/features/applog/widget/AppLogWidget.ui" line="32"/>
         <source>Application log messages will appear here...</source>
-        <translation type="unfinished">Application log messages will appear here...</translation>
+        <translation type="obsolete">Application log messages will appear here...</translation>
     </message>
 </context>
 <context>
