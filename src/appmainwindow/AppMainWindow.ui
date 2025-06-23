@@ -6,50 +6,37 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width> <!-- Increased width to accommodate both widgets side-by-side -->
-    <height>400</height> <!-- Adjusted height -->
+    <width>800</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string/>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout"> <!-- Changed to QHBoxLayout -->
+   <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <!-- Placeholder for CounterWidget. This will be replaced at runtime. -->
-     <widget class="QWidget" name="counterPlaceholderWidget">
+     <widget class="QWidget" name="counterPlaceholderWidget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horStretch>1</horStretch> <!-- Give it a stretch factor so it resizes -->
-        <verStretch>0</verStretch>
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
        </sizepolicy>
       </property>
      </widget>
     </item>
     <item>
-     <!-- Placeholder for AppLogWidget. This will be replaced at runtime. -->
-     <widget class="QWidget" name="appLogPlaceholderWidget">
+     <widget class="QWidget" name="appLogPlaceholderWidget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horStretch>1</horStretch> <!-- Give it a stretch factor so it resizes -->
-        <verStretch>0</verStretch>
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
        </sizepolicy>
       </property>
      </widget>
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>800</width>
-     <height>22</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>

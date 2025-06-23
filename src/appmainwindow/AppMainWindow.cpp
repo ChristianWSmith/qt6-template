@@ -30,7 +30,7 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 
   ui->setupUi(this);
 
-  QSettings settings(APP_ID, APP_NAME);
+  QSettings settings(ORGANIZATION_NAME, APP_NAME);
   restoreGeometry(settings.value("window/geometry").toByteArray());
   restoreState(settings.value("window/state").toByteArray());
 
