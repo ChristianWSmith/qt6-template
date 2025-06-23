@@ -8,7 +8,6 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <fmt/core.h>
-#include <unistd.h>
 
 namespace {
 QString stateFilePath() {
