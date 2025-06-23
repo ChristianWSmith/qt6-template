@@ -29,4 +29,13 @@ void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
   }
 }
 
+void AppLogWidget::clear() { ui->logListWidget->clear(); }
+
+void AppLogWidget::on_clearButton_clicked() { emit clearRequested(); }
+
+QMetaObject::Connection
+AppLogWidget::connectClearRequested(QObject *receiver, const char *member) {
+  return QObject::connect(this, SIGNAL(clearRequested()), receiver, member);
+}
+
 void AppLogWidget::shutdown() { qInfo() << "AppLogWidget::shutdown()"; }

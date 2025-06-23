@@ -21,8 +21,11 @@ public:
   IAppLogModel &operator=(IAppLogModel &&) = delete;
 
   virtual void addLogMessage(const QString &message) = 0;
+  virtual void clear() = 0;
 
   virtual QMetaObject::Connection connectLogChanged(QObject *receiver,
+                                                    const char *member) = 0;
+  virtual QMetaObject::Connection connectLogCleared(QObject *receiver,
                                                     const char *member) = 0;
 };
 

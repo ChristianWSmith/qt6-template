@@ -19,8 +19,13 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
     qWarning() << "AppLogPresenter instantiated without view";
   }
 
+  if (m_view != nullptr) {
+    m_view->connectClearRequested(this, SLOT(handleClearRequested()));
+  }
+
   if (m_model != nullptr) {
     m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
+    m_model->connectLogCleared(this, SLOT(handleLogCleared()));
   }
   qDebug() << "AppLogPresenter instantiated";
 }
@@ -34,6 +39,18 @@ void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
 void AppLogPresenter::handleLogChanged(const LogDelta &logDelta) {
   if (m_view != nullptr) {
     m_view->handleLogChanged(logDelta);
+  }
+}
+
+void AppLogPresenter::handleLogCleared() {
+  if (m_view != nullptr) {
+    m_view->clear();
+  }
+}
+
+void AppLogPresenter::handleClearRequested() {
+  if (m_model != nullptr) {
+    m_model->clear();
   }
 }
 

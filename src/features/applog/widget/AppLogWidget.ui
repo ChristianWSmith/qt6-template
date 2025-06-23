@@ -17,6 +17,13 @@
    <item>
     <widget class="QListWidget" name="logListWidget"/>
    </item>
+   <item>
+    <widget class="QPushButton" name="clearButton">
+     <property name="text">
+      <string>Clear</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

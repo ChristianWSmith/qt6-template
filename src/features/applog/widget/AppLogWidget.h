@@ -24,12 +24,19 @@ public:
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
+  QMetaObject::Connection connectClearRequested(QObject *receiver,
+                                                const char *member) override;
+
+  void clear() override;
+
 public slots:
   void handleLogChanged(const LogDelta &logDelta) override;
 
 signals:
+  void clearRequested();
 
 private slots:
+  void on_clearButton_clicked();
 
 private:
   Ui::AppLogWidget *ui;

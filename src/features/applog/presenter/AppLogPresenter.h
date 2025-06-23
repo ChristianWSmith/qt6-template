@@ -24,6 +24,8 @@ private slots:
   void onLogEventReceived(const LogEvent &event);
 
   void handleLogChanged(const LogDelta &logDelta);
+  void handleLogCleared();
+  void handleClearRequested();
 
 private:
   IAppLogModel *m_model;

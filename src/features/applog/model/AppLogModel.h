@@ -13,12 +13,16 @@ public:
   void shutdown() override;
 
   void addLogMessage(const QString &message) override;
+  void clear() override;
 
   QMetaObject::Connection connectLogChanged(QObject *receiver,
+                                            const char *member) override;
+  QMetaObject::Connection connectLogCleared(QObject *receiver,
                                             const char *member) override;
 
 signals:
   void logChanged(const LogDelta &_t1);
+  void logCleared();
 
 private:
   QVector<QString> m_logMessages;

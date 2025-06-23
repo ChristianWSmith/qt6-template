@@ -26,9 +26,19 @@ void AppLogModel::addLogMessage(const QString &message) {
   emit logChanged(LogDelta{timestampedMessage, trimmed});
 }
 
+void AppLogModel::clear() {
+  m_logMessages.clear();
+  emit logCleared();
+}
+
 QMetaObject::Connection AppLogModel::connectLogChanged(QObject *receiver,
                                                        const char *member) {
   return QObject::connect(this, SIGNAL(logChanged(LogDelta)), receiver, member);
+}
+
+QMetaObject::Connection AppLogModel::connectLogCleared(QObject *receiver,
+                                                       const char *member) {
+  return QObject::connect(this, SIGNAL(logCleared()), receiver, member);
 }
 
 void AppLogModel::shutdown() { qInfo() << "AppLogModel::shutdown()"; }

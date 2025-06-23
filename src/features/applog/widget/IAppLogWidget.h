@@ -19,8 +19,12 @@ public:
   IAppLogWidget(IAppLogWidget &&) = delete;
   IAppLogWidget &operator=(IAppLogWidget &&) = delete;
 
+  virtual QMetaObject::Connection connectClearRequested(QObject *receiver,
+                                                        const char *member) = 0;
+
 public slots:
   virtual void handleLogChanged(const LogDelta &logDelta) = 0;
+  virtual void clear() = 0;
 };
 
 Q_DECLARE_INTERFACE(IAppLogWidget, APPLOG_FEATURE_ID FEATURE_WIDGET_SUFFIX)
