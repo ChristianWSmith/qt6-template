@@ -6,6 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DAPP_NAME="${APP_NAME}")
 add_definitions(-DAPP_DESCRIPTION="${APP_DESCRIPTION}")
 add_definitions(-DAPP_VERSION="${APP_VERSION}")
+add_definitions(-DORGANIZATION_NAME="${ORGANIZATION_NAME}")
 add_definitions(-DAPP_ID="${APP_ID}")
 
 set(CMAKE_AUTOUIC ON)
@@ -43,6 +44,7 @@ target_compile_definitions(${APP_NAME}_lib PRIVATE
     APP_NAME="${APP_NAME}"
     APP_DESCRIPTION="${APP_DESCRIPTION}"
     APP_VERSION="${APP_VERSION}"
+    ORGANIZATION_NAME="${ORGANIZATION_NAME}"
     APP_ID="${APP_ID}"
 )
 

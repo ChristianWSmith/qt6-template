@@ -16,7 +16,9 @@ CounterPresenter::CounterPresenter(ICounterModel *model, ICounterWidget *view,
   if (m_view != nullptr) {
     m_view->connectIncrementRequested(this, SLOT(handleIncrementRequest()));
   }
+
   if (m_model != nullptr) {
+    m_view->connectResetRequested(this, SLOT(handleResetRequest()));
     m_model->connectValueChanged(this, SLOT(handleCounterValueChanged(int)));
   }
   if ((m_view != nullptr) && (m_model != nullptr)) {
@@ -30,6 +32,14 @@ void CounterPresenter::handleIncrementRequest() {
       "CounterPresenter::handleIncrementRequest() → m_model->increment()"});
   if (m_model != nullptr) {
     m_model->increment();
+  }
+}
+
+void CounterPresenter::handleResetRequest() {
+  events::publish(
+      LogEvent{"CounterPresenter::handleResetRequest() → m_model->reset()"});
+  if (m_model != nullptr) {
+    m_model->reset();
   }
 }
 

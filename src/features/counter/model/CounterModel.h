@@ -10,6 +10,7 @@ public:
   void shutdown() override;
   [[nodiscard]] int value() const override;
   void increment() override;
+  void reset() override;
   QMetaObject::Connection connectValueChanged(QObject *receiver,
                                               const char *member) override;
 signals:
@@ -17,4 +18,6 @@ signals:
 
 private:
   int m_value{0};
+  void loadState();
+  void saveState() const;
 };

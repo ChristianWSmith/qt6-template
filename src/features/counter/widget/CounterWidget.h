@@ -23,12 +23,16 @@ public:
   void displayCounter(int value) override;
   QMetaObject::Connection
   connectIncrementRequested(QObject *receiver, const char *member) override;
+  QMetaObject::Connection connectResetRequested(QObject *receiver,
+                                                const char *member) override;
 
 signals:
   void incrementRequested();
+  void resetRequested();
 
 private slots:
   void on_incrementButton_clicked();
+  void on_resetButton_clicked();
 
 private:
   Ui::CounterWidget *ui;

@@ -25,10 +25,21 @@ void CounterWidget::on_incrementButton_clicked() {
   emit incrementRequested();
 }
 
+void CounterWidget::on_resetButton_clicked() {
+  events::publish(LogEvent{"CounterWidget::on_resetButton_clicked() → "
+                           "emit resetRequested()"});
+  emit resetRequested();
+}
+
 QMetaObject::Connection
 CounterWidget::connectIncrementRequested(QObject *receiver,
                                          const char *member) {
   return QObject::connect(this, SIGNAL(incrementRequested()), receiver, member);
+}
+
+QMetaObject::Connection
+CounterWidget::connectResetRequested(QObject *receiver, const char *member) {
+  return QObject::connect(this, SIGNAL(resetRequested()), receiver, member);
 }
 
 void CounterWidget::shutdown() { qInfo() << "CounterWidget::shutdown()"; }

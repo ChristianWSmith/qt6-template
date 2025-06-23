@@ -21,6 +21,7 @@ public:
   [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] virtual int
   value() const = 0;
   virtual void increment() = 0;
+  virtual void reset() = 0;
   virtual QMetaObject::Connection connectValueChanged(QObject *receiver,
                                                       const char *member) = 0;
 };

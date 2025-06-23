@@ -1,3 +1,4 @@
+#include "appconstants.h"
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
@@ -58,6 +59,9 @@ int main(int argc, char *argv[]) {
     services::ServiceRegistry::registerAll();
 
     QApplication app(argc, argv);
+    QApplication::setApplicationName(QString::fromStdString(APP_NAME));
+    QApplication::setOrganizationName(
+        QString::fromStdString(ORGANIZATION_NAME));
     QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
     QGuiApplication::setDesktopFileName(APP_ID);
 

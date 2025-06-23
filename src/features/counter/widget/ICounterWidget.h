@@ -20,6 +20,8 @@ public:
   virtual void displayCounter(int value) = 0;
   virtual QMetaObject::Connection
   connectIncrementRequested(QObject *receiver, const char *member) = 0;
+  virtual QMetaObject::Connection connectResetRequested(QObject *receiver,
+                                                        const char *member) = 0;
 };
 
 Q_DECLARE_INTERFACE(ICounterWidget, COUNTER_FEATURE_ID FEATURE_WIDGET_SUFFIX)

@@ -15,6 +15,7 @@ public:
 
 private slots:
   void handleIncrementRequest();
+  void handleResetRequest();
   void handleCounterValueChanged(int newValue);
 
 private:
