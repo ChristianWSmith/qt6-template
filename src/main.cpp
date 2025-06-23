@@ -1,4 +1,3 @@
-#include "appconstants.h"
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"

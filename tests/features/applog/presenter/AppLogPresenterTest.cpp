@@ -14,7 +14,11 @@ using ::testing::NiceMock;
 class MockAppLogModel : public IAppLogModel {
 public:
   MOCK_METHOD(void, addLogMessage, (const QString &), (override));
+  MOCK_METHOD(void, clear, (), (override));
+  MOCK_METHOD(const QVector<QString> &, getLogMessages, (), (const override));
   MOCK_METHOD(QMetaObject::Connection, connectLogChanged,
+              (QObject *, const char *), (override));
+  MOCK_METHOD(QMetaObject::Connection, connectLogCleared,
               (QObject *, const char *), (override));
   MOCK_METHOD(void, shutdown, (), (override));
 };
@@ -23,6 +27,10 @@ class MockAppLogWidget : public IAppLogWidget {
 public:
   MOCK_METHOD(void, handleLogChanged, (const LogDelta &), (override));
   MOCK_METHOD(void, shutdown, (), (override));
+  MOCK_METHOD(void, clear, (), (override));
+  MOCK_METHOD(void, setLogMessages, (const QVector<QString> &), (override));
+  MOCK_METHOD(QMetaObject::Connection, connectClearRequested,
+              (QObject *, const char *), (override));
 };
 
 class AppLogPresenterTest : public ::testing::Test {
@@ -33,6 +41,10 @@ protected:
 
   void SetUp() override {
     mockModel = new NiceMock<MockAppLogModel>();
+    QVector<QString> dummyLogMessages{"line 1", "line 2"};
+    ON_CALL(*mockModel, getLogMessages())
+        .WillByDefault(::testing::ReturnRef(dummyLogMessages));
+
     mockView = new NiceMock<MockAppLogWidget>();
     presenter = new AppLogPresenter(mockModel, mockView);
   }

@@ -16,11 +16,11 @@ CounterPresenter::CounterPresenter(ICounterModel *model, ICounterWidget *view,
   }
 
   if (m_view != nullptr) {
+    m_view->connectResetRequested(this, SLOT(handleResetRequest()));
     m_view->connectIncrementRequested(this, SLOT(handleIncrementRequest()));
   }
 
   if (m_model != nullptr) {
-    m_view->connectResetRequested(this, SLOT(handleResetRequest()));
     m_model->connectValueChanged(this, SLOT(handleCounterValueChanged(int)));
   }
   if ((m_view != nullptr) && (m_model != nullptr)) {

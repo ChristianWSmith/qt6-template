@@ -13,6 +13,7 @@ class MockCounterModel : public ICounterModel {
 public:
   MOCK_METHOD(void, increment, (), (override));
   MOCK_METHOD(int, value, (), (const, override));
+  MOCK_METHOD(void, reset, (), (override));
   MOCK_METHOD(QMetaObject::Connection, connectValueChanged,
               (QObject * receiver, const char *member), (override));
   MOCK_METHOD(void, shutdown, (), (override));
@@ -22,6 +23,8 @@ class MockCounterWidget : public ICounterWidget {
 public:
   MOCK_METHOD(void, displayCounter, (int value), (override));
   MOCK_METHOD(QMetaObject::Connection, connectIncrementRequested,
+              (QObject * receiver, const char *member), (override));
+  MOCK_METHOD(QMetaObject::Connection, connectResetRequested,
               (QObject * receiver, const char *member), (override));
   MOCK_METHOD(void, shutdown, (), (override));
 };

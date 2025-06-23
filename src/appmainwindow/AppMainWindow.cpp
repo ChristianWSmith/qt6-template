@@ -52,13 +52,12 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 AppMainWindow::~AppMainWindow() { delete ui; }
 
 void AppMainWindow::shutdown() {
-  QSettings settings(APP_ID, APP_NAME);
+  QSettings settings(ORGANIZATION_NAME, APP_NAME);
   settings.setValue("window/geometry", saveGeometry());
   settings.setValue("window/state", saveState());
 }
 
 void AppMainWindow::closeEvent(QCloseEvent *event) {
-
   QFuture<void> shutdownFuture = QtConcurrent::run([this]() { shutdown(); });
   QFuture<void> counterFuture =
       QtConcurrent::run([this]() { m_counterPresenter->shutdown(); });
