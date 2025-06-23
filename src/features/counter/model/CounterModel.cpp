@@ -1,6 +1,7 @@
 #include "CounterModel.h"
 #include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
+#include "../../../platform/flushFileBuffer.h"
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -80,9 +81,8 @@ void CounterModel::saveState() const {
   obj["value"] = m_value;
   QJsonDocument doc(obj);
   file.write(doc.toJson(QJsonDocument::Compact));
-  file.flush();
-  file.waitForBytesWritten(-1);
-  ::fsync(file.handle());
+  flushToDisk(file);
+  file.close();
 
   qDebug() << "Saved counter value:" << m_value;
 }

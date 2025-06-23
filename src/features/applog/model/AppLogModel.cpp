@@ -1,4 +1,5 @@
 #include "AppLogModel.h"
+#include "../../../platform/flushFileBuffer.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -107,9 +108,8 @@ void AppLogModel::saveState() const {
   obj["logMessages"] = messages;
 
   file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));
-  file.flush();
-  file.waitForBytesWritten(-1);
-  ::fsync(file.handle());
+  flushToDisk(file);
+  file.close();
 
   qInfo() << "Saved" << m_logMessages.size() << "log messages";
 }
