@@ -58,6 +58,9 @@ void AppMainWindow::shutdown() {
 }
 
 void AppMainWindow::closeEvent(QCloseEvent *event) {
+  this->hide();
+  qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
+
   QFuture<void> shutdownFuture = QtConcurrent::run([this]() { shutdown(); });
   QFuture<void> counterFuture =
       QtConcurrent::run([this]() { m_counterPresenter->shutdown(); });
