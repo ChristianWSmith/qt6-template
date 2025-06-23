@@ -17,7 +17,8 @@ LogLevel parseLogLevel(const std::string &levelStr) {
   if (levelIterator != map.end()) {
     return levelIterator->second;
   }
-  throw std::invalid_argument("Invalid log level: " + levelStr);
+  std::cerr << "Invalid log level, defaulting to info\n";
+  return LogLevel::Info;
 }
 
 bool shouldLog(QtMsgType type) {

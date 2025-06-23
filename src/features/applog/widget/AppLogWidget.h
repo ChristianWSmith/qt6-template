@@ -28,6 +28,7 @@ public:
                                                 const char *member) override;
 
   void clear() override;
+  void setLogMessages(const QVector<QString> &messages) override;
 
 public slots:
   void handleLogChanged(const LogDelta &logDelta) override;

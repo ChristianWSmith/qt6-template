@@ -190,6 +190,8 @@ format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
 # PRESENTER CPP
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Presenter.h"
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 
 ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model,
                                            I${FEATURE_NAME_TITLE}Widget *view,
@@ -208,12 +210,18 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 // Implements presenter slots
 
 void ${FEATURE_NAME_TITLE}Presenter::shutdown() {
+  QFuture<void> modelFuture;
+  QFuture<void> viewFuture;
+
   if (m_view != nullptr) {
-    m_view->shutdown();
+    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
   }
   if (m_model != nullptr) {
-    m_model->shutdown();
+    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
   }
+
+  modelFuture.waitForFinished();
+  viewFuture.waitForFinished();
 }
 
 EOF

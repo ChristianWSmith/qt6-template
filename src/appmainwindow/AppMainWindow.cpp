@@ -11,8 +11,10 @@
 #include <QMainWindow>
 #include <QSettings>
 
+#include <QFuture>
 #include <QHBoxLayout>
 #include <QWidget>
+#include <QtConcurrent/QtConcurrent>
 #include <qsettings.h>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
@@ -49,13 +51,23 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 
 AppMainWindow::~AppMainWindow() { delete ui; }
 
-void AppMainWindow::closeEvent(QCloseEvent *event) {
+void AppMainWindow::shutdown() {
   QSettings settings(APP_ID, APP_NAME);
   settings.setValue("window/geometry", saveGeometry());
   settings.setValue("window/state", saveState());
+}
 
-  m_counterPresenter->shutdown();
-  m_appLogPresenter->shutdown();
+void AppMainWindow::closeEvent(QCloseEvent *event) {
+
+  QFuture<void> shutdownFuture = QtConcurrent::run([this]() { shutdown(); });
+  QFuture<void> counterFuture =
+      QtConcurrent::run([this]() { m_counterPresenter->shutdown(); });
+  QFuture<void> appLogFuture =
+      QtConcurrent::run([this]() { m_appLogPresenter->shutdown(); });
+
+  shutdownFuture.waitForFinished();
+  counterFuture.waitForFinished();
+  appLogFuture.waitForFinished();
 
   QMainWindow::closeEvent(event);
 }

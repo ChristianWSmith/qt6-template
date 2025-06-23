@@ -1,5 +1,7 @@
 #include "AppLogPresenter.h"
 #include <QDebug>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 #include <fmt/core.h>
 #include <qlogging.h>
 
@@ -26,6 +28,10 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
   if (m_model != nullptr) {
     m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
     m_model->connectLogCleared(this, SLOT(handleLogCleared()));
+  }
+
+  if (m_model != nullptr && m_view != nullptr) {
+    m_view->setLogMessages(m_model->getLogMessages());
   }
   qDebug() << "AppLogPresenter instantiated";
 }
@@ -56,10 +62,17 @@ void AppLogPresenter::handleClearRequested() {
 
 void AppLogPresenter::shutdown() {
   qInfo() << "AppLogPresenter::shutdown()";
+
+  QFuture<void> modelFuture;
+  QFuture<void> viewFuture;
+
   if (m_view != nullptr) {
-    m_view->shutdown();
+    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
   }
   if (m_model != nullptr) {
-    m_model->shutdown();
+    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
   }
+
+  modelFuture.waitForFinished();
+  viewFuture.waitForFinished();
 }

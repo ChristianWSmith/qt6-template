@@ -14,6 +14,7 @@ public:
 
   void addLogMessage(const QString &message) override;
   void clear() override;
+  [[nodiscard]] const QVector<QString> &getLogMessages() const override;
 
   QMetaObject::Connection connectLogChanged(QObject *receiver,
                                             const char *member) override;
@@ -26,4 +27,6 @@ signals:
 
 private:
   QVector<QString> m_logMessages;
+  void saveState() const;
+  void loadState();
 };

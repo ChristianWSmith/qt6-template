@@ -22,6 +22,7 @@ public:
 
   virtual void addLogMessage(const QString &message) = 0;
   virtual void clear() = 0;
+  [[nodiscard]] virtual const QVector<QString> &getLogMessages() const = 0;
 
   virtual QMetaObject::Connection connectLogChanged(QObject *receiver,
                                                     const char *member) = 0;

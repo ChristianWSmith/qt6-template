@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <fmt/core.h>
+#include <unistd.h>
 
 namespace {
 QString stateFilePath() {
@@ -79,6 +80,9 @@ void CounterModel::saveState() const {
   obj["value"] = m_value;
   QJsonDocument doc(obj);
   file.write(doc.toJson(QJsonDocument::Compact));
+  file.flush();
+  file.waitForBytesWritten(-1);
+  ::fsync(file.handle());
 
   qDebug() << "Saved counter value:" << m_value;
 }

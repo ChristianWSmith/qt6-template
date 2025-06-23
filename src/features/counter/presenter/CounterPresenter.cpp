@@ -1,6 +1,8 @@
 #include "CounterPresenter.h"
 #include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 #include <fmt/core.h>
 
 CounterPresenter::CounterPresenter(ICounterModel *model, ICounterWidget *view,
@@ -55,10 +57,17 @@ void CounterPresenter::handleCounterValueChanged(int newValue) {
 
 void CounterPresenter::shutdown() {
   qInfo() << "CounterPresenter::shutdown()";
+
+  QFuture<void> modelFuture;
+  QFuture<void> viewFuture;
+
   if (m_view != nullptr) {
-    m_view->shutdown();
+    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
   }
   if (m_model != nullptr) {
-    m_model->shutdown();
+    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
   }
+
+  modelFuture.waitForFinished();
+  viewFuture.waitForFinished();
 }
