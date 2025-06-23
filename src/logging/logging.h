@@ -1,5 +1,4 @@
-#ifndef MESSAGEOUTPUT_H
-#define MESSAGEOUTPUT_H
+#pragma once
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -8,7 +7,7 @@
 #include <QMutex>
 #include <QMutexLocker>
 
-enum class LogLevel { Debug, Info, Warn, Error, None };
+enum class LogLevel : std::uint8_t { Debug, Info, Warn, Error, None };
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg);
@@ -16,5 +15,3 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
 void setLogLevel(LogLevel logLevel);
 
 LogLevel parseLogLevel(const std::string &levelStr);
-
-#endif

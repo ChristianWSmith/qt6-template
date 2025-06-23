@@ -15,21 +15,12 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QTextEdit" name="logTextEdit">
-     <property name="readOnly">
-      <bool>true</bool>
-     </property>
-     <property name="lineWrapMode">
-      <enum>QTextEdit::WidgetWidth</enum>
-     </property>
-     <property name="verticalScrollBarPolicy">
-      <enum>Qt::ScrollBarAsNeeded</enum>
-     </property>
-     <property name="horizontalScrollBarPolicy">
-      <enum>Qt::ScrollBarAlwaysOff</enum>
-     </property>
-     <property name="placeholderText">
-      <string>Application log messages will appear here...</string>
+    <widget class="QListWidget" name="logListWidget"/>
+   </item>
+   <item>
+    <widget class="QPushButton" name="clearButton">
+     <property name="text">
+      <string>Clear</string>
      </property>
     </widget>
    </item>

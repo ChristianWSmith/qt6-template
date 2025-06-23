@@ -14,35 +14,37 @@ public:
 private:
   static std::vector<std::shared_ptr<void>> &subscriptions_();
   template <typename InputEvent, typename OutputEvent, typename Callable>
-  static void registerService(Callable &&fn);
+  static void registerService(Callable &&func);
 
   template <typename InputEvent, typename Callable>
-  static void registerOneWayService(Callable &&fn);
+  static void registerOneWayService(Callable &&func);
 
   template <typename InputEvent, typename OutputEvent, typename Callable>
-  static void registerOptionalService(Callable &&fn);
+  static void registerOptionalService(Callable &&func);
 };
 
 template <typename InputEvent, typename OutputEvent, typename Callable>
-events::Subscription<InputEvent> connectService(Callable &&fn) {
+events::Subscription<InputEvent> connectService(Callable &&func) {
   return events::subscribe<InputEvent>(
-      [fn = std::forward<Callable>(fn)](const InputEvent &in) {
-        OutputEvent out = fn(in);
+      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
+        OutputEvent out = func(inputEvent);
         events::publish<OutputEvent>(out);
       });
 }
 
 template <typename InputEvent, typename Callable>
-events::Subscription<InputEvent> connectOneWayService(Callable &&fn) {
+events::Subscription<InputEvent> connectOneWayService(Callable &&func) {
   return events::subscribe<InputEvent>(
-      [fn = std::forward<Callable>(fn)](const InputEvent &in) { fn(in); });
+      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
+        func(inputEvent);
+      });
 }
 
 template <typename InputEvent, typename OutputEvent, typename Callable>
-events::Subscription<InputEvent> connectOptionalService(Callable &&fn) {
+events::Subscription<InputEvent> connectOptionalService(Callable &&func) {
   return events::subscribe<InputEvent>(
-      [fn = std::forward<Callable>(fn)](const InputEvent &in) {
-        std::optional<OutputEvent> out = fn(in);
+      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
+        std::optional<OutputEvent> out = func(inputEvent);
         if (out) {
           events::publish<OutputEvent>(*out);
         }
@@ -50,22 +52,22 @@ events::Subscription<InputEvent> connectOptionalService(Callable &&fn) {
 }
 
 template <typename InputEvent, typename OutputEvent, typename Callable>
-void ServiceRegistry::registerService(Callable &&fn) {
+void ServiceRegistry::registerService(Callable &&func) {
   subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
-      connectService<InputEvent, OutputEvent>(std::forward<Callable>(fn))));
+      connectService<InputEvent, OutputEvent>(std::forward<Callable>(func))));
 }
 
 template <typename InputEvent, typename Callable>
-void ServiceRegistry::registerOneWayService(Callable &&fn) {
+void ServiceRegistry::registerOneWayService(Callable &&func) {
   subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
-      connectOneWayService<InputEvent>(std::forward<Callable>(fn))));
+      connectOneWayService<InputEvent>(std::forward<Callable>(func))));
 }
 
 template <typename InputEvent, typename OutputEvent, typename Callable>
-void ServiceRegistry::registerOptionalService(Callable &&fn) {
+void ServiceRegistry::registerOptionalService(Callable &&func) {
   subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
       connectOptionalService<InputEvent, OutputEvent>(
-          std::forward<Callable>(fn))));
+          std::forward<Callable>(func))));
 }
 
 } // namespace services

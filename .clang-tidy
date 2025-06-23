@@ -1,0 +1,22 @@
+---
+Checks: |
+  clang-analyzer-*,
+  performance-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  readability-*,
+
+  # Allow Qt idioms/macros:
+  -cppcoreguidelines-explicit-virtual-functions,
+  -modernize-use-trailing-return-type,
+  -modernize-use-override,
+  -modernize-avoid-c-arrays, # duplicate of cppcoreguidelines-avoid-c-arrays
+  -readability-redundant-access-specifiers,
+
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: 'src/.*'
+
+...

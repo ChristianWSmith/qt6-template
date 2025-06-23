@@ -1,6 +1,4 @@
-
-#ifndef APP_MAIN_WINDOW_H
-#define APP_MAIN_WINDOW_H
+#pragma once
 
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
@@ -24,6 +22,14 @@ public:
   explicit AppMainWindow(QWidget *parent = nullptr);
   ~AppMainWindow();
 
+  AppMainWindow(const AppMainWindow &) = delete;
+  AppMainWindow &operator=(const AppMainWindow &) = delete;
+  AppMainWindow(AppMainWindow &&) = delete;
+  AppMainWindow &operator=(AppMainWindow &&) = delete;
+
+  void closeEvent(QCloseEvent *event);
+  void shutdown();
+
 private:
   Ui::AppMainWindow *ui;
 
@@ -35,5 +41,3 @@ private:
   IAppLogWidget *m_appLogWidget;
   IAppLogPresenter *m_appLogPresenter;
 };
-
-#endif

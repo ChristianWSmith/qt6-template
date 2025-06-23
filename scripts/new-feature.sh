@@ -50,12 +50,9 @@ WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
 # COMMON
 mkdir -p "${FEATURE_DIR}"
 cat > "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}COMMON_H
-#define ${FEATURE_NAME_UPPER}COMMON_H
+#pragma once
 
 #define ${FEATURE_NAME_UPPER}_FEATURE_ID APP_ID ".${FEATURE_NAME_TITLE}"
-
-#endif
 
 EOF
 format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
@@ -63,34 +60,38 @@ format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 # MODEL INTERFACE
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}MODEL_H
-#define I${FEATURE_NAME_UPPER}MODEL_H
+#pragma once
+#include "../../IModel.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Model : public QObject {
+class I${FEATURE_NAME_TITLE}Model : public QObject, public IModel {
   Q_OBJECT
 
 public:
   explicit I${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Model() = default;
+
+  I${FEATURE_NAME_TITLE}Model(const I${FEATURE_NAME_TITLE}Model &) = delete;
+  I${FEATURE_NAME_TITLE}Model &operator=(const I${FEATURE_NAME_TITLE}Model &) = delete;
+  I${FEATURE_NAME_TITLE}Model(I${FEATURE_NAME_TITLE}Model &&) = delete;
+  I${FEATURE_NAME_TITLE}Model &operator=(I${FEATURE_NAME_TITLE}Model &&) = delete;
+
   // Model API methods and connections
 };
 
-Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
-
-#endif
+Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model,
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
 
 EOF
 format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
 
 # MODEL HEADER
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}MODEL_H
-#define ${FEATURE_NAME_UPPER}MODEL_H
+#pragma once
 #include "I${FEATURE_NAME_TITLE}Model.h"
 
 class ${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
@@ -99,6 +100,7 @@ class ${FEATURE_NAME_TITLE}Model : public I${FEATURE_NAME_TITLE}Model {
 
 public:
   explicit ${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr);
+  void shutdown() override;
   // Implements I${FEATURE_NAME_TITLE}Model methods
 
 signals:
@@ -107,8 +109,6 @@ signals:
 private:
   // Private data members holding the Model's state
 };
-
-#endif
 
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
@@ -122,39 +122,45 @@ ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent)
 
 // Implementation of I${FEATURE_NAME_TITLE}Model methods and internal connections
 
+void ${FEATURE_NAME_TITLE}Model::shutdown() {
+  // Perform model shutdown actions
+}
+
 EOF
 format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 
 # PRESENTER INTERFACE
 mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}PRESENTER_H
-#define I${FEATURE_NAME_UPPER}PRESENTER_H
+#pragma once
+#include "../../IPresenter.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QObject>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Presenter : public QObject {
+class I${FEATURE_NAME_TITLE}Presenter : public QObject, public IPresenter {
   Q_OBJECT
 
 public:
   explicit I${FEATURE_NAME_TITLE}Presenter(QObject *parent = nullptr) : QObject(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Presenter() = default;
+
+  I${FEATURE_NAME_TITLE}Presenter(const I${FEATURE_NAME_TITLE}Presenter &) = delete;
+  I${FEATURE_NAME_TITLE}Presenter &operator=(const I${FEATURE_NAME_TITLE}Presenter &) = delete;
+  I${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Presenter &&) = delete;
+  I${FEATURE_NAME_TITLE}Presenter &operator=(I${FEATURE_NAME_TITLE}Presenter &&) = delete;
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
                     ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
-
-#endif
 
 EOF
 format "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h"
 
 # PRESENTER HEADER
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}PRESENTER_H
-#define ${FEATURE_NAME_UPPER}PRESENTER_H
+#pragma once
 #include "../model/I${FEATURE_NAME_TITLE}Model.h"
 #include "../widget/I${FEATURE_NAME_TITLE}Widget.h"
 #include "I${FEATURE_NAME_TITLE}Presenter.h"
@@ -165,8 +171,10 @@ class ${FEATURE_NAME_TITLE}Presenter : public I${FEATURE_NAME_TITLE}Presenter {
   Q_INTERFACES(I${FEATURE_NAME_TITLE}Presenter)
 
 public:
-  explicit ${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
-                            QObject *parent = nullptr);
+  explicit ${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model,
+                                I${FEATURE_NAME_TITLE}Widget *view,
+                                QObject *parent = nullptr);
+  void shutdown() override;
 
 private slots:
   // Concrete slots for handling events
@@ -176,23 +184,24 @@ private:
   I${FEATURE_NAME_TITLE}Widget *m_view;
 };
 
-#endif
-
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h"
 
 # PRESENTER CPP
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Presenter.h"
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 
-${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model, I${FEATURE_NAME_TITLE}Widget *view,
-                                   QObject *parent)
+${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_TITLE}Model *model,
+                                           I${FEATURE_NAME_TITLE}Widget *view,
+                                           QObject *parent)
     : I${FEATURE_NAME_TITLE}Presenter(parent), m_model(model), m_view(view) {
 
-  if (!m_model) {
+  if (m_model == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without model";
   }
-  if (!m_view) {
+  if (m_view == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without view";
   }
   // Connects view/model signals to presenter slots
@@ -200,39 +209,57 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(I${FEATURE_NAME_T
 
 // Implements presenter slots
 
+void ${FEATURE_NAME_TITLE}Presenter::shutdown() {
+  QFuture<void> modelFuture;
+  QFuture<void> viewFuture;
+
+  if (m_view != nullptr) {
+    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
+  }
+  if (m_model != nullptr) {
+    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
+  }
+
+  modelFuture.waitForFinished();
+  viewFuture.waitForFinished();
+}
+
 EOF
 format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 
 # WIDGET INTERFACE
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h" <<EOF
-#ifndef I${FEATURE_NAME_UPPER}WIDGET_H
-#define I${FEATURE_NAME_UPPER}WIDGET_H
+#pragma once
+#include "../../IWidget.h"
 #include "../../featurescommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QWidget>
 #include <QtPlugin>
 
-class I${FEATURE_NAME_TITLE}Widget : public QWidget {
+class I${FEATURE_NAME_TITLE}Widget : public QWidget, public IWidget {
   Q_OBJECT
 
 public:
   explicit I${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr) : QWidget(parent) {}
   virtual ~I${FEATURE_NAME_TITLE}Widget() = default;
+
+  I${FEATURE_NAME_TITLE}Widget(const I${FEATURE_NAME_TITLE}Widget &) = delete;
+  I${FEATURE_NAME_TITLE}Widget &operator=(const I${FEATURE_NAME_TITLE}Widget &) = delete;
+  I${FEATURE_NAME_TITLE}Widget(I${FEATURE_NAME_TITLE}Widget &&) = delete;
+  I${FEATURE_NAME_TITLE}Widget &operator=(I${FEATURE_NAME_TITLE}Widget &&) = delete;
   // Widget API methods and connections
 };
 
-Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget, ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
-
-#endif
+Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget,
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
 
 EOF
 format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
 
 # WIDGET HEADER
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h" <<EOF
-#ifndef ${FEATURE_NAME_UPPER}WIDGET_H
-#define ${FEATURE_NAME_UPPER}WIDGET_H
+#pragma once
 #include "I${FEATURE_NAME_TITLE}Widget.h"
 #include "ui_${FEATURE_NAME_TITLE}Widget.h"
 
@@ -247,6 +274,14 @@ class ${FEATURE_NAME_TITLE}Widget : public I${FEATURE_NAME_TITLE}Widget {
 public:
   explicit ${FEATURE_NAME_TITLE}Widget(QWidget *parent = nullptr);
   ~${FEATURE_NAME_TITLE}Widget();
+
+  ${FEATURE_NAME_TITLE}Widget(const ${FEATURE_NAME_TITLE}Widget &) = delete;
+  ${FEATURE_NAME_TITLE}Widget &operator=(const ${FEATURE_NAME_TITLE}Widget &) = delete;
+  ${FEATURE_NAME_TITLE}Widget(${FEATURE_NAME_TITLE}Widget &&) = delete;
+  ${FEATURE_NAME_TITLE}Widget &operator=(${FEATURE_NAME_TITLE}Widget &&) = delete;
+
+  void shutdown() override;
+
   // Implements I${FEATURE_NAME_TITLE}Widget methods
 
 signals:
@@ -258,8 +293,6 @@ private slots:
 private:
   Ui::${FEATURE_NAME_TITLE}Widget *ui;
 };
-
-#endif
 
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h"
@@ -278,6 +311,8 @@ ${FEATURE_NAME_TITLE}Widget::~${FEATURE_NAME_TITLE}Widget() { delete ui; }
 // Implements I${FEATURE_NAME_TITLE}Widget methods and internal connections
 
 // Implements UI slots, typically emitting signals to the Presenter
+
+void ${FEATURE_NAME_TITLE}Widget::shutdown() {}
 
 EOF
 format "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.cpp"
@@ -307,6 +342,7 @@ EOF
 # MODEL TEST
 mkdir -p "${TEST_MODEL_DIR}"
 cat > "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include "${MODEL_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Model.h"
 
@@ -323,12 +359,15 @@ TEST_F(${FEATURE_NAME_TITLE}ModelTest, Placeholder) {
   // Add your model tests here
   EXPECT_TRUE(true);
 }
+// NOLINTEND
+
 EOF
 format "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" 
 
 # PRESENTER TEST
 mkdir -p "${TEST_PRESENTER_DIR}"
 cat > "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "${PRESENTER_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Presenter.h"
@@ -371,6 +410,7 @@ protected:
 TEST_F(${FEATURE_NAME_TITLE}PresenterTest, Placeholder) {
   EXPECT_TRUE(true);
 }
+// NOLINTEND
 
 EOF
 format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
@@ -378,6 +418,7 @@ format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
 # WIDGET TEST
 mkdir -p "${TEST_WIDGET_DIR}"
 cat > "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp" <<EOF
+// NOLINTBEGIN
 #include <gtest/gtest.h>
 #include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
 
@@ -400,6 +441,7 @@ protected:
 TEST_F(${FEATURE_NAME_TITLE}WidgetTest, Placeholder) {
   EXPECT_TRUE(true);
 }
+// NOLINTEND
 
 EOF
 format "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp"

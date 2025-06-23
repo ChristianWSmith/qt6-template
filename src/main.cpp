@@ -11,8 +11,10 @@
 #include <QTranslator>
 #include <cxxopts.hpp>
 #include <fmt/core.h>
+#include <iostream>
 #include <qdebug.h>
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
 cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
   options.add_options()("l,log", "Log level (debug, info, warn, error, none)",
@@ -22,8 +24,8 @@ cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {
 
   cxxopts::ParseResult parsedArgs = options.parse(argc, argv);
 
-  if (parsedArgs.count("help")) {
-    fprintf(stdout, "%s\n", options.help().c_str());
+  if (parsedArgs.contains("help")) {
+    std::cout << options.help().c_str() << '\n';
     exit(0);
   }
 
@@ -45,29 +47,37 @@ void setupLocalization() {
 }
 
 int main(int argc, char *argv[]) {
-  cxxopts::ParseResult parsedArgs = parseCommandLine(argc, argv);
+  try {
+    cxxopts::ParseResult parsedArgs = parseCommandLine(argc, argv);
 
-  setLogLevel(parseLogLevel(parsedArgs["log"].as<std::string>()));
-  qInstallMessageHandler(messageHandler);
+    setLogLevel(parseLogLevel(parsedArgs["log"].as<std::string>()));
+    qInstallMessageHandler(messageHandler);
 
-  qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
+    qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
 
-  services::ServiceRegistry::registerAll();
+    services::ServiceRegistry::registerAll();
 
-  QApplication app(argc, argv);
-  app.setWindowIcon(QIcon(":/icons/app_icon.png"));
-  QGuiApplication::setDesktopFileName(APP_ID);
+    QApplication app(argc, argv);
+    QApplication::setApplicationName(QString::fromStdString(APP_NAME));
+    QApplication::setOrganizationName(
+        QString::fromStdString(ORGANIZATION_NAME));
+    QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
+    QGuiApplication::setDesktopFileName(APP_ID);
 
-  setupLocalization();
+    setupLocalization();
 
-  AppMainWindow mainWindow;
+    AppMainWindow mainWindow;
 
-  if (parsedArgs.count("smoke-test")) {
-    qInfo() << "Smoke test successful: Application initialized and exiting.";
-    return 0;
+    if (parsedArgs.contains("smoke-test")) {
+      qInfo() << "Smoke test successful: Application initialized and exiting.";
+      return 0;
+    }
+
+    mainWindow.show();
+
+    return QApplication::exec();
+  } catch (...) {
+    std::cerr << "UNKNOWN EXTREME FAILURE\n";
+    return 1;
   }
-
-  mainWindow.show();
-
-  return app.exec();
 }

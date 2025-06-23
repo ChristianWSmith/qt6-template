@@ -1,5 +1,4 @@
-#ifndef COUNTERMODEL_H
-#define COUNTERMODEL_H
+#pragma once
 #include "ICounterModel.h"
 
 class CounterModel : public ICounterModel {
@@ -8,15 +7,17 @@ class CounterModel : public ICounterModel {
 
 public:
   explicit CounterModel(QObject *parent = nullptr);
-  int value() const override;
+  void shutdown() override;
+  [[nodiscard]] int value() const override;
   void increment() override;
+  void reset() override;
   QMetaObject::Connection connectValueChanged(QObject *receiver,
                                               const char *member) override;
 signals:
-  void valueChanged(int newValue);
+  void valueChanged(int _t1);
 
 private:
-  int m_value;
+  int m_value{0};
+  void loadState();
+  void saveState() const;
 };
-
-#endif

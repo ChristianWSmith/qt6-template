@@ -1,5 +1,4 @@
-#ifndef APPLOGPRESENTER_H
-#define APPLOGPRESENTER_H
+#pragma once
 
 #include "../model/IAppLogModel.h"
 #include "../widget/IAppLogWidget.h"
@@ -19,15 +18,17 @@ public:
   explicit AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
                            QObject *parent = nullptr);
 
+  void shutdown() override;
+
 private slots:
   void onLogEventReceived(const LogEvent &event);
 
-  void handleLogMessageAdded(const QString &message);
+  void handleLogChanged(const LogDelta &logDelta);
+  void handleLogCleared();
+  void handleClearRequested();
 
 private:
   IAppLogModel *m_model;
   IAppLogWidget *m_view;
   events::Subscription<LogEvent> m_logEventSubscription;
 };
-
-#endif

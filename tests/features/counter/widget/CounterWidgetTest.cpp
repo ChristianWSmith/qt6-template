@@ -1,3 +1,4 @@
+// NOLINTBEGIN
 #include "features/counter/widget/CounterWidget.h"
 #include <QCoreApplication>
 #include <QDebug>
@@ -71,4 +72,4 @@ TEST_F(CounterWidgetTest, ConnectIncrementRequestedBindsSignal) {
   if (!wasCalled) {
     delete receiver;
   }
-}
+}// NOLINTEND

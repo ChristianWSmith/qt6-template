@@ -29,6 +29,7 @@ class MyConanApp(ConanFile):
             "APP_NAME": os.environ.get("APP_NAME", "MyConanApp"),
             "APP_DESCRIPTION": os.environ.get("APP_DESCRIPTION", "My Conan App Description"),
             "APP_VERSION": os.environ.get("APP_VERSION", "0.1.0"),
+            "ORGANIZATION_NAME": os.environ.get("ORGANIZATION_NAME", "MyConanOrganization"),
             "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
             "QT_DEBUG_FIND_PACKAGE": "ON",
             "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),

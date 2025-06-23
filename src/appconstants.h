@@ -17,4 +17,8 @@
 #define APP_DESCRIPTION "My C++ App Description"
 #endif
 
+#ifndef ORGANIZATION_NAME
+#define ORGANIZATION_NAME "MyC++Organization"
+#endif
+
 #endif

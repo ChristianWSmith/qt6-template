@@ -1,5 +1,4 @@
-#ifndef APPLOGMODEL_H
-#define APPLOGMODEL_H
+#pragma once
 
 #include "IAppLogModel.h"
 #include <QString>
@@ -11,17 +10,23 @@ class AppLogModel : public IAppLogModel {
 
 public:
   explicit AppLogModel(QObject *parent = nullptr);
+  void shutdown() override;
 
   void addLogMessage(const QString &message) override;
+  void clear() override;
+  [[nodiscard]] const QVector<QString> &getLogMessages() const override;
 
-  QMetaObject::Connection connectLogMessageAdded(QObject *receiver,
-                                                 const char *member) override;
+  QMetaObject::Connection connectLogChanged(QObject *receiver,
+                                            const char *member) override;
+  QMetaObject::Connection connectLogCleared(QObject *receiver,
+                                            const char *member) override;
 
 signals:
-  void logMessageAdded(const QString &message);
+  void logChanged(const LogDelta &_t1);
+  void logCleared();
 
 private:
   QVector<QString> m_logMessages;
+  void saveState() const;
+  void loadState();
 };
-
-#endif

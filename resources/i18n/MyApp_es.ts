@@ -9,9 +9,13 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/features/applog/widget/AppLogWidget.ui" line="32"/>
+        <location filename="../../src/features/applog/widget/AppLogWidget.ui" line="23"/>
+        <source>Clear</source>
+        <translation type="unfinished">Borrar</translation>
+    </message>
+    <message>
         <source>Application log messages will appear here...</source>
-        <translation type="unfinished">Los mensajes del registro de la aplicación aparecerán aquí...</translation>
+        <translation type="obsolete">Los mensajes del registro de la aplicación aparecerán aquí...</translation>
     </message>
 </context>
 <context>
@@ -25,6 +29,11 @@
         <location filename="../../src/features/counter/widget/CounterWidget.ui" line="35"/>
         <source>Increment</source>
         <translation type="unfinished">Incremento</translation>
+    </message>
+    <message>
+        <location filename="../../src/features/counter/widget/CounterWidget.ui" line="42"/>
+        <source>Reset</source>
+        <translation type="unfinished">Reiniciar</translation>
     </message>
 </context>
 </TS>

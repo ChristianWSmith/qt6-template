@@ -1,5 +1,4 @@
-#ifndef APPLOGWIDGET_H
-#define APPLOGWIDGET_H
+#pragma once
 
 #include "IAppLogWidget.h"
 #include "ui_AppLogWidget.h"
@@ -18,16 +17,28 @@ class AppLogWidget : public IAppLogWidget {
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
+  void shutdown() override;
+
+  AppLogWidget(const AppLogWidget &) = delete;
+  AppLogWidget &operator=(const AppLogWidget &) = delete;
+  AppLogWidget(AppLogWidget &&) = delete;
+  AppLogWidget &operator=(AppLogWidget &&) = delete;
+
+  QMetaObject::Connection connectClearRequested(QObject *receiver,
+                                                const char *member) override;
+
+  void clear() override;
+  void setLogMessages(const QVector<QString> &messages) override;
 
 public slots:
-  void displayLogMessage(const QString &message) override;
+  void handleLogChanged(const LogDelta &logDelta) override;
 
 signals:
+  void clearRequested();
 
 private slots:
+  void on_clearButton_clicked();
 
 private:
   Ui::AppLogWidget *ui;
 };
-
-#endif

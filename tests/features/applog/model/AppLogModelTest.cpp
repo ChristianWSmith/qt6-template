@@ -1,4 +1,6 @@
+// NOLINTBEGIN
 #include "features/applog/model/AppLogModel.h"
+#include "features/applog/applogcommon.h"
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -24,28 +26,30 @@ TEST_F(AppLogModelTest, ConstructorInstantiatesCorrectly) {
 
 TEST_F(AppLogModelTest, AddLogMessageEmitsTimestampedSignal) {
   const QString raw = "This is a test log message";
-  QSignalSpy spy(model, SIGNAL(logMessageAdded(QString)));
+  const LogDelta logDelta = LogDelta{raw, false};
+  QSignalSpy spy(model, SIGNAL(logChanged(LogDelta)));
   ASSERT_TRUE(spy.isValid());
 
   model->addLogMessage(raw);
 
   ASSERT_EQ(spy.count(), 1);
-  const QString emitted = spy.takeFirst().at(0).toString();
+  const LogDelta emitted = qvariant_cast<LogDelta>(spy.takeFirst().at(0));
 
   QDateTime now = QDateTime::currentDateTime();
   QString date = now.toString("yyyy-MM-dd");
   QString time = now.toString("hh:mm:ss");
 
-  EXPECT_TRUE(emitted.startsWith(date));
-  EXPECT_TRUE(emitted.contains(time));
-  EXPECT_TRUE(emitted.contains(" - "));
-  EXPECT_TRUE(emitted.endsWith(raw));
+  EXPECT_TRUE(emitted.message.startsWith(date));
+  EXPECT_TRUE(emitted.message.contains(time));
+  EXPECT_TRUE(emitted.message.contains(" - "));
+  EXPECT_TRUE(emitted.message.endsWith(raw));
 }
 
-TEST_F(AppLogModelTest, ConnectLogMessageAddedReturnsValidConnection) {
+TEST_F(AppLogModelTest, ConnectLogChangedReturnsValidConnection) {
   QObject dummy;
   QMetaObject::Connection conn =
-      model->connectLogMessageAdded(&dummy, SLOT(deleteLater()));
+      model->connectLogChanged(&dummy, SLOT(deleteLater()));
   EXPECT_NE(conn, QMetaObject::Connection());
   QObject::disconnect(conn);
 }
+// NOLINTEND

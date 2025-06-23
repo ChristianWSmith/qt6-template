@@ -2,5 +2,5 @@
 #include "../events/LogEvent.h"
 
 namespace ConsoleLogService {
-void handle(const LogEvent &);
+void handle(const LogEvent & /*event*/);
 }

@@ -1,6 +1,8 @@
 #include "logging.h"
 #include <fmt/core.h>
+#include <iostream>
 
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static LogLevel g_minLogLevel = LogLevel::Info;
 
 void setLogLevel(LogLevel logLevel) { g_minLogLevel = logLevel; }
@@ -11,11 +13,12 @@ LogLevel parseLogLevel(const std::string &levelStr) {
       {"warn", LogLevel::Warn},   {"warning", LogLevel::Warn},
       {"error", LogLevel::Error}, {"none", LogLevel::None}};
 
-  auto it = map.find(levelStr);
-  if (it != map.end()) {
-    return it->second;
+  auto levelIterator = map.find(levelStr);
+  if (levelIterator != map.end()) {
+    return levelIterator->second;
   }
-  throw std::invalid_argument("Invalid log level: " + levelStr);
+  std::cerr << "Invalid log level, defaulting to info\n";
+  return LogLevel::Info;
 }
 
 bool shouldLog(QtMsgType type) {
@@ -37,8 +40,9 @@ bool shouldLog(QtMsgType type) {
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg) {
-  if (!shouldLog(type))
+  if (!shouldLog(type)) {
     return;
+  }
 
   static QMutex mutex;
   QMutexLocker lock(&mutex);
@@ -86,9 +90,9 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
 #endif
 
   if (type == QtDebugMsg || type == QtInfoMsg) {
-    fprintf(stdout, "%s\n", logMessage.c_str());
+    std::cout << logMessage.c_str() << '\n';
   } else {
-    fprintf(stderr, "%s\n", logMessage.c_str());
+    std::cerr << logMessage.c_str() << '\n';
   }
 
   if (type == QtFatalMsg) {

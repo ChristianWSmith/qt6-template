@@ -6,6 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DAPP_NAME="${APP_NAME}")
 add_definitions(-DAPP_DESCRIPTION="${APP_DESCRIPTION}")
 add_definitions(-DAPP_VERSION="${APP_VERSION}")
+add_definitions(-DORGANIZATION_NAME="${ORGANIZATION_NAME}")
 add_definitions(-DAPP_ID="${APP_ID}")
 
 set(CMAKE_AUTOUIC ON)
@@ -15,7 +16,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools Concurrent)
 find_package(fmt REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(cxxopts REQUIRED)
@@ -34,6 +35,7 @@ add_library(${APP_NAME}_lib STATIC
 
 target_link_libraries(${APP_NAME}_lib PRIVATE
     Qt6::Widgets
+    Qt6::Concurrent
     fmt::fmt
     Vulkan::Vulkan
     cxxopts::cxxopts
@@ -43,6 +45,7 @@ target_compile_definitions(${APP_NAME}_lib PRIVATE
     APP_NAME="${APP_NAME}"
     APP_DESCRIPTION="${APP_DESCRIPTION}"
     APP_VERSION="${APP_VERSION}"
+    ORGANIZATION_NAME="${ORGANIZATION_NAME}"
     APP_ID="${APP_ID}"
 )
 

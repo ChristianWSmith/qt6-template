@@ -1,5 +1,4 @@
-#ifndef COUNTERPRESENTER_H
-#define COUNTERPRESENTER_H
+#pragma once
 #include "../model/ICounterModel.h"
 #include "../widget/ICounterWidget.h"
 #include "ICounterPresenter.h"
@@ -12,14 +11,14 @@ class CounterPresenter : public ICounterPresenter {
 public:
   explicit CounterPresenter(ICounterModel *model, ICounterWidget *view,
                             QObject *parent = nullptr);
+  void shutdown() override;
 
 private slots:
   void handleIncrementRequest();
+  void handleResetRequest();
   void handleCounterValueChanged(int newValue);
 
 private:
   ICounterModel *m_model;
   ICounterWidget *m_view;
 };
-
-#endif

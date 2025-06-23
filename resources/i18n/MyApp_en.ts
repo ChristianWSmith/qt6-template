@@ -9,9 +9,13 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/features/applog/widget/AppLogWidget.ui" line="32"/>
+        <location filename="../../src/features/applog/widget/AppLogWidget.ui" line="23"/>
+        <source>Clear</source>
+        <translation type="unfinished">Clear</translation>
+    </message>
+    <message>
         <source>Application log messages will appear here...</source>
-        <translation type="unfinished">Application log messages will appear here...</translation>
+        <translation type="obsolete">Application log messages will appear here...</translation>
     </message>
 </context>
 <context>
@@ -25,6 +29,11 @@
         <location filename="../../src/features/counter/widget/CounterWidget.ui" line="35"/>
         <source>Increment</source>
         <translation type="unfinished">Increment</translation>
+    </message>
+    <message>
+        <location filename="../../src/features/counter/widget/CounterWidget.ui" line="42"/>
+        <source>Reset</source>
+        <translation type="unfinished">Reset</translation>
     </message>
 </context>
 </TS>
