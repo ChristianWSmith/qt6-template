@@ -61,12 +61,13 @@ elif [[ "${EXT_LOWER}" =~ ^(png|jpg|jpeg)$ ]]; then
   warn_if_small "${INPUT_FILE}"
 
   # Try to vectorize
-  if command -v magick &>/dev/null && command -v inkscape &>/dev/null; then
+  if command -v magick &>/dev/null && command -v autotrace &>/dev/null; then
     magick "${SOURCE_PNG}" -resize 1024x1024! "${TMP_DIR}/resized.png"
-    inkscape "${TMP_DIR}/resized.png" \
-      --export-type=svg \
-      --export-plain-svg \
-      --export-filename="${SOURCE_SVG}" &>/dev/null
+    autotrace "${TMP_DIR}/resized.png" \
+    --background-color="000000" \
+    --output-file="${SOURCE_SVG}" \
+    --output-format=svg \
+    --color-count=16
     if [[ -f "${SOURCE_SVG}" ]]; then
       cp "${SOURCE_SVG}" "${ICONS_DIR}/${BASENAME}.svg"
       echo "Generated placeholder SVG from raster source."

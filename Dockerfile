@@ -40,7 +40,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     locales \
     locales-all \
-    inkscape \
+    autotrace \
     libfontenc-dev \
     libice-dev \
     libsm-dev \
