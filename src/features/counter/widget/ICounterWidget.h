@@ -1,6 +1,6 @@
 #pragma once
-#include "../../IWidget.h"
-#include "../../featurescommon.h"
+#include "../../../core/IWidget.h"
+#include "../../../core/interfacecommon.h"
 #include "../countercommon.h"
 #include <QWidget>
 #include <QtPlugin>
@@ -24,4 +24,4 @@ public:
                                                         const char *member) = 0;
 };
 
-Q_DECLARE_INTERFACE(ICounterWidget, COUNTER_FEATURE_ID FEATURE_WIDGET_SUFFIX)
+Q_DECLARE_INTERFACE(ICounterWidget, COUNTER_FEATURE_ID QINTERFACE_WIDGET_SUFFIX)

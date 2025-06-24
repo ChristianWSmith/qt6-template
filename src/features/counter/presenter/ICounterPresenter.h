@@ -1,6 +1,6 @@
 #pragma once
-#include "../../IPresenter.h"
-#include "../../featurescommon.h"
+#include "../../../core/IPresenter.h"
+#include "../../../core/interfacecommon.h"
 #include "../countercommon.h"
 #include <QObject>
 #include <QtPlugin>
@@ -19,4 +19,4 @@ public:
 };
 
 Q_DECLARE_INTERFACE(ICounterPresenter,
-                    COUNTER_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
+                    COUNTER_FEATURE_ID QINTERFACE_PRESENTER_SUFFIX)

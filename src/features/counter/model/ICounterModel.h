@@ -1,6 +1,6 @@
 #pragma once
-#include "../../IModel.h"
-#include "../../featurescommon.h"
+#include "../../../core/IModel.h"
+#include "../../../core/interfacecommon.h"
 #include "../countercommon.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -26,4 +26,4 @@ public:
                                                       const char *member) = 0;
 };
 
-Q_DECLARE_INTERFACE(ICounterModel, COUNTER_FEATURE_ID FEATURE_MODEL_SUFFIX)
+Q_DECLARE_INTERFACE(ICounterModel, COUNTER_FEATURE_ID QINTERFACE_MODEL_SUFFIX)

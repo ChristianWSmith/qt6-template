@@ -61,8 +61,8 @@ format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h" <<EOF
 #pragma once
-#include "../../IModel.h"
-#include "../../featurescommon.h"
+#include "../../../core/IModel.h"
+#include "../../../core/interfacecommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -84,7 +84,7 @@ public:
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Model,
-                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_MODEL_SUFFIX)
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID QINTERFACE_MODEL_SUFFIX)
 
 EOF
 format "${MODEL_DIR}/I${FEATURE_NAME_TITLE}Model.h"
@@ -133,8 +133,8 @@ format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h" <<EOF
 #pragma once
-#include "../../IPresenter.h"
-#include "../../featurescommon.h"
+#include "../../../core/IPresenter.h"
+#include "../../../core/interfacecommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QObject>
 #include <QtPlugin>
@@ -153,7 +153,7 @@ public:
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Presenter,
-                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_PRESENTER_SUFFIX)
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID QINTERFACE_PRESENTER_SUFFIX)
 
 EOF
 format "${PRESENTER_DIR}/I${FEATURE_NAME_TITLE}Presenter.h"
@@ -231,8 +231,8 @@ format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #pragma once
-#include "../../IWidget.h"
-#include "../../featurescommon.h"
+#include "../../../core/IWidget.h"
+#include "../../../core/interfacecommon.h"
 #include "../${FEATURE_NAME_LOWER}common.h"
 #include <QWidget>
 #include <QtPlugin>
@@ -252,7 +252,7 @@ public:
 };
 
 Q_DECLARE_INTERFACE(I${FEATURE_NAME_TITLE}Widget,
-                    ${FEATURE_NAME_UPPER}_FEATURE_ID FEATURE_WIDGET_SUFFIX)
+                    ${FEATURE_NAME_UPPER}_FEATURE_ID QINTERFACE_WIDGET_SUFFIX)
 
 EOF
 format "${WIDGET_DIR}/I${FEATURE_NAME_TITLE}Widget.h"
