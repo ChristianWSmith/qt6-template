@@ -24,7 +24,7 @@ void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
 
   if (wasAtBottom) {
     ui->logListWidget->scrollToBottom();
-  } else {
+  } else if (logDelta.trimmed) {
     scrollBar->setValue(oldValue - 1);
   }
 }
