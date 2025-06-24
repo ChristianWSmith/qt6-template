@@ -1,8 +1,8 @@
 #pragma once
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FEATURE_MODEL_SUFFIX ".Model"
+#define QINTERFACE_MODEL_SUFFIX ".Model"
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FEATURE_PRESENTER_SUFFIX ".Presenter"
+#define QINTERFACE_PRESENTER_SUFFIX ".Presenter"
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define FEATURE_WIDGET_SUFFIX ".Widget"
+#define QINTERFACE_WIDGET_SUFFIX ".Widget"

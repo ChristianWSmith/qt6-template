@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../IWidget.h"
-#include "../../featurescommon.h"
+#include "../../../core/IWidget.h"
+#include "../../../core/interfacecommon.h"
 #include "../applogcommon.h"
 #include <QString>
 #include <QWidget>
@@ -28,4 +28,4 @@ public slots:
   virtual void handleLogChanged(const LogDelta &logDelta) = 0;
 };
 
-Q_DECLARE_INTERFACE(IAppLogWidget, APPLOG_FEATURE_ID FEATURE_WIDGET_SUFFIX)
+Q_DECLARE_INTERFACE(IAppLogWidget, APPLOG_FEATURE_ID QINTERFACE_WIDGET_SUFFIX)
