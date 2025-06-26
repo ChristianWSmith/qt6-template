@@ -29,8 +29,6 @@ public:
   MOCK_METHOD(void, shutdown, (), (override));
   MOCK_METHOD(void, clear, (), ());
   MOCK_METHOD(void, setLogMessages, (const QVector<QString> &), ());
-  MOCK_METHOD(QMetaObject::Connection, connectClearRequested,
-              (QObject *, const char *), ());
 };
 
 class AppLogPresenterTest : public ::testing::Test {

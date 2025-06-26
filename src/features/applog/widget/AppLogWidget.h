@@ -26,9 +26,6 @@ public:
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
-  QMetaObject::Connection connectClearRequested(QObject *receiver,
-                                                const char *member);
-
   void clear();
   void setLogMessages(const QVector<QString> &messages);
 

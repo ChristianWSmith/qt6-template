@@ -22,7 +22,9 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   }
 
   if (m_view != nullptr) {
-    m_view->connectClearRequested(this, SLOT(handleClearRequested()));
+    connect(m_view, &AppLogWidget::clearRequested, this,
+            &AppLogPresenter::handleClearRequested);
+    // m_view->connectClearRequested(this, SLOT(handleClearRequested()));
   }
 
   if (m_model != nullptr) {
