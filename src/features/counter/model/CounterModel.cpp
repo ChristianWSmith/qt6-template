@@ -38,12 +38,6 @@ void CounterModel::reset() {
   m_value = 0;
   emit valueChanged(m_value);
 }
-
-QMetaObject::Connection CounterModel::connectValueChanged(QObject *receiver,
-                                                          const char *member) {
-  return QObject::connect(this, SIGNAL(valueChanged(int)), receiver, member);
-}
-
 void CounterModel::loadState() {
   QFile file(stateFilePath());
   if (!file.open(QIODevice::ReadOnly)) {

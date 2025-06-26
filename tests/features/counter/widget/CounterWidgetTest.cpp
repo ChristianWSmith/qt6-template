@@ -39,37 +39,4 @@ TEST_F(CounterWidgetTest, ClickingIncrementEmitsSignal) {
   ASSERT_EQ(spy.count(), 1);
 }
 
-TEST_F(CounterWidgetTest, ConnectIncrementRequestedBindsSignal) {
-  qDebug() << "Starting ConnectIncrementRequestedBindsSignal test";
-
-  QObject *receiver = new QObject();
-
-  bool wasCalled = false;
-  QObject::connect(receiver, &QObject::destroyed, [&wasCalled]() {
-    qDebug() << "Receiver destroyed signal caught";
-    wasCalled = true;
-  });
-
-  auto conn = QObject::connect(widget, &CounterWidget::incrementRequested,
-                               receiver, &QObject::deleteLater);
-
-  qDebug() << "Connection success:" << (conn != QMetaObject::Connection());
-
-  EXPECT_TRUE(conn != QMetaObject::Connection());
-
-  qDebug() << "Emitting incrementRequested signal";
-  emit widget->incrementRequested();
-
-  qDebug() << "Processing events";
-  QEventLoop loop;
-  QTimer::singleShot(50, &loop, &QEventLoop::quit);
-  loop.exec();
-
-  qDebug() << "Was called:" << wasCalled;
-
-  EXPECT_TRUE(wasCalled);
-
-  if (!wasCalled) {
-    delete receiver;
-  }
-}// NOLINTEND
+// NOLINTEND

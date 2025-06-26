@@ -19,18 +19,17 @@ class AppLogWidget : public QWidget, public IWidget {
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
-  void shutdown() override;
 
   AppLogWidget(const AppLogWidget &) = delete;
   AppLogWidget &operator=(const AppLogWidget &) = delete;
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
-  void clear();
-  void setLogMessages(const QVector<QString> &messages);
+  virtual void shutdown() override;
 
-public slots:
-  void handleLogChanged(const LogDelta &logDelta);
+  virtual void clear();
+  virtual void setLogMessages(const QVector<QString> &messages);
+  virtual void handleLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();

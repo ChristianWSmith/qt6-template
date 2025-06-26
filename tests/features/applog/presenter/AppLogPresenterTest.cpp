@@ -17,6 +17,10 @@ public:
   MOCK_METHOD(void, clear, (), ());
   MOCK_METHOD(const QVector<QString> &, getLogMessages, (), (const));
   MOCK_METHOD(void, shutdown, (), (override));
+
+signals:
+  void logChanged(const LogDelta &_t1);
+  void logCleared();
 };
 
 class MockAppLogWidget : public AppLogWidget {
@@ -25,6 +29,9 @@ public:
   MOCK_METHOD(void, shutdown, (), (override));
   MOCK_METHOD(void, clear, (), ());
   MOCK_METHOD(void, setLogMessages, (const QVector<QString> &), ());
+
+signals:
+  void clearRequested();
 };
 
 class AppLogPresenterTest : public ::testing::Test {
@@ -52,12 +59,11 @@ protected:
 
 TEST_F(AppLogPresenterTest, HandleLogChangedForwardsToView) {
   QString testMessage = "Mocked log line";
-  const LogDelta logDelta = LogDelta{testMessage, false};
+  LogDelta logDelta = LogDelta{testMessage, false};
 
   EXPECT_CALL(*mockView, handleLogChanged(logDelta)).Times(1);
-
   QMetaObject::invokeMethod(presenter, "handleLogChanged", Qt::DirectConnection,
-                            Q_ARG(LogDelta, logDelta));
+                            Q_ARG(const LogDelta &, logDelta));
 }
 
 TEST_F(AppLogPresenterTest, OnLogEventReceivedForwardsToModel) {
@@ -67,6 +73,7 @@ TEST_F(AppLogPresenterTest, OnLogEventReceivedForwardsToModel) {
   EXPECT_CALL(*mockModel, addLogMessage(expected)).Times(1);
 
   QMetaObject::invokeMethod(presenter, "onLogEventReceived",
-                            Qt::DirectConnection, Q_ARG(LogEvent, event));
+                            Qt::DirectConnection,
+                            Q_ARG(const LogEvent &, event));
 }
 // NOLINTEND

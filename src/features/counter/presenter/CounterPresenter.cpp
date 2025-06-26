@@ -16,12 +16,15 @@ CounterPresenter::CounterPresenter(CounterModel *model, CounterWidget *view,
   }
 
   if (m_view != nullptr) {
-    m_view->connectResetRequested(this, SLOT(handleResetRequest()));
-    m_view->connectIncrementRequested(this, SLOT(handleIncrementRequest()));
+    connect(m_view, &CounterWidget::resetRequested, this,
+            &CounterPresenter::handleResetRequest);
+    connect(m_view, &CounterWidget::incrementRequested, this,
+            &CounterPresenter::handleIncrementRequest);
   }
 
   if (m_model != nullptr) {
-    m_model->connectValueChanged(this, SLOT(handleCounterValueChanged(int)));
+    connect(m_model, &CounterModel::valueChanged, this,
+            &CounterPresenter::handleCounterValueChanged);
   }
   if ((m_view != nullptr) && (m_model != nullptr)) {
     m_view->displayCounter(m_model->value());

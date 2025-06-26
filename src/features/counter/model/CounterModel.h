@@ -9,12 +9,13 @@ class CounterModel : public QObject, public IModel {
 
 public:
   explicit CounterModel(QObject *parent = nullptr);
-  void shutdown() override;
-  [[nodiscard]] int value() const;
-  void increment();
-  void reset();
-  QMetaObject::Connection connectValueChanged(QObject *receiver,
-                                              const char *member);
+
+  virtual void shutdown() override;
+
+  [[nodiscard]] virtual int value() const;
+  virtual void increment();
+  virtual void reset();
+
 signals:
   void valueChanged(int _t1);
 

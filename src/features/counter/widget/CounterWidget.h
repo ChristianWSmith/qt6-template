@@ -1,7 +1,5 @@
 #pragma once
 #include "../../../core/IWidget.h"
-#include "../countercommon.h"
-#include "CounterWidget.h"
 #include "ui_CounterWidget.h"
 #include <QWidget>
 #include <QtPlugin>
@@ -21,13 +19,10 @@ public:
   CounterWidget &operator=(const CounterWidget &) = delete;
   CounterWidget(CounterWidget &&) = delete;
   CounterWidget &operator=(CounterWidget &&) = delete;
-  void shutdown() override;
 
-  void displayCounter(int value);
-  QMetaObject::Connection connectIncrementRequested(QObject *receiver,
-                                                    const char *member);
-  QMetaObject::Connection connectResetRequested(QObject *receiver,
-                                                const char *member);
+  virtual void shutdown() override;
+
+  virtual void displayCounter(int value);
 
 signals:
   void incrementRequested();

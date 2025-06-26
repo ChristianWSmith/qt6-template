@@ -31,15 +31,6 @@ TEST_F(CounterModelTest, IncrementIncreasesValueAndEmitsSignal) {
   EXPECT_EQ(model->value(), 1);
 }
 
-TEST_F(CounterModelTest, ConnectValueChangedReturnsValidConnection) {
-  QObject dummy;
-  QMetaObject::Connection connection =
-      model->connectValueChanged(&dummy, SLOT(deleteLater()));
-
-  EXPECT_NE(connection, QMetaObject::Connection());
-  QObject::disconnect(connection);
-}
-
 TEST_F(CounterModelTest, IncrementMultipleTimesUpdatesValueCorrectly) {
   QSignalSpy spy(model, SIGNAL(valueChanged(int)));
   model->increment();

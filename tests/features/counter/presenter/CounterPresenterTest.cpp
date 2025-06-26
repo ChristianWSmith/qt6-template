@@ -8,25 +8,27 @@
 #include <QDebug>
 #include <QMetaObject>
 #include <QObject>
+#include <qtmetamacros.h>
 
 class MockCounterModel : public CounterModel {
 public:
   MOCK_METHOD(void, increment, (), ());
   MOCK_METHOD(int, value, (), (const));
   MOCK_METHOD(void, reset, (), ());
-  MOCK_METHOD(QMetaObject::Connection, connectValueChanged,
-              (QObject * receiver, const char *member), ());
   MOCK_METHOD(void, shutdown, (), (override));
+
+signals:
+  void valueChanged(int _t1);
 };
 
 class MockCounterWidget : public CounterWidget {
 public:
   MOCK_METHOD(void, displayCounter, (int value), ());
-  MOCK_METHOD(QMetaObject::Connection, connectIncrementRequested,
-              (QObject * receiver, const char *member), ());
-  MOCK_METHOD(QMetaObject::Connection, connectResetRequested,
-              (QObject * receiver, const char *member), ());
   MOCK_METHOD(void, shutdown, (), (override));
+
+signals:
+  void incrementRequested();
+  void resetRequested();
 };
 
 class CounterPresenterTest : public ::testing::Test {
@@ -52,16 +54,6 @@ protected:
 TEST_F(CounterPresenterTest,
        ConstructorEstablishesConnectionsAndDisplaysInitialValue) {
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(
-                             testing::A<QObject *>(),
-                             testing::StrEq(SLOT(handleIncrementRequest()))))
-      .Times(1);
-  EXPECT_CALL(
-      *mockModel,
-      connectValueChanged(testing::A<QObject *>(),
-                          testing::StrEq(SLOT(handleCounterValueChanged(int)))))
-      .Times(1);
-
   EXPECT_CALL(*mockModel, value()).WillOnce(testing::Return(100));
   EXPECT_CALL(*mockView, displayCounter(100)).Times(1);
 
@@ -70,13 +62,8 @@ TEST_F(CounterPresenterTest,
 
 TEST_F(CounterPresenterTest, ConstructorHandlesNullModel) {
 
-  EXPECT_CALL(*mockModel, connectValueChanged(testing::_, testing::_)).Times(0);
   EXPECT_CALL(*mockModel, value()).Times(0);
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(
-                             testing::A<QObject *>(),
-                             testing::StrEq(SLOT(handleIncrementRequest()))))
-      .Times(1);
   EXPECT_CALL(*mockView, displayCounter(testing::_)).Times(0);
 
   presenter = new CounterPresenter(nullptr, mockView);
@@ -84,15 +71,8 @@ TEST_F(CounterPresenterTest, ConstructorHandlesNullModel) {
 
 TEST_F(CounterPresenterTest, ConstructorHandlesNullView) {
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(testing::_, testing::_))
-      .Times(0);
   EXPECT_CALL(*mockView, displayCounter(testing::_)).Times(0);
 
-  EXPECT_CALL(
-      *mockModel,
-      connectValueChanged(testing::A<QObject *>(),
-                          testing::StrEq(SLOT(handleCounterValueChanged(int)))))
-      .Times(1);
   EXPECT_CALL(*mockModel, value()).Times(0);
 
   presenter = new CounterPresenter(mockModel, nullptr);
@@ -101,8 +81,6 @@ TEST_F(CounterPresenterTest, ConstructorHandlesNullView) {
 TEST_F(CounterPresenterTest,
        HandleIncrementRequestIncrementsModelAndPublishesLog) {
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(testing::_, testing::_));
-  EXPECT_CALL(*mockModel, connectValueChanged(testing::_, testing::_));
   EXPECT_CALL(*mockModel, value()).WillOnce(testing::Return(0));
   EXPECT_CALL(*mockView, displayCounter(0));
   presenter = new CounterPresenter(mockModel, mockView);
@@ -116,8 +94,6 @@ TEST_F(CounterPresenterTest,
 TEST_F(CounterPresenterTest,
        HandleCounterValueChangedUpdatesViewAndPublishesLog) {
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(testing::_, testing::_));
-  EXPECT_CALL(*mockModel, connectValueChanged(testing::_, testing::_));
   EXPECT_CALL(*mockModel, value()).WillOnce(testing::Return(0));
   EXPECT_CALL(*mockView, displayCounter(0));
   presenter = new CounterPresenter(mockModel, mockView);
@@ -132,7 +108,6 @@ TEST_F(CounterPresenterTest,
 
 TEST_F(CounterPresenterTest, HandleIncrementRequestNoOpWhenModelIsNull) {
 
-  EXPECT_CALL(*mockView, connectIncrementRequested(testing::_, testing::_));
   presenter = new CounterPresenter(nullptr, mockView);
 
   EXPECT_CALL(*mockModel, increment()).Times(0);
@@ -142,8 +117,6 @@ TEST_F(CounterPresenterTest, HandleIncrementRequestNoOpWhenModelIsNull) {
 }
 
 TEST_F(CounterPresenterTest, HandleCounterValueChangedNoOpWhenViewIsNull) {
-
-  EXPECT_CALL(*mockModel, connectValueChanged(testing::_, testing::_));
 
   EXPECT_CALL(*mockModel, value()).Times(0);
 
