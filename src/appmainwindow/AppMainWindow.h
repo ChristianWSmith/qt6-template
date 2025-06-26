@@ -3,13 +3,13 @@
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 
-class ICounterModel;
-class ICounterWidget;
-class ICounterPresenter;
+class CounterModel;
+class CounterWidget;
+class CounterPresenter;
 
-class IAppLogModel;
-class IAppLogWidget;
-class IAppLogPresenter;
+class AppLogModel;
+class AppLogWidget;
+class AppLogPresenter;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -33,11 +33,11 @@ public:
 private:
   Ui::AppMainWindow *ui;
 
-  ICounterModel *m_counterModel;
-  ICounterWidget *m_counterWidget;
-  ICounterPresenter *m_counterPresenter;
+  CounterModel *m_counterModel;
+  CounterWidget *m_counterWidget;
+  CounterPresenter *m_counterPresenter;
 
-  IAppLogModel *m_appLogModel;
-  IAppLogWidget *m_appLogWidget;
-  IAppLogPresenter *m_appLogPresenter;
+  AppLogModel *m_appLogModel;
+  AppLogWidget *m_appLogWidget;
+  AppLogPresenter *m_appLogPresenter;
 };

@@ -1,25 +1,28 @@
 #pragma once
 
-#include "IAppLogModel.h"
+#include "../../../core/IModel.h"
+#include "../applogcommon.h"
+#include <QMetaMethod>
+#include <QObject>
 #include <QString>
 #include <QVector>
+#include <QtPlugin>
 
-class AppLogModel : public IAppLogModel {
+class AppLogModel : public QObject, public IModel {
   Q_OBJECT
-  Q_INTERFACES(IAppLogModel)
 
 public:
   explicit AppLogModel(QObject *parent = nullptr);
   void shutdown() override;
 
-  void addLogMessage(const QString &message) override;
-  void clear() override;
-  [[nodiscard]] const QVector<QString> &getLogMessages() const override;
+  void addLogMessage(const QString &message);
+  void clear();
+  [[nodiscard]] const QVector<QString> &getLogMessages() const;
 
   QMetaObject::Connection connectLogChanged(QObject *receiver,
-                                            const char *member) override;
+                                            const char *member);
   QMetaObject::Connection connectLogCleared(QObject *receiver,
-                                            const char *member) override;
+                                            const char *member);
 
 signals:
   void logChanged(const LogDelta &_t1);

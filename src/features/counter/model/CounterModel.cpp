@@ -16,7 +16,7 @@ QString stateFilePath() {
 }
 } // namespace
 
-CounterModel::CounterModel(QObject *parent) : ICounterModel(parent) {
+CounterModel::CounterModel(QObject *parent) : QObject(parent) {
   qDebug() << "CounterModel instantiated";
   loadState();
 }

@@ -2,8 +2,8 @@
 #include "features/applog/presenter/AppLogPresenter.h"
 #include "events/LogEvent.h"
 #include "features/applog/applogcommon.h"
-#include "features/applog/model/IAppLogModel.h"
-#include "features/applog/widget/IAppLogWidget.h"
+#include "features/applog/model/AppLogModel.h"
+#include "features/applog/widget/AppLogWidget.h"
 #include <QCoreApplication>
 #include <QSignalSpy>
 #include <gmock/gmock.h>
@@ -11,26 +11,26 @@
 
 using ::testing::NiceMock;
 
-class MockAppLogModel : public IAppLogModel {
+class MockAppLogModel : public AppLogModel {
 public:
-  MOCK_METHOD(void, addLogMessage, (const QString &), (override));
-  MOCK_METHOD(void, clear, (), (override));
-  MOCK_METHOD(const QVector<QString> &, getLogMessages, (), (const override));
+  MOCK_METHOD(void, addLogMessage, (const QString &), ());
+  MOCK_METHOD(void, clear, (), ());
+  MOCK_METHOD(const QVector<QString> &, getLogMessages, (), (const));
   MOCK_METHOD(QMetaObject::Connection, connectLogChanged,
-              (QObject *, const char *), (override));
+              (QObject *, const char *), ());
   MOCK_METHOD(QMetaObject::Connection, connectLogCleared,
-              (QObject *, const char *), (override));
+              (QObject *, const char *), ());
   MOCK_METHOD(void, shutdown, (), (override));
 };
 
-class MockAppLogWidget : public IAppLogWidget {
+class MockAppLogWidget : public AppLogWidget {
 public:
-  MOCK_METHOD(void, handleLogChanged, (const LogDelta &), (override));
+  MOCK_METHOD(void, handleLogChanged, (const LogDelta &), ());
   MOCK_METHOD(void, shutdown, (), (override));
-  MOCK_METHOD(void, clear, (), (override));
-  MOCK_METHOD(void, setLogMessages, (const QVector<QString> &), (override));
+  MOCK_METHOD(void, clear, (), ());
+  MOCK_METHOD(void, setLogMessages, (const QVector<QString> &), ());
   MOCK_METHOD(QMetaObject::Connection, connectClearRequested,
-              (QObject *, const char *), (override));
+              (QObject *, const char *), ());
 };
 
 class AppLogPresenterTest : public ::testing::Test {

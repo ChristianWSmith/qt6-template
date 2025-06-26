@@ -1,18 +1,20 @@
 #pragma once
-#include "ICounterModel.h"
+#include "../../../core/IModel.h"
+#include <QMetaMethod>
+#include <QObject>
+#include <QtPlugin>
 
-class CounterModel : public ICounterModel {
+class CounterModel : public QObject, public IModel {
   Q_OBJECT
-  Q_INTERFACES(ICounterModel)
 
 public:
   explicit CounterModel(QObject *parent = nullptr);
   void shutdown() override;
-  [[nodiscard]] int value() const override;
-  void increment() override;
-  void reset() override;
+  [[nodiscard]] int value() const;
+  void increment();
+  void reset();
   QMetaObject::Connection connectValueChanged(QObject *receiver,
-                                              const char *member) override;
+                                              const char *member);
 signals:
   void valueChanged(int _t1);
 

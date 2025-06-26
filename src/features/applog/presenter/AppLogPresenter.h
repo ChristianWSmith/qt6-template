@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../model/IAppLogModel.h"
-#include "../widget/IAppLogWidget.h"
-#include "IAppLogPresenter.h"
+#include "../model/AppLogModel.h"
+#include "../widget/AppLogWidget.h"
 
 #include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
@@ -10,12 +9,15 @@
 #include <QObject>
 #include <QString>
 
-class AppLogPresenter : public IAppLogPresenter {
+#include "../../../core/IPresenter.h"
+#include "../applogcommon.h"
+#include <QtPlugin>
+
+class AppLogPresenter : public QObject, public IPresenter {
   Q_OBJECT
-  Q_INTERFACES(IAppLogPresenter)
 
 public:
-  explicit AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
+  explicit AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                            QObject *parent = nullptr);
 
   void shutdown() override;
@@ -28,7 +30,7 @@ private slots:
   void handleClearRequested();
 
 private:
-  IAppLogModel *m_model;
-  IAppLogWidget *m_view;
+  AppLogModel *m_model;
+  AppLogWidget *m_view;
   events::Subscription<LogEvent> m_logEventSubscription;
 };

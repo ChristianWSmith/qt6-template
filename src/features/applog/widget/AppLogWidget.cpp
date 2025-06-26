@@ -3,7 +3,7 @@
 #include <fmt/core.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
-    : IAppLogWidget(parent), ui(new Ui::AppLogWidget) {
+    : QWidget(parent), ui(new Ui::AppLogWidget) {
   ui->setupUi(this);
   qDebug() << "AppLogWidget instantiated";
 }

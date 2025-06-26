@@ -1,18 +1,20 @@
 #pragma once
 
-#include "IAppLogWidget.h"
 #include "ui_AppLogWidget.h"
 #include <QTextEdit>
 
+#include "../../../core/IWidget.h"
+#include "../applogcommon.h"
+#include <QString>
+#include <QWidget>
+#include <QtPlugin>
+
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class AppLogWidget;
-}
+namespace Ui {}
 QT_END_NAMESPACE
 
-class AppLogWidget : public IAppLogWidget {
+class AppLogWidget : public QWidget, public IWidget {
   Q_OBJECT
-  Q_INTERFACES(IAppLogWidget)
 
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
@@ -25,13 +27,13 @@ public:
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
   QMetaObject::Connection connectClearRequested(QObject *receiver,
-                                                const char *member) override;
+                                                const char *member);
 
-  void clear() override;
-  void setLogMessages(const QVector<QString> &messages) override;
+  void clear();
+  void setLogMessages(const QVector<QString> &messages);
 
 public slots:
-  void handleLogChanged(const LogDelta &logDelta) override;
+  void handleLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();

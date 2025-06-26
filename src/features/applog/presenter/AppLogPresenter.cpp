@@ -5,9 +5,9 @@
 #include <fmt/core.h>
 #include <qlogging.h>
 
-AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
+AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                                  QObject *parent)
-    : IAppLogPresenter(parent), m_model(model), m_view(view),
+    : QObject(parent), m_model(model), m_view(view),
       m_logEventSubscription(
           events::subscribe<LogEvent>([this](const LogEvent &logEvent) {
             QMetaObject::invokeMethod(this, "onLogEventReceived",

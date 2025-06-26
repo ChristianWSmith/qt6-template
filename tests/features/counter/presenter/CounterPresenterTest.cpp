@@ -1,7 +1,7 @@
 // NOLINTBEGIN
 #include "features/counter/presenter/CounterPresenter.h"
-#include "features/counter/model/ICounterModel.h"
-#include "features/counter/widget/ICounterWidget.h"
+#include "features/counter/model/CounterModel.h"
+#include "features/counter/widget/CounterWidget.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <QCoreApplication>
@@ -9,23 +9,23 @@
 #include <QMetaObject>
 #include <QObject>
 
-class MockCounterModel : public ICounterModel {
+class MockCounterModel : public CounterModel {
 public:
-  MOCK_METHOD(void, increment, (), (override));
-  MOCK_METHOD(int, value, (), (const, override));
-  MOCK_METHOD(void, reset, (), (override));
+  MOCK_METHOD(void, increment, (), ());
+  MOCK_METHOD(int, value, (), (const));
+  MOCK_METHOD(void, reset, (), ());
   MOCK_METHOD(QMetaObject::Connection, connectValueChanged,
-              (QObject * receiver, const char *member), (override));
+              (QObject * receiver, const char *member), ());
   MOCK_METHOD(void, shutdown, (), (override));
 };
 
-class MockCounterWidget : public ICounterWidget {
+class MockCounterWidget : public CounterWidget {
 public:
-  MOCK_METHOD(void, displayCounter, (int value), (override));
+  MOCK_METHOD(void, displayCounter, (int value), ());
   MOCK_METHOD(QMetaObject::Connection, connectIncrementRequested,
-              (QObject * receiver, const char *member), (override));
+              (QObject * receiver, const char *member), ());
   MOCK_METHOD(QMetaObject::Connection, connectResetRequested,
-              (QObject * receiver, const char *member), (override));
+              (QObject * receiver, const char *member), ());
   MOCK_METHOD(void, shutdown, (), (override));
 };
 

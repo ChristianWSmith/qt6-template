@@ -5,9 +5,9 @@
 #include <QtConcurrent/QtConcurrent>
 #include <fmt/core.h>
 
-CounterPresenter::CounterPresenter(ICounterModel *model, ICounterWidget *view,
+CounterPresenter::CounterPresenter(CounterModel *model, CounterWidget *view,
                                    QObject *parent)
-    : ICounterPresenter(parent), m_model(model), m_view(view) {
+    : QObject(parent), m_model(model), m_view(view) {
   if (m_model == nullptr) {
     qWarning() << "CounterPresenter instantiated without model";
   }

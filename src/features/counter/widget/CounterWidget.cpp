@@ -4,7 +4,7 @@
 #include <fmt/core.h>
 
 CounterWidget::CounterWidget(QWidget *parent)
-    : ICounterWidget(parent), ui(new Ui::CounterWidget) {
+    : QWidget(parent), ui(new Ui::CounterWidget) {
   ui->setupUi(this);
   qDebug() << "CounterWidget instantiated";
 }

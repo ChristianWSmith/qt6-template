@@ -17,7 +17,7 @@ QString stateFilePath() {
 }
 } // namespace
 
-AppLogModel::AppLogModel(QObject *parent) : IAppLogModel(parent) {
+AppLogModel::AppLogModel(QObject *parent) : QObject(parent) {
   qDebug() << "AppLogModel instantiated";
   loadState();
 }
