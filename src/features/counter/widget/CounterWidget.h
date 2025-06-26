@@ -1,6 +1,5 @@
 #pragma once
 #include "../../../core/IWidget.h"
-#include "../../../core/interfacecommon.h"
 #include "../countercommon.h"
 #include "CounterWidget.h"
 #include "ui_CounterWidget.h"

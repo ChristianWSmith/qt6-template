@@ -1,6 +1,5 @@
 #pragma once
 #include "../../../core/IPresenter.h"
-#include "../../../core/interfacecommon.h"
 #include "../countercommon.h"
 #include "../model/CounterModel.h"
 #include "../widget/CounterWidget.h"
