@@ -19,11 +19,6 @@ public:
   void clear();
   [[nodiscard]] const QVector<QString> &getLogMessages() const;
 
-  QMetaObject::Connection connectLogChanged(QObject *receiver,
-                                            const char *member);
-  QMetaObject::Connection connectLogCleared(QObject *receiver,
-                                            const char *member);
-
 signals:
   void logChanged(const LogDelta &_t1);
   void logCleared();

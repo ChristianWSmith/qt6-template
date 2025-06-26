@@ -16,10 +16,6 @@ public:
   MOCK_METHOD(void, addLogMessage, (const QString &), ());
   MOCK_METHOD(void, clear, (), ());
   MOCK_METHOD(const QVector<QString> &, getLogMessages, (), (const));
-  MOCK_METHOD(QMetaObject::Connection, connectLogChanged,
-              (QObject *, const char *), ());
-  MOCK_METHOD(QMetaObject::Connection, connectLogCleared,
-              (QObject *, const char *), ());
   MOCK_METHOD(void, shutdown, (), (override));
 };
 
@@ -53,19 +49,6 @@ protected:
     delete mockView;
   }
 };
-
-TEST_F(AppLogPresenterTest, ConstructorConnectsModelSignal) {
-  EXPECT_CALL(*mockModel, connectLogChanged(testing::_, testing::_))
-      .WillOnce([](QObject *receiver, const char *signal) {
-        std::cerr << "connectLogChanged called with signal: " << signal << "\n";
-        std::string actual(signal);
-        EXPECT_EQ(actual, "1handleLogChanged(LogDelta)");
-        return QMetaObject::Connection();
-      });
-
-  delete presenter;
-  presenter = new AppLogPresenter(mockModel, mockView);
-}
 
 TEST_F(AppLogPresenterTest, HandleLogChangedForwardsToView) {
   QString testMessage = "Mocked log line";

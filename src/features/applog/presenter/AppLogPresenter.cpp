@@ -24,12 +24,14 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   if (m_view != nullptr) {
     connect(m_view, &AppLogWidget::clearRequested, this,
             &AppLogPresenter::handleClearRequested);
-    // m_view->connectClearRequested(this, SLOT(handleClearRequested()));
   }
 
   if (m_model != nullptr) {
-    m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
-    m_model->connectLogCleared(this, SLOT(handleLogCleared()));
+    // m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
+    connect(m_model, &AppLogModel::logChanged, this,
+            &AppLogPresenter::handleLogChanged);
+    connect(m_model, &AppLogModel::logCleared, this,
+            &AppLogPresenter::handleLogCleared);
   }
 
   if (m_model != nullptr && m_view != nullptr) {

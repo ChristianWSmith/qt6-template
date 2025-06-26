@@ -44,12 +44,4 @@ TEST_F(AppLogModelTest, AddLogMessageEmitsTimestampedSignal) {
   EXPECT_TRUE(emitted.message.contains(" - "));
   EXPECT_TRUE(emitted.message.endsWith(raw));
 }
-
-TEST_F(AppLogModelTest, ConnectLogChangedReturnsValidConnection) {
-  QObject dummy;
-  QMetaObject::Connection conn =
-      model->connectLogChanged(&dummy, SLOT(deleteLater()));
-  EXPECT_NE(conn, QMetaObject::Connection());
-  QObject::disconnect(conn);
-}
 // NOLINTEND

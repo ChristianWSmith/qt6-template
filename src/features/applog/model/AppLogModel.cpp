@@ -50,16 +50,6 @@ const QVector<QString> &AppLogModel::getLogMessages() const {
   return m_logMessages;
 }
 
-QMetaObject::Connection AppLogModel::connectLogChanged(QObject *receiver,
-                                                       const char *member) {
-  return QObject::connect(this, SIGNAL(logChanged(LogDelta)), receiver, member);
-}
-
-QMetaObject::Connection AppLogModel::connectLogCleared(QObject *receiver,
-                                                       const char *member) {
-  return QObject::connect(this, SIGNAL(logCleared()), receiver, member);
-}
-
 void AppLogModel::loadState() {
   QFile file(stateFilePath());
   if (!file.open(QIODevice::ReadOnly)) {
