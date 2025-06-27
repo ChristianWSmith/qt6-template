@@ -13,7 +13,7 @@ public:
   explicit CounterPresenter(CounterModel *model, CounterWidget *view,
                             QObject *parent = nullptr);
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
 private slots:
   void handleIncrementRequest();

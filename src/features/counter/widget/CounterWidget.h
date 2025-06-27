@@ -21,9 +21,9 @@ public:
   CounterWidget(CounterWidget &&) = delete;
   CounterWidget &operator=(CounterWidget &&) = delete;
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
-  virtual void displayCounter(int value);
+  void displayCounter(int value);
 
 signals:
   void incrementRequested();

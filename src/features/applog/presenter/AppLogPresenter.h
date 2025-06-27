@@ -20,7 +20,7 @@ public:
   explicit AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                            QObject *parent = nullptr);
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
 private slots:
   void onLogEventReceived(const LogEvent &event);

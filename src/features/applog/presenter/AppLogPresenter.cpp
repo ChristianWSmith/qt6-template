@@ -27,7 +27,6 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   }
 
   if (m_model != nullptr) {
-    // m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
     connect(m_model, &AppLogModel::logChanged, this,
             &AppLogPresenter::handleLogChanged);
     connect(m_model, &AppLogModel::logCleared, this,

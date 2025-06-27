@@ -14,11 +14,11 @@ class AppLogModel : public QObject, public IModel {
 public:
   explicit AppLogModel(QObject *parent = nullptr);
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
-  virtual void addLogMessage(const QString &message);
-  virtual void clear();
-  [[nodiscard]] virtual const QVector<QString> &getLogMessages() const;
+  void addLogMessage(const QString &message);
+  void clear();
+  [[nodiscard]] const QVector<QString> &getLogMessages() const;
 
 signals:
   void logChanged(const LogDelta &_t1);

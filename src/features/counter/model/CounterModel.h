@@ -11,11 +11,11 @@ class CounterModel : public QObject, public IModel {
 public:
   explicit CounterModel(QObject *parent = nullptr);
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
-  [[nodiscard]] virtual int value() const;
-  virtual void increment();
-  virtual void reset();
+  [[nodiscard]] int value() const;
+  void increment();
+  void reset();
 
 signals:
   void valueChanged(int _t1);

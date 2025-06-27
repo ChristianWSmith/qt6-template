@@ -25,11 +25,11 @@ public:
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
-  virtual void shutdown() override;
+  void shutdown() override;
 
-  virtual void clear();
-  virtual void setLogMessages(const QVector<QString> &messages);
-  virtual void handleLogChanged(const LogDelta &logDelta);
+  void clear();
+  void setLogMessages(const QVector<QString> &messages);
+  void handleLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();
