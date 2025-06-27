@@ -72,19 +72,22 @@ class ${FEATURE_NAME_TITLE}Model : public QObject, public IModel {
 public:
   explicit ${FEATURE_NAME_TITLE}Model(IPersistenceProvider *provider = nullptr,
                                       QObject *parent = nullptr);
+
+  // IModel
   void shutdown() override;
+  void saveState() const override;
+  void loadState() override;
+
+  // Methods to be called by ${FEATURE_NAME_TITLE}Presenter
 
 signals:
-  // Signals emitted by this concrete Model
+  // Signals emitted by this Model to be connect to ${FEATURE_NAME_TITLE}Presenter Slots
 
 private:
   friend class ${FEATURE_NAME_TITLE}Test;
 
   IPersistenceProvider *m_provider;
   const QString m_key{APP_ID ".${FEATURE_NAME_TITLE}State"};
-
-  void saveState() const override;
-  void loadState() override;
 
   // Private data members holding the Model's state
 };
@@ -97,7 +100,7 @@ cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Model.h"
 
 namespace {
-// Define persistence keys
+// constexpr auto KEY_MY_VALUE = "myValue";
 } // namespace
 
 ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(IPersistenceProvider *provider, QObject *parent)
@@ -115,7 +118,7 @@ void ${FEATURE_NAME_TITLE}Model::saveState() const {
     return;
   }
   // QJsonObject obj;
-  // ...
+  // obj[KEY_MY_VALUE] = m_myvalue;
   // m_provider->saveState(m_key, obj);
 }
 
@@ -124,7 +127,7 @@ void ${FEATURE_NAME_TITLE}Model::loadState() {
     return;
   }
   // QJsonObject obj = m_provider->loadState(m_key);
-  // ...
+  // m_myvalue = obj[KEY_MY_VALUE]
 }
 
 EOF
@@ -147,13 +150,16 @@ public:
   explicit ${FEATURE_NAME_TITLE}Presenter(${FEATURE_NAME_TITLE}Model *model,
                                    ${FEATURE_NAME_TITLE}Widget *view,
                                    QObject *parent = nullptr);
+
+  // IPresenter
   void shutdown() override;
 
 private slots:
-  // Concrete slots for handling events
+  // Slots to be connected to ${FEATURE_NAME_TITLE}Model/${FEATURE_NAME_TITLE}View Signals
 
 private:
   friend class ${FEATURE_NAME_TITLE}Test;
+
   ${FEATURE_NAME_TITLE}Model *m_model;
   ${FEATURE_NAME_TITLE}Widget *m_view;
 };
@@ -178,7 +184,7 @@ ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(${FEATURE_NAME_TI
   if (m_view == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without view";
   }
-  // Connects view/model signals to presenter slots
+  // Connect ${FEATURE_NAME_TITLE}Model/${FEATURE_NAME_TITLE}View Signals to ${FEATURE_NAME_TITLE}Presenter Slots
 }
 
 // Implements presenter slots
@@ -226,10 +232,11 @@ public:
   ${FEATURE_NAME_TITLE}Widget(${FEATURE_NAME_TITLE}Widget &&) = delete;
   ${FEATURE_NAME_TITLE}Widget &operator=(${FEATURE_NAME_TITLE}Widget &&) = delete;
 
+  // IWidget
   void shutdown() override;
 
 signals:
-  // Signals emitted by this concrete Widget
+  // Signals emitted by this Widget to be connect to ${FEATURE_NAME_TITLE}Presenter Slots
 
 private slots:
   // Slots for UI events (auto-connected by Qt Designer)

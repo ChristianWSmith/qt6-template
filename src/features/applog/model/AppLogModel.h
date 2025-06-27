@@ -17,6 +17,8 @@ public:
                        QObject *parent = nullptr);
 
   void shutdown() override;
+  void saveState() const override;
+  void loadState() override;
 
   void addLogMessage(const QString &message);
   void clear();
@@ -31,9 +33,6 @@ private:
 
   IPersistenceProvider *m_provider;
   const QString m_key{APP_ID ".AppLogState"};
-
-  void saveState() const override;
-  void loadState() override;
 
   QVector<QString> m_logMessages;
 };

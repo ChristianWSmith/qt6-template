@@ -14,6 +14,8 @@ public:
                         QObject *parent = nullptr);
 
   void shutdown() override;
+  void saveState() const override;
+  void loadState() override;
 
   [[nodiscard]] int value() const;
   void increment();
@@ -27,9 +29,6 @@ private:
 
   IPersistenceProvider *m_provider;
   const QString m_key{APP_ID ".CounterState"};
-
-  void saveState() const override;
-  void loadState() override;
 
   int m_value{0};
 };
