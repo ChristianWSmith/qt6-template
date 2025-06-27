@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../../core/IModel.h"
+#include "../../../core/IPersistenceProvider.h"
 #include "../applogcommon.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -12,7 +13,8 @@ class AppLogModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit AppLogModel(QObject *parent = nullptr);
+  explicit AppLogModel(IPersistenceProvider *provider = nullptr,
+                       QObject *parent = nullptr);
 
   void shutdown() override;
 
@@ -26,7 +28,12 @@ signals:
 
 private:
   friend class AppLogTest;
+
+  IPersistenceProvider *m_provider;
+  QString m_key{APP_ID ".AppLogState"};
+
+  void saveState() const override;
+  void loadState() override;
+
   QVector<QString> m_logMessages;
-  void saveState() const;
-  void loadState();
 };

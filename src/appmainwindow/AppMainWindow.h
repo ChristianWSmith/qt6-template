@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../platform/FilePersistenceProvider.h"
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 
@@ -32,6 +33,8 @@ public:
 
 private:
   Ui::AppMainWindow *ui;
+
+  FilePersistenceProvider *m_provider;
 
   CounterModel *m_counterModel;
   CounterWidget *m_counterWidget;

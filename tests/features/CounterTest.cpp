@@ -15,7 +15,8 @@ protected:
   CounterWidget view;
   CounterPresenter presenter;
 
-  CounterTest() : model(nullptr), view(nullptr), presenter(&model, &view) {}
+  CounterTest()
+      : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(CounterTest, ModelStartsAtZero) { EXPECT_EQ(model.value(), 0); }

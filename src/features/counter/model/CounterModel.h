@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../core/IModel.h"
+#include "../../../core/IPersistenceProvider.h"
 #include "../countercommon.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -9,7 +10,8 @@ class CounterModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit CounterModel(QObject *parent = nullptr);
+  explicit CounterModel(IPersistenceProvider *provider = nullptr,
+                        QObject *parent = nullptr);
 
   void shutdown() override;
 
@@ -22,7 +24,12 @@ signals:
 
 private:
   friend class CounterTest;
+
+  IPersistenceProvider *m_provider;
+  QString m_key{APP_ID ".CounterState"};
+
+  void saveState() const override;
+  void loadState() override;
+
   int m_value{0};
-  void loadState();
-  void saveState() const;
 };

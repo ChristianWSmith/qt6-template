@@ -1,5 +1,4 @@
 #include "AppLogModel.h"
-#include "../../../platform/flushFileBuffer.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -11,18 +10,14 @@
 #include <fmt/core.h>
 
 namespace {
-QString stateFilePath() {
-  return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-         "/applog_model_state.json";
-}
+const int MAX_LOG_SIZE = 100;
 } // namespace
 
-AppLogModel::AppLogModel(QObject *parent) : QObject(parent) {
+AppLogModel::AppLogModel(IPersistenceProvider *provider, QObject *parent)
+    : QObject(parent), m_provider(provider) {
   qDebug() << "AppLogModel instantiated";
   loadState();
 }
-
-const static int MAX_LOG_SIZE = 100;
 
 void AppLogModel::addLogMessage(const QString &message) {
 
@@ -51,20 +46,11 @@ const QVector<QString> &AppLogModel::getLogMessages() const {
 }
 
 void AppLogModel::loadState() {
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::ReadOnly)) {
-    qWarning() << "Could not open state file for reading:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
 
-  const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-  if (!doc.isObject()) {
-    qWarning() << "Invalid JSON structure in state file";
-    return;
-  }
-
-  const QJsonObject obj = doc.object();
+  QJsonObject obj = m_provider->loadState(m_key);
   const QJsonArray messages = obj.value("logMessages").toArray();
 
   m_logMessages.clear();
@@ -78,13 +64,7 @@ void AppLogModel::loadState() {
 }
 
 void AppLogModel::saveState() const {
-  QDir().mkpath(
-      QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Could not open state file for writing:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
 
@@ -96,10 +76,7 @@ void AppLogModel::saveState() const {
   QJsonObject obj;
   obj["logMessages"] = messages;
 
-  file.write(QJsonDocument(obj).toJson(QJsonDocument::Compact));
-  flushToDisk(file);
-  file.close();
-
+  m_provider->saveState(m_key, obj);
   qInfo() << "Saved" << m_logMessages.size() << "log messages";
 }
 

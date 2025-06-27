@@ -23,7 +23,8 @@ protected:
   AppLogWidget view;
   AppLogPresenter presenter;
 
-  AppLogTest() : model(nullptr), view(nullptr), presenter(&model, &view) {}
+  AppLogTest()
+      : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(AppLogTest, ModelEmitsLogChanged) {

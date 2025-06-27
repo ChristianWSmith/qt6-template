@@ -1,7 +1,6 @@
 #include "CounterModel.h"
 #include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
-#include "../../../platform/flushFileBuffer.h"
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -9,14 +8,8 @@
 #include <QStandardPaths>
 #include <fmt/core.h>
 
-namespace {
-QString stateFilePath() {
-  return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-         "/counter_model_state.json";
-}
-} // namespace
-
-CounterModel::CounterModel(QObject *parent) : QObject(parent) {
+CounterModel::CounterModel(IPersistenceProvider *provider, QObject *parent)
+    : QObject(parent), m_provider(provider) {
   qDebug() << "CounterModel instantiated";
   loadState();
 }
@@ -38,46 +31,24 @@ void CounterModel::reset() {
   m_value = 0;
   emit valueChanged(m_value);
 }
+
 void CounterModel::loadState() {
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::ReadOnly)) {
-    qWarning() << "Could not open state file for reading:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
-
-  const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-  if (!doc.isObject()) {
-    qWarning() << "Invalid JSON structure in state file";
-    return;
-  }
-
-  const QJsonObject obj = doc.object();
+  const auto obj = m_provider->loadState(m_key);
   if (obj.contains("value") && obj["value"].isDouble()) {
     m_value = obj["value"].toInt();
-    qDebug() << "Loaded counter value:" << m_value;
   }
 }
 
 void CounterModel::saveState() const {
-  QDir().mkpath(
-      QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Could not open state file for writing:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
-
   QJsonObject obj;
   obj["value"] = m_value;
-  QJsonDocument doc(obj);
-  file.write(doc.toJson(QJsonDocument::Compact));
-  flushToDisk(file);
-  file.close();
-
-  qDebug() << "Saved counter value:" << m_value;
+  m_provider->saveState(m_key, obj);
 }
 
 void CounterModel::shutdown() {

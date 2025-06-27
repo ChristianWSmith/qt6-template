@@ -60,6 +60,7 @@ format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
 #pragma once
 #include "../${FEATURE_NAME_LOWER}common.h"
+#include "../../../core/IPersistenceProvider.h"
 #include "../../../core/IModel.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -69,7 +70,8 @@ class ${FEATURE_NAME_TITLE}Model : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit ${FEATURE_NAME_TITLE}Model(QObject *parent = nullptr);
+  explicit ${FEATURE_NAME_TITLE}Model(IPersistenceProvider *provider = nullptr,
+                                      QObject *parent = nullptr);
   void shutdown() override;
 
 signals:
@@ -77,6 +79,13 @@ signals:
 
 private:
   friend class ${FEATURE_NAME_TITLE}Test;
+
+  IPersistenceProvider *m_provider;
+  QString m_key{APP_ID ".${FEATURE_NAME_TITLE}State"};
+
+  void saveState() const override;
+  void loadState() override;
+
   // Private data members holding the Model's state
 };
 
@@ -87,10 +96,31 @@ format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Model.h"
 
-${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(QObject *parent) : QObject(parent) {}
+${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(IPersistenceProvider *provider, QObject *parent)
+    : QObject(parent), m_provider(provider) {
+  loadState();    
+}
 
 void ${FEATURE_NAME_TITLE}Model::shutdown() {
   // Perform model shutdown actions
+  saveState();
+}
+
+void ${FEATURE_NAME_TITLE}Model::saveState() const {
+  if (m_provider == nullptr) {
+    return;
+  }
+  // QJsonObject obj;
+  // ...
+  // m_provider->saveState(m_key, obj);
+}
+
+void ${FEATURE_NAME_TITLE}Model::loadState() {
+  if (m_provider == nullptr) {
+    return;
+  }
+  // QJsonObject obj = m_provider->loadState(m_key);
+  // ...
 }
 
 EOF
@@ -264,7 +294,7 @@ protected:
   ${FEATURE_NAME_TITLE}Widget view;
   ${FEATURE_NAME_TITLE}Presenter presenter;
 
-  ${FEATURE_NAME_TITLE}Test() : model(nullptr), view(nullptr), presenter(&model, &view) {}
+  ${FEATURE_NAME_TITLE}Test() : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(${FEATURE_NAME_TITLE}Test, Placeholder) {
