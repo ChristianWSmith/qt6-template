@@ -26,7 +26,7 @@ private:
   friend class CounterTest;
 
   IPersistenceProvider *m_provider;
-  QString m_key{APP_ID ".CounterState"};
+  const QString m_key{APP_ID ".CounterState"};
 
   void saveState() const override;
   void loadState() override;

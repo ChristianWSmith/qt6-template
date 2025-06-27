@@ -11,12 +11,13 @@
 
 namespace {
 const int MAX_LOG_SIZE = 100;
+constexpr auto KEY_LOG_MESSAGES = "logMessages";
 } // namespace
 
 AppLogModel::AppLogModel(IPersistenceProvider *provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
   qDebug() << "AppLogModel instantiated";
-  loadState();
+  AppLogModel::loadState();
 }
 
 void AppLogModel::addLogMessage(const QString &message) {
@@ -51,7 +52,7 @@ void AppLogModel::loadState() {
   }
 
   QJsonObject obj = m_provider->loadState(m_key);
-  const QJsonArray messages = obj.value("logMessages").toArray();
+  const QJsonArray messages = obj.value(KEY_LOG_MESSAGES).toArray();
 
   m_logMessages.clear();
   for (const auto &val : messages) {
@@ -74,7 +75,7 @@ void AppLogModel::saveState() const {
   }
 
   QJsonObject obj;
-  obj["logMessages"] = messages;
+  obj[KEY_LOG_MESSAGES] = messages;
 
   m_provider->saveState(m_key, obj);
   qInfo() << "Saved" << m_logMessages.size() << "log messages";

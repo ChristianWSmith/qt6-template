@@ -81,7 +81,7 @@ private:
   friend class ${FEATURE_NAME_TITLE}Test;
 
   IPersistenceProvider *m_provider;
-  QString m_key{APP_ID ".${FEATURE_NAME_TITLE}State"};
+  const QString m_key{APP_ID ".${FEATURE_NAME_TITLE}State"};
 
   void saveState() const override;
   void loadState() override;
@@ -96,9 +96,13 @@ format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h"
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp" <<EOF
 #include "${FEATURE_NAME_TITLE}Model.h"
 
+namespace {
+// Define persistence keys
+} // namespace
+
 ${FEATURE_NAME_TITLE}Model::${FEATURE_NAME_TITLE}Model(IPersistenceProvider *provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
-  loadState();    
+  ${FEATURE_NAME_TITLE}Model::loadState();
 }
 
 void ${FEATURE_NAME_TITLE}Model::shutdown() {
@@ -166,7 +170,7 @@ cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp" <<EOF
 ${FEATURE_NAME_TITLE}Presenter::${FEATURE_NAME_TITLE}Presenter(${FEATURE_NAME_TITLE}Model *model,
                                                  ${FEATURE_NAME_TITLE}Widget *view,
                                                  QObject *parent)
-    : m_model(model), m_view(view) {
+    : QObject(parent), m_model(model), m_view(view) {
 
   if (m_model == nullptr) {
     qWarning() << "${FEATURE_NAME_TITLE}Presenter instantiated without model";
@@ -183,10 +187,10 @@ void ${FEATURE_NAME_TITLE}Presenter::shutdown() {
   QFuture<void> modelFuture;
   QFuture<void> viewFuture;
 
-  if (m_view != nullptr) {
+  if (m_model != nullptr) {
     modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
   }
-  if (m_model != nullptr) {
+  if (m_view != nullptr) {
     viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
   }
 

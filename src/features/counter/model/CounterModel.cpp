@@ -8,10 +8,14 @@
 #include <QStandardPaths>
 #include <fmt/core.h>
 
+namespace {
+constexpr auto KEY_VALUE = "value";
+} // namespace
+
 CounterModel::CounterModel(IPersistenceProvider *provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
   qDebug() << "CounterModel instantiated";
-  loadState();
+  CounterModel::loadState();
 }
 
 int CounterModel::value() const {
@@ -37,8 +41,8 @@ void CounterModel::loadState() {
     return;
   }
   const auto obj = m_provider->loadState(m_key);
-  if (obj.contains("value") && obj["value"].isDouble()) {
-    m_value = obj["value"].toInt();
+  if (obj.contains(KEY_VALUE) && obj[KEY_VALUE].isDouble()) {
+    m_value = obj[KEY_VALUE].toInt();
   }
 }
 
@@ -47,7 +51,7 @@ void CounterModel::saveState() const {
     return;
   }
   QJsonObject obj;
-  obj["value"] = m_value;
+  obj[KEY_VALUE] = m_value;
   m_provider->saveState(m_key, obj);
 }
 

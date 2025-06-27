@@ -30,7 +30,7 @@ private:
   friend class AppLogTest;
 
   IPersistenceProvider *m_provider;
-  QString m_key{APP_ID ".AppLogState"};
+  const QString m_key{APP_ID ".AppLogState"};
 
   void saveState() const override;
   void loadState() override;
