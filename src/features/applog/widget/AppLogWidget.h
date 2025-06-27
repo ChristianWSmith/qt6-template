@@ -38,5 +38,6 @@ private slots:
   void on_clearButton_clicked();
 
 private:
+  friend class AppLogTest;
   Ui::AppLogWidget *ui;
 };

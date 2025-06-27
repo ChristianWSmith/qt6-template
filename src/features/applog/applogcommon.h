@@ -2,6 +2,8 @@
 
 #include <QString>
 
+class AppLogTest;
+
 struct LogDelta {
   QString message;
   bool trimmed;

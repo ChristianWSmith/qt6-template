@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../core/IWidget.h"
+#include "../countercommon.h"
 #include "ui_CounterWidget.h"
 #include <QWidget>
 #include <QtPlugin>
@@ -33,5 +34,6 @@ private slots:
   void on_resetButton_clicked();
 
 private:
+  friend class CounterTest;
   Ui::CounterWidget *ui;
 };

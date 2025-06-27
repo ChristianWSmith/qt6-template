@@ -25,6 +25,7 @@ signals:
   void logCleared();
 
 private:
+  friend class AppLogTest;
   QVector<QString> m_logMessages;
   void saveState() const;
   void loadState();

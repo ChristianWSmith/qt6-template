@@ -30,6 +30,7 @@ private slots:
   void handleClearRequested();
 
 private:
+  friend class AppLogTest;
   AppLogModel *m_model;
   AppLogWidget *m_view;
   events::Subscription<LogEvent> m_logEventSubscription;

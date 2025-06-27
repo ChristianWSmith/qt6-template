@@ -37,18 +37,12 @@ MODEL_DIR="${FEATURE_DIR}/model"
 PRESENTER_DIR="${FEATURE_DIR}/presenter"
 WIDGET_DIR="${FEATURE_DIR}/widget"
 
-TEST_FEATURE_DIR="${TESTS_FEATURES_DIR}/${FEATURE_NAME_LOWER}"
-TEST_MODEL_DIR="${TEST_FEATURE_DIR}/model"
-TEST_PRESENTER_DIR="${TEST_FEATURE_DIR}/presenter"
-TEST_WIDGET_DIR="${TEST_FEATURE_DIR}/widget"
-
 mkdir -p "${MODEL_DIR}"
 mkdir -p "${PRESENTER_DIR}"
 mkdir -p "${WIDGET_DIR}"
-mkdir -p "${TEST_MODEL_DIR}"
-mkdir -p "${TEST_PRESENTER_DIR}"
-mkdir -p "${TEST_WIDGET_DIR}"
+mkdir -p "${TESTS_FEATURES_DIR}"
 
+FEATURE_DIR_RELATIVE=${FEATURE_DIR#"${SRC_DIR}/"}
 MODEL_DIR_RELATIVE=${MODEL_DIR#"${SRC_DIR}/"}
 PRESENTER_DIR_RELATIVE=${PRESENTER_DIR#"${SRC_DIR}/"}
 WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
@@ -57,11 +51,15 @@ WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
 cat > "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h" <<EOF
 #pragma once
 
+class ${FEATURE_NAME_TITLE}Test;
+
 EOF
+format "${FEATURE_DIR}/${FEATURE_NAME_LOWER}common.h"
 
 # MODEL HEADER
 cat > "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.h" <<EOF
 #pragma once
+#include "../${FEATURE_NAME_LOWER}common.h"
 #include "../../../core/IModel.h"
 #include <QMetaMethod>
 #include <QObject>
@@ -78,6 +76,7 @@ signals:
   // Signals emitted by this concrete Model
 
 private:
+  friend class ${FEATURE_NAME_TITLE}Test;
   // Private data members holding the Model's state
 };
 
@@ -100,6 +99,7 @@ format "${MODEL_DIR}/${FEATURE_NAME_TITLE}Model.cpp"
 # PRESENTER HEADER
 cat > "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.h" <<EOF
 #pragma once
+#include "../${FEATURE_NAME_LOWER}common.h"
 #include "../../../core/IPresenter.h"
 #include "../model/${FEATURE_NAME_TITLE}Model.h"
 #include "../widget/${FEATURE_NAME_TITLE}Widget.h"
@@ -119,6 +119,7 @@ private slots:
   // Concrete slots for handling events
 
 private:
+  friend class ${FEATURE_NAME_TITLE}Test;
   ${FEATURE_NAME_TITLE}Model *m_model;
   ${FEATURE_NAME_TITLE}Widget *m_view;
 };
@@ -169,6 +170,7 @@ format "${PRESENTER_DIR}/${FEATURE_NAME_TITLE}Presenter.cpp"
 # WIDGET HEADER
 cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.h" <<EOF
 #pragma once
+#include "../${FEATURE_NAME_LOWER}common.h"
 #include "../../../core/IWidget.h"
 #include "ui_${FEATURE_NAME_TITLE}Widget.h"
 #include <QWidget>
@@ -199,6 +201,7 @@ private slots:
   // Slots for UI events (auto-connected by Qt Designer)
 
 private:
+  friend class ${FEATURE_NAME_TITLE}Test;
   Ui::${FEATURE_NAME_TITLE}Widget *ui;
 };
 
@@ -246,100 +249,31 @@ cat > "${WIDGET_DIR}/${FEATURE_NAME_TITLE}Widget.ui" <<EOF
 EOF
 
 # MODEL TEST
-cat > "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" <<EOF
+cat > "${TESTS_FEATURES_DIR}/${FEATURE_NAME_TITLE}Test.cpp" <<EOF
 // NOLINTBEGIN
+#include "${FEATURE_DIR_RELATIVE}/${FEATURE_NAME_LOWER}common.h"
 #include "${MODEL_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Model.h"
+#include "${PRESENTER_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Presenter.h"
+#include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
+
 #include <gtest/gtest.h>
 
-class ${FEATURE_NAME_TITLE}ModelTest : public ::testing::Test {
+class ${FEATURE_NAME_TITLE}Test : public ::testing::Test {
 protected:
-  ${FEATURE_NAME_TITLE}Model *model;
+  ${FEATURE_NAME_TITLE}Model model;
+  ${FEATURE_NAME_TITLE}Widget view;
+  ${FEATURE_NAME_TITLE}Presenter presenter;
 
-  void SetUp() override { model = new ${FEATURE_NAME_TITLE}Model(); }
-
-  void TearDown() override { delete model; }
+  ${FEATURE_NAME_TITLE}Test() : model(nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
-TEST_F(${FEATURE_NAME_TITLE}ModelTest, Placeholder) {
-  // Add your model tests here
+TEST_F(${FEATURE_NAME_TITLE}Test, Placeholder) {
   EXPECT_TRUE(true);
 }
+
+#include "${FEATURE_NAME_TITLE}Test.moc"
+
 // NOLINTEND
 
 EOF
-format "${TEST_MODEL_DIR}/${FEATURE_NAME_TITLE}ModelTest.cpp" 
-
-# PRESENTER TEST
-cat > "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp" <<EOF
-// NOLINTBEGIN
-#include "${PRESENTER_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Presenter.h"
-#include "${MODEL_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Model.h"
-#include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-using ::testing::NiceMock;
-
-class Mock${FEATURE_NAME_TITLE}Model : public ${FEATURE_NAME_TITLE}Model {
-public:
-  // Mock model methods
-};
-
-class Mock${FEATURE_NAME_TITLE}Widget : public ${FEATURE_NAME_TITLE}Widget {
-public:
-  // Mock widget methods
-};
-
-class ${FEATURE_NAME_TITLE}PresenterTest : public ::testing::Test {
-protected:
-  Mock${FEATURE_NAME_TITLE}Model *mockModel;
-  Mock${FEATURE_NAME_TITLE}Widget *mockWidget;
-  ${FEATURE_NAME_TITLE}Presenter *presenter;
-
-  void SetUp() override {
-    mockModel = new Mock${FEATURE_NAME_TITLE}Model();
-    mockWidget = new Mock${FEATURE_NAME_TITLE}Widget();
-    presenter = new ${FEATURE_NAME_TITLE}Presenter(mockModel, mockWidget);
-  }
-
-  void TearDown() override {
-    delete presenter;
-    delete mockModel;
-    delete mockWidget;
-  }
-};
-
-// Add your presenter tests here
-TEST_F(${FEATURE_NAME_TITLE}PresenterTest, Placeholder) { EXPECT_TRUE(true); }
-// NOLINTEND
-
-EOF
-format "${TEST_PRESENTER_DIR}/${FEATURE_NAME_TITLE}PresenterTest.cpp"
-
-# WIDGET TEST
-cat > "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp" <<EOF
-// NOLINTBEGIN
-#include "${WIDGET_DIR_RELATIVE}/${FEATURE_NAME_TITLE}Widget.h"
-#include <gtest/gtest.h>
-
-class ${FEATURE_NAME_TITLE}WidgetTest : public ::testing::Test {
-protected:
-  ${FEATURE_NAME_TITLE}Widget *widget = nullptr;
-
-  void SetUp() override {
-    widget = new ${FEATURE_NAME_TITLE}Widget();
-    widget->show();
-  }
-
-  void TearDown() override {
-    widget->hide();
-    delete widget;
-  }
-};
-
-// Add your widget tests here
-TEST_F(${FEATURE_NAME_TITLE}WidgetTest, Placeholder) { EXPECT_TRUE(true); }
-// NOLINTEND
-
-EOF
-format "${TEST_WIDGET_DIR}/${FEATURE_NAME_TITLE}WidgetTest.cpp"
+format "${TESTS_FEATURES_DIR}/${FEATURE_NAME_TITLE}Test.cpp"

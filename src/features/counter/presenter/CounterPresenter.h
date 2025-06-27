@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../core/IPresenter.h"
+#include "../countercommon.h"
 #include "../model/CounterModel.h"
 #include "../widget/CounterWidget.h"
 #include <QObject>
@@ -20,6 +21,7 @@ private slots:
   void handleCounterValueChanged(int newValue);
 
 private:
+  friend class CounterTest;
   CounterModel *m_model;
   CounterWidget *m_view;
 };

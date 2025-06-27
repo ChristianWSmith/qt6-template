@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../core/IModel.h"
+#include "../countercommon.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>
@@ -20,6 +21,7 @@ signals:
   void valueChanged(int _t1);
 
 private:
+  friend class CounterTest;
   int m_value{0};
   void loadState();
   void saveState() const;
