@@ -41,10 +41,13 @@ if [[ "${TYPE}" == "feature" ]]; then
   MODEL_DIR_RELATIVE=${MODEL_DIR#"${SRC_DIR}/"}
   PRESENTER_DIR_RELATIVE=${PRESENTER_DIR#"${SRC_DIR}/"}
   WIDGET_DIR_RELATIVE=${WIDGET_DIR#"${SRC_DIR}/"}
+
   PRESENTER_STRING="${NAME_TITLE}Presenter"
 elif [[ "${TYPE}" == "widget" ]]; then
   TARGET_DIR="${WIDGETS_DIR}/${NAME_LOWER}"
+
   WIDGET_DIR="${TARGET_DIR}"
+
   PRESENTER_STRING="Presenter"
 fi
 
@@ -63,7 +66,7 @@ mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
 #pragma once
 <GEN:COMMON_H>
-<GEN:I_WIDGET>
+#include "$(realpath --relative-to="${WIDGET_DIR}" "${SRC_DIR}/core")/IWidget.h"
 #include "ui_${NAME_TITLE}Widget.h"
 #include <QWidget>
 #include <QtPlugin>
@@ -142,13 +145,11 @@ EOF
 
 if [[ "${TYPE}" == "widget" ]]; then
   sed -i '/<GEN:COMMON_H>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
-  sed -i 's|<GEN:I_WIDGET>|#include "../../core/IWidget.h"|g' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   sed -i '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   exit 0
 else
   sed -i "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
-  sed -i 's|<GEN:I_WIDGET>|#include "../../../core/IWidget.h"|g' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   sed -i "s|<GEN:FRIEND_TEST>|friend class ${NAME_TITLE}Test;|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
 fi
@@ -168,8 +169,8 @@ mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/${NAME_TITLE}Model.h" <<EOF
 #pragma once
 #include "../${NAME_LOWER}common.h"
-#include "../../../core/IPersistenceProvider.h"
-#include "../../../core/IModel.h"
+#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IPersistenceProvider.h"
+#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IModel.h"
 #include <QMetaMethod>
 #include <QObject>
 #include <QtPlugin>
@@ -246,7 +247,7 @@ mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h" <<EOF
 #pragma once
 #include "../${NAME_LOWER}common.h"
-#include "../../../core/IPresenter.h"
+#include "$(realpath --relative-to="${PRESENTER_DIR}" "${SRC_DIR}/core")/IPresenter.h"
 #include "../model/${NAME_TITLE}Model.h"
 #include "../widget/${NAME_TITLE}Widget.h"
 #include <QObject>
