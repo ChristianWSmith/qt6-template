@@ -8,7 +8,6 @@
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QtConcurrent/QtConcurrent>
-#include <qsettings.h>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AppMainWindow),
