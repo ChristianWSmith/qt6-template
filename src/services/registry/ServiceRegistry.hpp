@@ -11,7 +11,6 @@ class ServiceRegistry {
 public:
   static void registerAll();
 
-private:
   static std::vector<std::shared_ptr<void>> &subscriptions_();
   template <typename InputEvent, typename OutputEvent, typename Callable>
   static void registerService(Callable &&func);
