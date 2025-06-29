@@ -1,12 +1,5 @@
 #include "AppMainWindow.h"
 
-#include "../features/counter/model/CounterModel.h"
-#include "../features/counter/presenter/CounterPresenter.h"
-#include "../features/counter/widget/CounterWidget.h"
-
-#include "../features/applog/model/AppLogModel.h"
-#include "../features/applog/presenter/AppLogPresenter.h"
-#include "../features/applog/widget/AppLogWidget.h"
 #include <QCloseEvent>
 #include <QMainWindow>
 #include <QSettings>

@@ -4,13 +4,13 @@
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 
-class CounterModel;
-class CounterWidget;
-class CounterPresenter;
+#include "../features/counter/model/CounterModel.h"
+#include "../features/counter/presenter/CounterPresenter.h"
+#include "../features/counter/widget/CounterWidget.h"
 
-class AppLogModel;
-class AppLogWidget;
-class AppLogPresenter;
+#include "../features/applog/model/AppLogModel.h"
+#include "../features/applog/presenter/AppLogPresenter.h"
+#include "../features/applog/widget/AppLogWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
