@@ -3,6 +3,7 @@
 #include "logging/logging.h"
 #include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QGuiApplication>
@@ -12,7 +13,6 @@
 #include <cxxopts.hpp>
 #include <fmt/core.h>
 #include <iostream>
-#include <qdebug.h>
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
 cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {

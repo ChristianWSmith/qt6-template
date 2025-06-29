@@ -1,23 +1,34 @@
 #pragma once
-#include "ICounterModel.h"
+#include "../../../core/IModel.h"
+#include "../../../core/IPersistenceProvider.h"
+#include "../countercommon.h"
+#include <QMetaMethod>
+#include <QObject>
+#include <QtPlugin>
 
-class CounterModel : public ICounterModel {
+class CounterModel : public QObject, public IModel {
   Q_OBJECT
-  Q_INTERFACES(ICounterModel)
 
 public:
-  explicit CounterModel(QObject *parent = nullptr);
+  explicit CounterModel(IPersistenceProvider *provider = nullptr,
+                        QObject *parent = nullptr);
+
   void shutdown() override;
-  [[nodiscard]] int value() const override;
-  void increment() override;
-  void reset() override;
-  QMetaObject::Connection connectValueChanged(QObject *receiver,
-                                              const char *member) override;
+  void saveState() const override;
+  void loadState() override;
+
+  [[nodiscard]] int value() const;
+  void increment();
+  void reset();
+
 signals:
   void valueChanged(int _t1);
 
 private:
+  friend class CounterTest;
+
+  IPersistenceProvider *m_provider;
+  const QString m_key{APP_ID ".CounterState"};
+
   int m_value{0};
-  void loadState();
-  void saveState() const;
 };

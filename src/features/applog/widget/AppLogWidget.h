@@ -1,37 +1,35 @@
 #pragma once
 
-#include "IAppLogWidget.h"
 #include "ui_AppLogWidget.h"
 #include <QTextEdit>
 
+#include "../../../core/IWidget.h"
+#include "../applogcommon.h"
+#include <QString>
+#include <QWidget>
+#include <QtPlugin>
+
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class AppLogWidget;
-}
+namespace Ui {}
 QT_END_NAMESPACE
 
-class AppLogWidget : public IAppLogWidget {
+class AppLogWidget : public QWidget, public IWidget {
   Q_OBJECT
-  Q_INTERFACES(IAppLogWidget)
 
 public:
   explicit AppLogWidget(QWidget *parent = nullptr);
   ~AppLogWidget();
-  void shutdown() override;
 
   AppLogWidget(const AppLogWidget &) = delete;
   AppLogWidget &operator=(const AppLogWidget &) = delete;
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
-  QMetaObject::Connection connectClearRequested(QObject *receiver,
-                                                const char *member) override;
+  void shutdown() override;
 
-  void clear() override;
-  void setLogMessages(const QVector<QString> &messages) override;
-
-public slots:
-  void handleLogChanged(const LogDelta &logDelta) override;
+  void clear();
+  void setLogMessages(const QVector<QString> &messages);
+  void handleLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();
@@ -40,5 +38,6 @@ private slots:
   void on_clearButton_clicked();
 
 private:
+  friend class AppLogTest;
   Ui::AppLogWidget *ui;
 };

@@ -1,15 +1,16 @@
 #pragma once
 
+#include "../platform/FilePersistenceProvider.h"
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 
-class ICounterModel;
-class ICounterWidget;
-class ICounterPresenter;
+#include "../features/counter/model/CounterModel.h"
+#include "../features/counter/presenter/CounterPresenter.h"
+#include "../features/counter/widget/CounterWidget.h"
 
-class IAppLogModel;
-class IAppLogWidget;
-class IAppLogPresenter;
+#include "../features/applog/model/AppLogModel.h"
+#include "../features/applog/presenter/AppLogPresenter.h"
+#include "../features/applog/widget/AppLogWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -33,11 +34,13 @@ public:
 private:
   Ui::AppMainWindow *ui;
 
-  ICounterModel *m_counterModel;
-  ICounterWidget *m_counterWidget;
-  ICounterPresenter *m_counterPresenter;
+  FilePersistenceProvider *m_provider;
 
-  IAppLogModel *m_appLogModel;
-  IAppLogWidget *m_appLogWidget;
-  IAppLogPresenter *m_appLogPresenter;
+  CounterModel *m_counterModel;
+  CounterWidget *m_counterWidget;
+  CounterPresenter *m_counterPresenter;
+
+  AppLogModel *m_appLogModel;
+  AppLogWidget *m_appLogWidget;
+  AppLogPresenter *m_appLogPresenter;
 };

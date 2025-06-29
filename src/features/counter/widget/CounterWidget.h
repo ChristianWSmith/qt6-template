@@ -1,14 +1,16 @@
 #pragma once
-#include "ICounterWidget.h"
+#include "../../../core/IWidget.h"
+#include "../countercommon.h"
 #include "ui_CounterWidget.h"
+#include <QWidget>
+#include <QtPlugin>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
 QT_END_NAMESPACE
 
-class CounterWidget : public ICounterWidget {
+class CounterWidget : public QWidget, public IWidget {
   Q_OBJECT
-  Q_INTERFACES(ICounterWidget)
 
 public:
   explicit CounterWidget(QWidget *parent = nullptr);
@@ -18,13 +20,10 @@ public:
   CounterWidget &operator=(const CounterWidget &) = delete;
   CounterWidget(CounterWidget &&) = delete;
   CounterWidget &operator=(CounterWidget &&) = delete;
+
   void shutdown() override;
 
-  void displayCounter(int value) override;
-  QMetaObject::Connection
-  connectIncrementRequested(QObject *receiver, const char *member) override;
-  QMetaObject::Connection connectResetRequested(QObject *receiver,
-                                                const char *member) override;
+  void displayCounter(int value);
 
 signals:
   void incrementRequested();
@@ -35,5 +34,6 @@ private slots:
   void on_resetButton_clicked();
 
 private:
+  friend class CounterTest;
   Ui::CounterWidget *ui;
 };

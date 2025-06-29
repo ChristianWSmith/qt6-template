@@ -3,7 +3,7 @@
 #include <fmt/core.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
-    : IAppLogWidget(parent), ui(new Ui::AppLogWidget) {
+    : QWidget(parent), ui(new Ui::AppLogWidget) {
   ui->setupUi(this);
   qDebug() << "AppLogWidget instantiated";
 }
@@ -37,10 +37,5 @@ void AppLogWidget::setLogMessages(const QVector<QString> &messages) {
 }
 
 void AppLogWidget::on_clearButton_clicked() { emit clearRequested(); }
-
-QMetaObject::Connection
-AppLogWidget::connectClearRequested(QObject *receiver, const char *member) {
-  return QObject::connect(this, SIGNAL(clearRequested()), receiver, member);
-}
 
 void AppLogWidget::shutdown() { qInfo() << "AppLogWidget::shutdown()"; }

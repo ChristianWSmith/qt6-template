@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QString>
-#define APPLOG_FEATURE_ID APP_ID ".AppLog"
+
+class AppLogTest;
 
 struct LogDelta {
   QString message;

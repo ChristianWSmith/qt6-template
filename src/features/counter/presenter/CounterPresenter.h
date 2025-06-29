@@ -1,16 +1,18 @@
 #pragma once
-#include "../model/ICounterModel.h"
-#include "../widget/ICounterWidget.h"
-#include "ICounterPresenter.h"
+#include "../../../core/IPresenter.h"
+#include "../countercommon.h"
+#include "../model/CounterModel.h"
+#include "../widget/CounterWidget.h"
 #include <QObject>
+#include <QtPlugin>
 
-class CounterPresenter : public ICounterPresenter {
+class CounterPresenter : public QObject, public IPresenter {
   Q_OBJECT
-  Q_INTERFACES(ICounterPresenter)
 
 public:
-  explicit CounterPresenter(ICounterModel *model, ICounterWidget *view,
+  explicit CounterPresenter(CounterModel *model, CounterWidget *view,
                             QObject *parent = nullptr);
+
   void shutdown() override;
 
 private slots:
@@ -19,6 +21,7 @@ private slots:
   void handleCounterValueChanged(int newValue);
 
 private:
-  ICounterModel *m_model;
-  ICounterWidget *m_view;
+  friend class CounterTest;
+  CounterModel *m_model;
+  CounterWidget *m_view;
 };

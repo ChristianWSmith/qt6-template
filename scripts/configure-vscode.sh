@@ -158,11 +158,18 @@ cat > "${VSCODE_DIR}/extensions.json" <<EOF
 {
     "recommendations": [
         "theqtcompany.qt-core",
-        "theqtcompany.qt-cpp",
         "llvm-vs-code-extensions.vscode-clangd",
         "vadimcn.vscode-lldb",
         "notskm.clang-tidy",
         "jeff-hykin.better-cpp-syntax"
     ]
+}
+EOF
+
+# Generate keybindings.json
+cat > "${VSCODE_DIR}/keybindings.json" <<EOF
+{
+    "key": "alt+o",
+    "command": "clangd.switchSourceHeader"
 }
 EOF

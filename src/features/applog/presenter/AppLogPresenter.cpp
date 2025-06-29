@@ -5,9 +5,9 @@
 #include <fmt/core.h>
 #include <qlogging.h>
 
-AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
+AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                                  QObject *parent)
-    : IAppLogPresenter(parent), m_model(model), m_view(view),
+    : QObject(parent), m_model(model), m_view(view),
       m_logEventSubscription(
           events::subscribe<LogEvent>([this](const LogEvent &logEvent) {
             QMetaObject::invokeMethod(this, "onLogEventReceived",
@@ -22,12 +22,15 @@ AppLogPresenter::AppLogPresenter(IAppLogModel *model, IAppLogWidget *view,
   }
 
   if (m_view != nullptr) {
-    m_view->connectClearRequested(this, SLOT(handleClearRequested()));
+    connect(m_view, &AppLogWidget::clearRequested, this,
+            &AppLogPresenter::handleClearRequested);
   }
 
   if (m_model != nullptr) {
-    m_model->connectLogChanged(this, SLOT(handleLogChanged(LogDelta)));
-    m_model->connectLogCleared(this, SLOT(handleLogCleared()));
+    connect(m_model, &AppLogModel::logChanged, this,
+            &AppLogPresenter::handleLogChanged);
+    connect(m_model, &AppLogModel::logCleared, this,
+            &AppLogPresenter::handleLogCleared);
   }
 
   if (m_model != nullptr && m_view != nullptr) {

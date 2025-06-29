@@ -1,12 +1,5 @@
 #include "AppMainWindow.h"
 
-#include "../features/counter/model/CounterModel.h"
-#include "../features/counter/presenter/CounterPresenter.h"
-#include "../features/counter/widget/CounterWidget.h"
-
-#include "../features/applog/model/AppLogModel.h"
-#include "../features/applog/presenter/AppLogPresenter.h"
-#include "../features/applog/widget/AppLogWidget.h"
 #include <QCloseEvent>
 #include <QMainWindow>
 #include <QSettings>
@@ -15,15 +8,15 @@
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QtConcurrent/QtConcurrent>
-#include <qsettings.h>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AppMainWindow),
-      m_appLogModel(new AppLogModel(this)),
+      m_provider(new FilePersistenceProvider()),
+      m_appLogModel(new AppLogModel(m_provider, this)),
       m_appLogPresenter(
           new AppLogPresenter(m_appLogModel, m_appLogWidget, this)),
       m_appLogWidget(new AppLogWidget(this)),
-      m_counterModel(new CounterModel(this)),
+      m_counterModel(new CounterModel(m_provider, this)),
       m_counterPresenter(
           new CounterPresenter(m_counterModel, m_counterWidget, this)),
       m_counterWidget(new CounterWidget(this)) {

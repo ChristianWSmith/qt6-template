@@ -1,7 +1,6 @@
 #include "CounterModel.h"
 #include "../../../events/LogEvent.h"
 #include "../../../events/bus/EventBus.hpp"
-#include "../../../platform/flushFileBuffer.h"
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -10,15 +9,13 @@
 #include <fmt/core.h>
 
 namespace {
-QString stateFilePath() {
-  return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
-         "/counter_model_state.json";
-}
+constexpr auto KEY_VALUE = "value";
 } // namespace
 
-CounterModel::CounterModel(QObject *parent) : ICounterModel(parent) {
+CounterModel::CounterModel(IPersistenceProvider *provider, QObject *parent)
+    : QObject(parent), m_provider(provider) {
   qDebug() << "CounterModel instantiated";
-  loadState();
+  CounterModel::loadState();
 }
 
 int CounterModel::value() const {
@@ -39,51 +36,23 @@ void CounterModel::reset() {
   emit valueChanged(m_value);
 }
 
-QMetaObject::Connection CounterModel::connectValueChanged(QObject *receiver,
-                                                          const char *member) {
-  return QObject::connect(this, SIGNAL(valueChanged(int)), receiver, member);
-}
-
 void CounterModel::loadState() {
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::ReadOnly)) {
-    qWarning() << "Could not open state file for reading:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
-
-  const QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-  if (!doc.isObject()) {
-    qWarning() << "Invalid JSON structure in state file";
-    return;
-  }
-
-  const QJsonObject obj = doc.object();
-  if (obj.contains("value") && obj["value"].isDouble()) {
-    m_value = obj["value"].toInt();
-    qDebug() << "Loaded counter value:" << m_value;
+  const auto obj = m_provider->loadState(m_key);
+  if (obj.contains(KEY_VALUE) && obj[KEY_VALUE].isDouble()) {
+    m_value = obj[KEY_VALUE].toInt();
   }
 }
 
 void CounterModel::saveState() const {
-  QDir().mkpath(
-      QStandardPaths::writableLocation(QStandardPaths::AppDataLocation));
-
-  QFile file(stateFilePath());
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Could not open state file for writing:"
-               << file.errorString();
+  if (m_provider == nullptr) {
     return;
   }
-
   QJsonObject obj;
-  obj["value"] = m_value;
-  QJsonDocument doc(obj);
-  file.write(doc.toJson(QJsonDocument::Compact));
-  flushToDisk(file);
-  file.close();
-
-  qDebug() << "Saved counter value:" << m_value;
+  obj[KEY_VALUE] = m_value;
+  m_provider->saveState(m_key, obj);
 }
 
 void CounterModel::shutdown() {

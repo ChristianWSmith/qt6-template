@@ -128,25 +128,36 @@ All communication between features must happen **exclusively via the centralized
 
 To standardize and accelerate feature development, the repo includes a script:
 
-### `scripts/new-feature.sh`
+### `scripts/generate.sh`
 
-This script bootstraps all required source and test files for a new feature module. It:
+This script bootstraps all required source and test files for a new module. It supports two types:
 
-- Validates the feature name
-- Creates the necessary `model/`, `presenter/`, and `widget/` subdirectories
-- Generates interface and implementation headers and `.cpp` files
-- Sets up a Qt `.ui` file scaffold
-- Adds placeholder tests for each layer using Google Test
+- `feature`: Generates a full MV* scaffold (model, presenter, widget)
+- `widget`: Generates only a standalone widget (no model/presenter/test)
+
+It performs the following:
+
+- Validates the name format (must be TitleCase and a valid C++ identifier)
+- Creates the appropriate directory structure
+- Generates `.h`, `.cpp`, and `.ui` files with placeholder logic
+- Substitutes or removes generation markers to tailor files per type
 - Applies `clang-format` to all generated files if available
 
 Usage:
+
 ```bash
-./scripts/new-feature.sh FeatureName
+./scripts/generate.sh [feature|widget] Name
 ```
 
-The `FeatureName` must be in **TitleCase** and form a valid C++ identifier.
+Examples:
 
-This ensures each feature is properly scaffolded with minimal friction and adheres to architectural standards by default.
+```bash
+./scripts/generate.sh feature MyThing
+./scripts/generate.sh widget SimplePreview
+```
+
+Each invocation ensures the resulting module adheres to project architecture and coding conventions by default. Feature modules also include a `common.h` file for shared types and friend declarations, and a Google Test stub covering all layers.
+
 
 ## 🧪 Developer Workflows
 
@@ -185,6 +196,8 @@ Edit `app.env`:
 APP_NAME=MyApp
 APP_ID=com.example.MyApp
 APP_VERSION=0.1.0
+APP_DESCRIPTION="My App Description"
+APP_ORGANIZATION=MyOrganization
 ```
 
 These values will flow automatically into:
