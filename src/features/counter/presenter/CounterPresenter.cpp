@@ -1,6 +1,6 @@
 #include "CounterPresenter.h"
 #include "../../../events/LogEvent.h"
-#include "../../../events/bus/EventBus.hpp"
+#include "../../../events/system/EventSystem.hpp"
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
 #include <fmt/core.h>

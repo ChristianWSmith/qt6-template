@@ -1,5 +1,5 @@
 // NOLINTBEGIN
-#include "events/bus/EventBus.hpp"
+#include "events/system/EventSystem.hpp"
 #include <chrono>
 #include <condition_variable>
 #include <mutex>

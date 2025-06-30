@@ -20,7 +20,6 @@ template <typename T> class EventBus;
 
 template <typename T> class Subscription;
 
-namespace detail {
 class BusRegistry {
 public:
   template <typename T> static EventBus<T> &getBus() {
@@ -48,19 +47,18 @@ private:
   std::unordered_map<std::type_index, std::any> buses_;
   std::mutex mutex_;
 };
-} // namespace detail
 
 template <typename T>
 Subscription<T> subscribe(std::function<void(const T &)> func) {
-  return detail::BusRegistry::getBus<T>().subscribe(std::move(func));
+  return BusRegistry::getBus<T>().subscribe(std::move(func));
 }
 
 template <typename T> void publish(const T &event) {
-  detail::BusRegistry::getBus<T>().publish(event);
+  BusRegistry::getBus<T>().publish(event);
 }
 
 template <typename T> T current() {
-  return detail::BusRegistry::getBus<T>().current();
+  return BusRegistry::getBus<T>().current();
 }
 
 template <typename T> class EventBus {

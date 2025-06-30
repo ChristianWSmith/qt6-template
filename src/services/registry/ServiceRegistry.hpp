@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../events/bus/EventBus.hpp"
+#include "../../events/system/EventSystem.hpp"
 #include <memory>
 #include <optional>
 #include <vector>
