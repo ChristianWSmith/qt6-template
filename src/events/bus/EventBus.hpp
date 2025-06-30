@@ -1,7 +1,6 @@
 
 #pragma once
 
-#include "Subscription.hpp"
 #include <any>
 #include <atomic>
 #include <cstdint>
@@ -103,6 +102,39 @@ private:
   std::unordered_map<SubscriptionId, Callback> subscribers_;
   std::atomic<SubscriptionId> nextId_ = 0;
   T last_;
+};
+template <typename T> class Subscription {
+public:
+  Subscription(EventBus<T> *bus, uint64_t subscriptionId)
+      : bus_(bus), id_(subscriptionId) {}
+
+  Subscription(Subscription &&other) noexcept
+      : bus_(std::exchange(other.bus_, nullptr)), id_(other.id_) {}
+
+  Subscription &operator=(Subscription &&other) noexcept {
+    if (this != &other) {
+      unsubscribe();
+      bus_ = std::exchange(other.bus_, nullptr);
+      id_ = other.id_;
+    }
+    return *this;
+  }
+
+  ~Subscription() { unsubscribe(); }
+
+  void unsubscribe() {
+    if (bus_) {
+      bus_->unsubscribe(id_);
+      bus_ = nullptr;
+    }
+  }
+
+  Subscription(const Subscription &) = delete;
+  Subscription &operator=(const Subscription &) = delete;
+
+private:
+  EventBus<T> *bus_;
+  uint64_t id_;
 };
 
 } // namespace events
