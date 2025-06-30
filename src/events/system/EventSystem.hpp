@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <any>
@@ -17,25 +16,38 @@
 namespace events {
 
 template <typename T> class EventBus;
-
 template <typename T> class Subscription;
+
+// Base interface for all event buses
+class IEventBus {
+public:
+  virtual ~IEventBus() = default;
+  virtual void shutdown() = 0;
+};
 
 class BusRegistry {
 public:
-  template <typename T> static EventBus<T> &getBus() {
+  template <typename T>
+  static EventBus<T> &getBus() {
     const std::type_index type = std::type_index(typeid(T));
     std::unique_lock lock(instance().mutex_);
 
-    auto busIterator = instance().buses_.find(type);
-    if (busIterator != instance().buses_.end()) {
-
-      return *std::any_cast<std::shared_ptr<EventBus<T>>>(busIterator->second);
+    auto it = instance().buses_.find(type);
+    if (it != instance().buses_.end()) {
+      return *static_cast<EventBus<T> *>(it->second.get());
     }
 
     auto newBus = std::make_shared<EventBus<T>>();
-
     instance().buses_[type] = newBus;
     return *newBus;
+  }
+
+  static void shutdown() {
+    std::unique_lock lock(instance().mutex_);
+    for (auto &[type, bus] : instance().buses_) {
+      bus->shutdown();
+    }
+    instance().buses_.clear();
   }
 
 private:
@@ -44,7 +56,7 @@ private:
     return registry;
   }
 
-  std::unordered_map<std::type_index, std::any> buses_;
+  std::unordered_map<std::type_index, std::shared_ptr<IEventBus>> buses_;
   std::mutex mutex_;
 };
 
@@ -53,40 +65,63 @@ Subscription<T> subscribe(std::function<void(const T &)> func) {
   return BusRegistry::getBus<T>().subscribe(std::move(func));
 }
 
-template <typename T> void publish(const T &event) {
+template <typename T>
+void publish(const T &event) {
   BusRegistry::getBus<T>().publish(event);
 }
 
-template <typename T> T current() {
+template <typename T>
+T current() {
   return BusRegistry::getBus<T>().current();
 }
 
-template <typename T> class EventBus {
+template <typename T>
+class EventBus : public IEventBus {
 public:
   using Callback = std::function<void(const T &)>;
   using SubscriptionId = uint64_t;
 
   Subscription<T> subscribe(Callback callback) {
     std::unique_lock lock(mutex_);
-    SubscriptionId subscriptionId = nextId_++;
-    subscribers_[subscriptionId] = std::move(callback);
-    return Subscription<T>(this, subscriptionId);
+    SubscriptionId subId = nextId_++;
+    subscribers_[subId] = std::move(callback);
+    return Subscription<T>(this, subId);
   }
 
-  void unsubscribe(SubscriptionId subscriptionId) {
+  void unsubscribe(SubscriptionId subId) {
     std::unique_lock lock(mutex_);
-    subscribers_.erase(subscriptionId);
+    subscribers_.erase(subId);
+
+    auto subIt = subscriberThreads_.find(subId);
+    if (subIt != subscriberThreads_.end()) {
+      for (std::thread &subThread : subIt->second) {
+        if (subThread.joinable()) {
+          subThread.join();
+        }
+      }
+      subscriberThreads_.erase(subIt);
+    }
   }
 
   void publish(const T &event) {
-    {
-      std::unique_lock lock(mutex_);
-      last_ = event;
-    }
-
     std::shared_lock lock(mutex_);
-    for (const auto &[subscriptionId, func] : subscribers_) {
-      std::thread(func, event).detach();
+    last_ = event;
+
+    for (const auto &entry : subscribers_) {
+      SubscriptionId subId = entry.first;
+      const Callback &func = entry.second;
+
+      std::thread subThread([func, event]() {
+        try {
+          func(event);
+        } catch (const std::exception &e) {
+          fmt::print(stderr, "Exception in EventBus callback: {}\n", e.what());
+        } catch (...) {
+          fmt::print(stderr, "Unknown exception in EventBus callback\n");
+        }
+      });
+
+      subscriberThreads_[subId].emplace_back(std::move(subThread));
     }
   }
 
@@ -95,16 +130,34 @@ public:
     return last_;
   }
 
+  void shutdown() override {
+    std::unique_lock lock(mutex_);
+
+    for (auto &[subId, threads] : subscriberThreads_) {
+      for (std::thread &subThread : threads) {
+        if (subThread.joinable()) {
+          subThread.join();
+        }
+      }
+    }
+
+    subscriberThreads_.clear();
+    subscribers_.clear();
+  }
+
 private:
   mutable std::shared_mutex mutex_;
   std::unordered_map<SubscriptionId, Callback> subscribers_;
+  std::unordered_map<SubscriptionId, std::vector<std::thread>> subscriberThreads_;
   std::atomic<SubscriptionId> nextId_ = 0;
   T last_;
 };
-template <typename T> class Subscription {
+
+template <typename T>
+class Subscription {
 public:
-  Subscription(EventBus<T> *bus, uint64_t subscriptionId)
-      : bus_(bus), id_(subscriptionId) {}
+  Subscription(EventBus<T> *bus, uint64_t subId)
+      : bus_(bus), id_(subId) {}
 
   Subscription(Subscription &&other) noexcept
       : bus_(std::exchange(other.bus_, nullptr)), id_(other.id_) {}

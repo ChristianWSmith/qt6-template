@@ -43,6 +43,7 @@ TEST_F(EventTest, EventsWork) {
 
   actual = events::current<Event>().value;
   ASSERT_EQ(actual, expected);
+  events::publish(Event{expected});
 }
 
 // NOLINTEND

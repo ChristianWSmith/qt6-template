@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include <QApplication>
 #include <gtest/gtest.h>
+#include "events/system/EventSystem.hpp"
 
 QDebug operator<<(QDebug debug, const std::string &str) {
   debug.noquote() << QString::fromStdString(str);
@@ -18,6 +19,8 @@ int main(int argc, char **argv) {
   QApplication a(argc, argv);
 
   ::testing::InitGoogleMock(&argc, argv);
-  return RUN_ALL_TESTS();
+  auto rc = RUN_ALL_TESTS();
+  events::BusRegistry::shutdown();
+  return rc;
 }
 // NOLINTEND
