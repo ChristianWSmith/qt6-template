@@ -1,7 +1,6 @@
 
 // NOLINTBEGIN
 #include "services/registry/ServiceRegistry.hpp"
-#include <QObject>
 #include <QTest>
 #include <chrono>
 #include <condition_variable>
@@ -12,11 +11,10 @@
 struct InputEvent {
   int value;
 };
-Q_DECLARE_METATYPE(InputEvent)
+
 struct OutputEvent {
   int value;
 };
-Q_DECLARE_METATYPE(OutputEvent)
 
 class ServicesTest : public ::testing::Test {
 protected:

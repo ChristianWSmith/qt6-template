@@ -10,7 +10,6 @@
 struct Event {
   int value;
 };
-Q_DECLARE_METATYPE(Event)
 
 class EventTest : public ::testing::Test {
 protected:
