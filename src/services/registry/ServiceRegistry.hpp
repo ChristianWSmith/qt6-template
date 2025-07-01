@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../../events/system/EventSystem.hpp"
-#include <memory>
 #include <optional>
 #include <vector>
 
