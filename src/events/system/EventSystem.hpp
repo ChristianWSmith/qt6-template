@@ -72,19 +72,6 @@ private:
   std::mutex mutex_;
 };
 
-// --- Subscription helpers ---
-
-template <typename T, typename Obj>
-void subscribe(Obj *receiver, void (Obj::*method)(const T &)) { // used
-  QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      receiver,
-      [receiver, method](const QVariant &var) {
-        (receiver->*method)(var.value<T>());
-      },
-      Qt::QueuedConnection);
-}
-
 template <typename T> class LambdaWrapper : public QObject {
 public:
   explicit LambdaWrapper(std::function<void(const T &)> func,
@@ -97,16 +84,26 @@ private:
   std::function<void(const T &)> func_;
 };
 
+template <typename T, typename Obj>
+std::enable_if_t<std::is_base_of_v<QObject, Obj>>
+subscribe(Obj *receiver, void (Obj::*method)(const T &)) {
+  QObject::connect(
+      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
+      receiver,
+      [receiver, method](const QVariant &var) {
+        (receiver->*method)(var.value<T>());
+      },
+      Qt::QueuedConnection);
+}
+
 template <typename T>
-void subscribe(QObject *owner, std::function<void(const T &)> func) { // used
+void subscribe(QObject *owner, std::function<void(const T &)> func) {
   // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   auto *wrapper = new LambdaWrapper<T>(std::move(func), owner);
   QObject::connect(&BusRegistry::dispatcher<T>(),
                    &EventDispatcherBase::eventPublished, wrapper,
                    &LambdaWrapper<T>::handle, Qt::QueuedConnection);
 }
-
-// --- Publish shortcut ---
 
 template <typename T> void publish(const T &event) {
   BusRegistry::publish<T>(event);

@@ -27,8 +27,7 @@ TEST_F(EventTest, EventsWork) {
   QTest::qWait(1);
 
   ASSERT_EQ(actual, expected);
-  events::publish(Event{expected}); // un-commenting this line leads to
-                                    // subsequent tests hanging indefinitely
+  events::publish(Event{expected});
 }
 
 #include "EventsTest.moc"
