@@ -37,7 +37,6 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
 }
 
 void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
-  qDebug() << "Received log:" << QString::fromStdString(event.message);
   if (m_model != nullptr) {
     m_model->addLogMessage(QString::fromStdString(event.message));
   }
