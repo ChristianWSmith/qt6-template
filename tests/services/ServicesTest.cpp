@@ -1,22 +1,26 @@
 
 // NOLINTBEGIN
 #include "services/registry/ServiceRegistry.hpp"
+#include <QObject>
+#include <QTest>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 #include <gtest/gtest.h>
 
-class ServicesTest : public ::testing::Test {
-protected:
-  ServicesTest() {}
-};
-
 struct InputEvent {
   int value;
 };
+Q_DECLARE_METATYPE(InputEvent)
 struct OutputEvent {
   int value;
+};
+Q_DECLARE_METATYPE(OutputEvent)
+
+class ServicesTest : public ::testing::Test {
+protected:
+  ServicesTest() {}
 };
 
 OutputEvent handle(InputEvent inputEvent) {
@@ -33,7 +37,7 @@ TEST_F(ServicesTest, ServicesWork) {
   int actual = 0;
   int expected = 1;
 
-  auto sub = events::subscribe<OutputEvent>([&](const OutputEvent &event) {
+  events::subscribe<OutputEvent>([&](const OutputEvent &event) {
     {
       std::lock_guard<std::mutex> lock(mtx);
       actual = event.value;
@@ -43,6 +47,7 @@ TEST_F(ServicesTest, ServicesWork) {
   });
 
   events::publish(InputEvent{expected});
+  QTest::qWait(1);
 
   std::unique_lock<std::mutex> lock(mtx);
   bool got_event = cv.wait_for(lock, std::chrono::seconds(1),

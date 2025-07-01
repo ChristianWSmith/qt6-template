@@ -7,13 +7,10 @@
 
 AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                                  QObject *parent)
-    : QObject(parent), m_model(model), m_view(view),
-      m_logEventSubscription(
-          events::subscribe<LogEvent>([this](const LogEvent &logEvent) {
-            QMetaObject::invokeMethod(this, "onLogEventReceived",
-                                      Qt::QueuedConnection,
-                                      Q_ARG(LogEvent, logEvent));
-          })) {
+    : QObject(parent), m_model(model), m_view(view) {
+
+  events::subscribe<LogEvent>(this, &AppLogPresenter::onLogEventReceived);
+
   if (m_model == nullptr) {
     qWarning() << "AppLogPresenter instantiated without model";
   }
@@ -40,6 +37,7 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
 }
 
 void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
+  qDebug() << "Received log:" << QString::fromStdString(event.message);
   if (m_model != nullptr) {
     m_model->addLogMessage(QString::fromStdString(event.message));
   }

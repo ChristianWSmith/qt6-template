@@ -11,12 +11,6 @@
 #include <QTest>
 #include <gtest/gtest.h>
 
-class TestLogEmitter : public QObject {
-  Q_OBJECT
-signals:
-  void logEventReady(const LogEvent &);
-};
-
 class AppLogTest : public ::testing::Test {
 protected:
   AppLogModel model;
@@ -38,21 +32,13 @@ TEST_F(AppLogTest, ModelEmitsLogChanged) {
 }
 
 TEST_F(AppLogTest, PresenterForwardsEvent_ModelEmits_ViewUpdates) {
-  TestLogEmitter emitter;
-  QObject::connect(&emitter, &TestLogEmitter::logEventReady, &presenter,
-                   [&](const LogEvent &event) {
-                     QMetaObject::invokeMethod(&presenter, "onLogEventReceived",
-                                               Qt::QueuedConnection,
-                                               Q_ARG(LogEvent, event));
-                   });
-
   QSignalSpy modelSpy(&model, &AppLogModel::logChanged);
 
   LogEvent event;
   event.message = "Presenter test message";
-  emit emitter.logEventReady(event);
+  events::publish(event);
 
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_EQ(modelSpy.count(), 1);
 

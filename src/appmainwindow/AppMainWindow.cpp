@@ -48,7 +48,6 @@ void AppMainWindow::shutdown() {
   QSettings settings(ORGANIZATION_NAME, APP_NAME);
   settings.setValue("window/geometry", saveGeometry());
   settings.setValue("window/state", saveState());
-  events::BusRegistry::shutdown();
 }
 
 void AppMainWindow::closeEvent(QCloseEvent *event) {

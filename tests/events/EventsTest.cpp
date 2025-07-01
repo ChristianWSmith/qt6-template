@@ -1,10 +1,16 @@
 // NOLINTBEGIN
 #include "events/system/EventSystem.hpp"
+#include <QTest>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 #include <gtest/gtest.h>
+
+struct Event {
+  int value;
+};
+Q_DECLARE_METATYPE(Event)
 
 class EventTest : public ::testing::Test {
 protected:
@@ -12,9 +18,6 @@ protected:
 };
 
 TEST_F(EventTest, EventsWork) {
-  struct Event {
-    int value;
-  };
 
   std::mutex mtx;
   std::condition_variable cv;
@@ -23,7 +26,7 @@ TEST_F(EventTest, EventsWork) {
   int actual = 0;
   int expected = 1;
 
-  auto sub = events::subscribe<Event>([&](const Event &event) {
+  events::subscribe<Event>([&](const Event &event) {
     {
       std::lock_guard<std::mutex> lock(mtx);
       actual = event.value;
@@ -33,15 +36,13 @@ TEST_F(EventTest, EventsWork) {
   });
 
   events::publish(Event{expected});
+  QTest::qWait(1);
 
   std::unique_lock<std::mutex> lock(mtx);
   bool got_event = cv.wait_for(lock, std::chrono::seconds(1),
                                [&] { return event_received; });
 
   ASSERT_TRUE(got_event);
-  ASSERT_EQ(actual, expected);
-
-  actual = events::current<Event>().value;
   ASSERT_EQ(actual, expected);
   events::publish(Event{expected});
 }

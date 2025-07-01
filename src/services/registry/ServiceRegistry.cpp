@@ -8,10 +8,4 @@ void ServiceRegistry::registerAll() {
   registerOneWayService<LogEvent>(ConsoleLogService::handle);
 }
 
-std::vector<std::shared_ptr<void>> &ServiceRegistry::subscriptions_() {
-  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-  static auto *vec = new std::vector<std::shared_ptr<void>>();
-  return *vec;
-}
-
 } // namespace services
