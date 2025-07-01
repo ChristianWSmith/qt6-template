@@ -27,13 +27,16 @@ TEST_F(ServicesTest, ServicesWork) {
   int actual = 0;
   int expected = 1;
 
+  auto qObj = new QObject();
   events::subscribe<OutputEvent>(
-      [&](const OutputEvent &event) { actual = event.value; });
+      qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{expected});
   QTest::qWait(1);
 
   ASSERT_EQ(actual, expected);
 }
+
+#include "ServicesTest.moc"
 
 // NOLINTEND

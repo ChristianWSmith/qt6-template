@@ -72,8 +72,10 @@ private:
   std::mutex mutex_;
 };
 
+// --- Subscription helpers ---
+
 template <typename T, typename Obj>
-void subscribe(Obj *receiver, void (Obj::*method)(const T &)) {
+void subscribe(Obj *receiver, void (Obj::*method)(const T &)) { // used
   QObject::connect(
       &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
       receiver,
@@ -83,40 +85,28 @@ void subscribe(Obj *receiver, void (Obj::*method)(const T &)) {
       Qt::QueuedConnection);
 }
 
-template <typename T, typename Ctx>
-void subscribe(std::shared_ptr<Ctx> ctx, void (Ctx::*method)(const T &)) {
-  QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      &BusRegistry::dispatcher<T>(),
-      [ctx, method](const QVariant &var) {
-        if (ctx) {
-          (ctx.get()->*method)(var.value<T>());
-        }
-      },
-      Qt::QueuedConnection);
+template <typename T> class LambdaWrapper : public QObject {
+public:
+  explicit LambdaWrapper(std::function<void(const T &)> func,
+                         QObject *parent = nullptr)
+      : QObject(parent), func_(std::move(func)) {}
+
+  void handle(const QVariant &var) { func_(var.value<T>()); }
+
+private:
+  std::function<void(const T &)> func_;
+};
+
+template <typename T>
+void subscribe(QObject *owner, std::function<void(const T &)> func) { // used
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+  auto *wrapper = new LambdaWrapper<T>(std::move(func), owner);
+  QObject::connect(&BusRegistry::dispatcher<T>(),
+                   &EventDispatcherBase::eventPublished, wrapper,
+                   &LambdaWrapper<T>::handle, Qt::QueuedConnection);
 }
 
-template <typename T> void subscribe(std::function<void(const T &)> func) {
-  QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      &BusRegistry::dispatcher<T>(),
-      [func = std::move(func)](const QVariant &var) { func(var.value<T>()); },
-      Qt::QueuedConnection);
-}
-
-template <typename T, typename QObj>
-void subscribeSafe(QObj *obj, void (QObj::*method)(const T &)) {
-  QPointer<QObj> safe(obj);
-  QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      &BusRegistry::dispatcher<T>(),
-      [safe, method](const QVariant &var) {
-        if (safe) {
-          (safe->*method)(var.value<T>());
-        }
-      },
-      Qt::QueuedConnection);
-}
+// --- Publish shortcut ---
 
 template <typename T> void publish(const T &event) {
   BusRegistry::publish<T>(event);
