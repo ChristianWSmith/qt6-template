@@ -7,7 +7,6 @@
 #include <memory>
 #include <mutex>
 #include <typeindex>
-#include <typeinfo>
 #include <unordered_map>
 
 namespace events {
