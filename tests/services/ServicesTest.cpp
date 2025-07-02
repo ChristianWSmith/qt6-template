@@ -3,10 +3,7 @@
 #include <QTest>
 #include <gtest/gtest.h>
 #include <set>
-
-// ----------------------------
-// File-scope data + handlers
-// ----------------------------
+#include <optional>
 
 struct InputEvent {
   int value;
@@ -20,9 +17,9 @@ static OutputEvent handle(InputEvent inputEvent) {
   return OutputEvent{inputEvent.value};
 }
 
-static int oneWayActual = 0;
 static void oneWayHandler(const InputEvent &event) {
-  oneWayActual = event.value;
+  extern int oneWayActualValue;
+  oneWayActualValue = event.value;
 }
 
 static std::optional<OutputEvent> optionalServiceHandler(const InputEvent &input) {
@@ -47,15 +44,6 @@ static MultiOutput multiHandler2(const MultiInput &e) {
   return MultiOutput{e.value + 5};
 }
 
-static bool serviceScopedWasCalled = false;
-static void serviceScopedHandler(const InputEvent &) {
-  serviceScopedWasCalled = true;
-}
-
-static OutputEvent lateSubscriberHandler(const InputEvent &e) {
-  return OutputEvent{e.value};
-}
-
 struct QuietInput {
   int value;
 };
@@ -68,21 +56,21 @@ static std::optional<QuietOutput> alwaysSkipHandler(const QuietInput &) {
   return std::nullopt;
 }
 
-// ----------------------------
-// Test Fixture
-// ----------------------------
+// Globals for test state mutation
+int oneWayActualValue = 0;
+bool wasServiceCalled = false;
+int lateSubscriberValue = 0;
+int quietOutputValue = -1;
 
 class ServicesTest : public ::testing::Test {
 protected:
-  void SetUp() override {
-    oneWayActual = 0;
-    serviceScopedWasCalled = false;
+  ServicesTest() {
+    oneWayActualValue = 0;
+    wasServiceCalled = false;
+    lateSubscriberValue = 0;
+    quietOutputValue = -1;
   }
 };
-
-// ----------------------------
-// Test Cases
-// ----------------------------
 
 TEST_F(ServicesTest, ServicesWork) {
   services::ServiceRegistry::registerService<InputEvent, OutputEvent>(handle);
@@ -90,9 +78,9 @@ TEST_F(ServicesTest, ServicesWork) {
   int actual = 0;
   int expected = 1;
 
-  auto qObj = new QObject();
+  QObject qObj;
   events::subscribe<OutputEvent>(
-      qObj, [&](const OutputEvent &event) { actual = event.value; });
+      &qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{expected});
   QTest::qWait(100);
@@ -106,20 +94,21 @@ TEST_F(ServicesTest, OneWayServiceFires) {
   events::publish(InputEvent{99});
   QTest::qWait(100);
 
-  ASSERT_EQ(oneWayActual, 99);
+  ASSERT_EQ(oneWayActualValue, 99);
 }
 
 TEST_F(ServicesTest, OptionalServiceOnlyPublishesWhenPopulated) {
-  services::ServiceRegistry::registerOptionalService<InputEvent, OutputEvent>(optionalServiceHandler);
+  services::ServiceRegistry::registerOptionalService<InputEvent, OutputEvent>(
+      optionalServiceHandler);
 
-  int actual = -1; // sentinel
-  auto qObj = new QObject();
+  int actual = -1;
+  QObject qObj;
   events::subscribe<OutputEvent>(
-      qObj, [&](const OutputEvent &event) { actual = event.value; });
+      &qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{-1});
   QTest::qWait(100);
-  ASSERT_EQ(actual, -1); // should remain unchanged
+  ASSERT_EQ(actual, -1); // Should remain unchanged
 
   events::publish(InputEvent{5});
   QTest::qWait(100);
@@ -143,47 +132,54 @@ TEST_F(ServicesTest, MultipleServicesCanCoexist) {
   ASSERT_EQ(seen.size(), 2);
 }
 
+static void markServiceCalled(const InputEvent &) {
+  wasServiceCalled = true;
+}
+
 TEST_F(ServicesTest, ServiceScopedToQCoreApplication) {
-  services::ServiceRegistry::registerOneWayService<InputEvent>(serviceScopedHandler);
+  services::ServiceRegistry::registerOneWayService<InputEvent>(markServiceCalled);
+
+  ASSERT_TRUE(QCoreApplication::instance());
 
   events::publish(InputEvent{123});
   QTest::qWait(100);
 
-  ASSERT_TRUE(serviceScopedWasCalled);
+  ASSERT_TRUE(wasServiceCalled);
+}
+
+static OutputEvent echoHandler(const InputEvent &e) {
+  return OutputEvent{e.value};
 }
 
 TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
-  services::ServiceRegistry::registerService<InputEvent, OutputEvent>(lateSubscriberHandler);
+  services::ServiceRegistry::registerService<InputEvent, OutputEvent>(echoHandler);
 
-  // publish before subscribing
   events::publish(InputEvent{7});
   QTest::qWait(100);
 
-  int actual = 0;
   QObject listener;
   events::subscribe<OutputEvent>(
-      &listener, [&](const OutputEvent &e) { actual = e.value; });
+      &listener, [&](const OutputEvent &e) { lateSubscriberValue = e.value; });
 
-  ASSERT_EQ(actual, 0); // nothing received yet
+  ASSERT_EQ(lateSubscriberValue, 0);
 
   events::publish(InputEvent{8});
   QTest::qWait(100);
-
-  ASSERT_EQ(actual, 8);
+  ASSERT_EQ(lateSubscriberValue, 8);
 }
 
 TEST_F(ServicesTest, OptionalServiceCanSkipOutput) {
-  services::ServiceRegistry::registerOptionalService<QuietInput, QuietOutput>(alwaysSkipHandler);
+  services::ServiceRegistry::registerOptionalService<QuietInput, QuietOutput>(
+      alwaysSkipHandler);
 
-  int actual = -1;
   QObject listener;
   events::subscribe<QuietOutput>(
-      &listener, [&](const QuietOutput &e) { actual = e.value; });
+      &listener, [&](const QuietOutput &e) { quietOutputValue = e.value; });
 
   events::publish(QuietInput{999});
   QTest::qWait(100);
 
-  ASSERT_EQ(actual, -1); // still unchanged
+  ASSERT_EQ(quietOutputValue, -1); // Still unchanged
 }
 
 #include "ServicesTest.moc"
