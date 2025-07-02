@@ -2,8 +2,8 @@
 #include "services/registry/ServiceRegistry.hpp"
 #include <QTest>
 #include <gtest/gtest.h>
-#include <set>
 #include <optional>
+#include <set>
 
 struct InputEvent {
   int value;
@@ -13,8 +13,8 @@ struct OutputEvent {
   int value;
 };
 
-static OutputEvent handle(InputEvent inputEvent) {
-  return OutputEvent{inputEvent.value};
+static OutputEvent handle(const InputEvent &event) {
+  return OutputEvent{event.value};
 }
 
 static void oneWayHandler(const InputEvent &event) {
@@ -22,7 +22,8 @@ static void oneWayHandler(const InputEvent &event) {
   oneWayActualValue = event.value;
 }
 
-static std::optional<OutputEvent> optionalServiceHandler(const InputEvent &input) {
+static std::optional<OutputEvent>
+optionalServiceHandler(const InputEvent &input) {
   if (input.value > 0)
     return OutputEvent{input.value * 2};
   return std::nullopt;
@@ -116,8 +117,10 @@ TEST_F(ServicesTest, OptionalServiceOnlyPublishesWhenPopulated) {
 }
 
 TEST_F(ServicesTest, MultipleServicesCanCoexist) {
-  services::ServiceRegistry::registerService<MultiInput, MultiOutput>(multiHandler1);
-  services::ServiceRegistry::registerService<MultiInput, MultiOutput>(multiHandler2);
+  services::ServiceRegistry::registerService<MultiInput, MultiOutput>(
+      multiHandler1);
+  services::ServiceRegistry::registerService<MultiInput, MultiOutput>(
+      multiHandler2);
 
   std::set<int> seen;
   QObject receiver;
@@ -132,12 +135,11 @@ TEST_F(ServicesTest, MultipleServicesCanCoexist) {
   ASSERT_EQ(seen.size(), 2);
 }
 
-static void markServiceCalled(const InputEvent &) {
-  wasServiceCalled = true;
-}
+static void markServiceCalled(const InputEvent &) { wasServiceCalled = true; }
 
 TEST_F(ServicesTest, ServiceScopedToQCoreApplication) {
-  services::ServiceRegistry::registerOneWayService<InputEvent>(markServiceCalled);
+  services::ServiceRegistry::registerOneWayService<InputEvent>(
+      markServiceCalled);
 
   ASSERT_TRUE(QCoreApplication::instance());
 
@@ -152,7 +154,8 @@ static OutputEvent echoHandler(const InputEvent &e) {
 }
 
 TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
-  services::ServiceRegistry::registerService<InputEvent, OutputEvent>(echoHandler);
+  services::ServiceRegistry::registerService<InputEvent, OutputEvent>(
+      echoHandler);
 
   events::publish(InputEvent{7});
   QTest::qWait(100);
