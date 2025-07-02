@@ -39,7 +39,7 @@ TEST_F(AppLogTest, PresenterForwardsEvent_ModelEmits_ViewUpdates) {
   event.message = "Presenter test message";
   events::publish(event);
 
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_EQ(modelSpy.count(), 1);
 

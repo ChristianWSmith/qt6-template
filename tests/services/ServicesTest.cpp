@@ -84,7 +84,7 @@ TEST_F(ServicesTest, ServicesWork) {
       &qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{expected});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_EQ(actual, expected);
 }
@@ -93,7 +93,7 @@ TEST_F(ServicesTest, OneWayServiceFires) {
   services::ServiceRegistry::registerOneWayService<InputEvent>(oneWayHandler);
 
   events::publish(InputEvent{99});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_EQ(oneWayActualValue, 99);
 }
@@ -108,11 +108,11 @@ TEST_F(ServicesTest, OptionalServiceOnlyPublishesWhenPopulated) {
       &qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{-1});
-  QTest::qWait(100);
+  QTest::qWait(1);
   ASSERT_EQ(actual, -1); // Should remain unchanged
 
   events::publish(InputEvent{5});
-  QTest::qWait(100);
+  QTest::qWait(1);
   ASSERT_EQ(actual, 10);
 }
 
@@ -128,7 +128,7 @@ TEST_F(ServicesTest, MultipleServicesCanCoexist) {
       &receiver, [&](const MultiOutput &e) { seen.insert(e.value); });
 
   events::publish(MultiInput{1});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_NE(seen.find(2), seen.end());
   ASSERT_NE(seen.find(6), seen.end());
@@ -144,7 +144,7 @@ TEST_F(ServicesTest, ServiceScopedToQCoreApplication) {
   ASSERT_TRUE(QCoreApplication::instance());
 
   events::publish(InputEvent{123});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_TRUE(wasServiceCalled);
 }
@@ -158,7 +158,7 @@ TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
       echoHandler);
 
   events::publish(InputEvent{7});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   QObject listener;
   events::subscribe<OutputEvent>(
@@ -167,7 +167,7 @@ TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
   ASSERT_EQ(lateSubscriberValue, 0);
 
   events::publish(InputEvent{8});
-  QTest::qWait(100);
+  QTest::qWait(1);
   ASSERT_EQ(lateSubscriberValue, 8);
 }
 
@@ -180,7 +180,7 @@ TEST_F(ServicesTest, OptionalServiceCanSkipOutput) {
       &listener, [&](const QuietOutput &e) { quietOutputValue = e.value; });
 
   events::publish(QuietInput{999});
-  QTest::qWait(100);
+  QTest::qWait(1);
 
   ASSERT_EQ(quietOutputValue, -1); // Still unchanged
 }
