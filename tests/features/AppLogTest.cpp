@@ -1,5 +1,6 @@
 // NOLINTBEGIN
 #include "events/LogEvent.h"
+#include "events/system/EventSystem.hpp"
 #include "features/applog/applogcommon.h"
 #include "features/applog/model/AppLogModel.h"
 #include "features/applog/presenter/AppLogPresenter.h"

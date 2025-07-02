@@ -4,7 +4,6 @@
 #include "../widget/AppLogWidget.h"
 
 #include "../../../events/LogEvent.h"
-#include "../../../events/system/EventSystem.hpp"
 
 #include <QObject>
 #include <QString>

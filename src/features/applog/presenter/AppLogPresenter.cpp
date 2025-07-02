@@ -1,4 +1,5 @@
 #include "AppLogPresenter.h"
+#include "../../../events/system/EventSystem.hpp"
 #include <QDebug>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>

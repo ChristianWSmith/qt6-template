@@ -84,8 +84,9 @@ private:
 };
 
 template <typename T, typename Obj>
-std::enable_if_t<std::is_base_of_v<QObject, Obj>>
-subscribe(Obj *receiver, void (Obj::*method)(const T &)) {
+void subscribe(Obj *receiver, void (Obj::*method)(const T &))
+  requires(std::is_base_of_v<QObject, Obj>)
+{
   QObject::connect(
       &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
       receiver,
