@@ -25,9 +25,11 @@ struct Registrar {
 
 } // namespace services::detail
 
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define REGISTER_SERVICE(FUNC)                                                 \
   namespace {                                                                  \
   static const services::detail::Registrar _registrar_##__COUNTER__([]() {     \
     events::subscribe(std::move(FUNC));                                        \
   });                                                                          \
   }
+// NOLINTEND(cppcoreguidelines-macro-usage)
