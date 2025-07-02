@@ -1,6 +1,7 @@
 // NOLINTBEGIN
 #include "events/system/EventSystem.hpp"
 #include <QObject>
+#include <QPointer>
 #include <QTest>
 #include <gtest/gtest.h>
 
@@ -25,7 +26,6 @@ TEST_F(EventTest, EventsWork) {
   QTest::qWait(1);
 
   ASSERT_EQ(actual, expected);
-  events::publish(Event{expected});
 }
 
 TEST_F(EventTest, DestroyedSubscriberDoesNotReceiveEvents) {
@@ -107,6 +107,92 @@ TEST_F(EventTest, LambdaLifetimeTiedToOwner) {
   QTest::qWait(1);
 
   ASSERT_EQ(actual, 0);
+}
+
+// New tests
+
+TEST_F(EventTest, SubscriberCanRegisterAnotherSubscriberMidDispatch) {
+  int a = 0;
+  int b = 0;
+
+  QObject objA, objB;
+
+  events::subscribe<Event>(&objA, [&](const Event &) {
+    a = 1;
+    events::subscribe<Event>(&objB, [&](const Event &) { b = 1; });
+  });
+
+  events::publish(Event{});
+  QTest::qWait(1);
+
+  ASSERT_EQ(a, 1);
+  ASSERT_EQ(b, 0);
+
+  events::publish(Event{});
+  QTest::qWait(1);
+
+  ASSERT_EQ(b, 1);
+}
+
+TEST_F(EventTest, SubscriberCanUnsubscribeItselfSafely) {
+  int callCount = 0;
+
+  QPointer<QObject> obj = new QObject();
+  events::subscribe<Event>(obj, [&](const Event &) {
+    callCount++;
+    obj->deleteLater();
+  });
+
+  events::publish(Event{});
+  QTest::qWait(1);
+
+  ASSERT_TRUE(obj.isNull());
+
+  events::publish(Event{});
+  QTest::qWait(1);
+
+  ASSERT_EQ(callCount, 1);
+}
+
+TEST_F(EventTest, ThousandsOfSubscribersAllFire) {
+  static constexpr int count = 1000;
+  int hitCount = 0;
+
+  std::vector<std::unique_ptr<QObject>> subs;
+  subs.reserve(count);
+
+  for (int i = 0; i < count; ++i) {
+    auto obj = std::make_unique<QObject>();
+    events::subscribe<Event>(obj.get(), [&](const Event &) { ++hitCount; });
+    subs.push_back(std::move(obj));
+  }
+
+  events::publish(Event{});
+  QTest::qWait(1);
+
+  ASSERT_EQ(hitCount, count);
+}
+
+struct EventA {
+  int val;
+};
+struct EventB {
+  int val;
+};
+
+TEST_F(EventTest, OneObjectCanSubscribeToMultipleEvents) {
+  int a = 0, b = 0;
+  QObject shared;
+
+  events::subscribe<EventA>(&shared, [&](const EventA &e) { a = e.val; });
+  events::subscribe<EventB>(&shared, [&](const EventB &e) { b = e.val; });
+
+  events::publish(EventA{1});
+  events::publish(EventB{2});
+  QTest::qWait(1);
+
+  ASSERT_EQ(a, 1);
+  ASSERT_EQ(b, 2);
 }
 
 #include "EventsTest.moc"
