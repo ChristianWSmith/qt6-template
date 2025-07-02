@@ -1,7 +1,7 @@
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
-#include "services/registry/registry.hpp"
+#include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
 #include <QDebug>
 #include <QDir>

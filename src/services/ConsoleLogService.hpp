@@ -1,5 +1,6 @@
 #pragma once
 #include "../events/LogEvent.h"
+#include "registry/ServiceRegistry.hpp"
 #include <QDebug>
 
 namespace ConsoleLogService {
@@ -9,3 +10,5 @@ void handle(const LogEvent &event) {
 }
 
 } // namespace ConsoleLogService
+
+REGISTER_SERVICE(ConsoleLogService::handle);
