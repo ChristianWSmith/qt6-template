@@ -56,7 +56,7 @@ public:
     return *static_cast<EventDispatcher<T> *>(basePtr.get());
   }
 
-  template <typename T> static void publish(const T &event) {
+  template <typename T> static void publish(T event) {
     dispatcher<T>().publish(event);
   }
 
@@ -105,8 +105,8 @@ void subscribe(QObject *owner, std::function<void(const T &)> func) {
                    &LambdaWrapper<T>::handle, Qt::QueuedConnection);
 }
 
-template <typename T> void publish(const T &event) {
-  BusRegistry::publish<T>(event);
+template <typename T> void publish(T event) {
+  BusRegistry::publish<T>(std::move(event));
 }
 
 } // namespace events
