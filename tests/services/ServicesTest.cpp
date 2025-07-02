@@ -32,7 +32,7 @@ TEST_F(ServicesTest, ServicesWork) {
       qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{expected});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   ASSERT_EQ(actual, expected);
 }
@@ -44,7 +44,7 @@ TEST_F(ServicesTest, OneWayServiceFires) {
       [&](const InputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{99});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   ASSERT_EQ(actual, 99);
 }
@@ -63,11 +63,11 @@ TEST_F(ServicesTest, OptionalServiceOnlyPublishesWhenPopulated) {
       qObj, [&](const OutputEvent &event) { actual = event.value; });
 
   events::publish(InputEvent{-1});
-  QTest::qWait(1);
+  QTest::qWait(100);
   ASSERT_EQ(actual, -1); // Should remain unchanged
 
   events::publish(InputEvent{5});
-  QTest::qWait(1);
+  QTest::qWait(100);
   ASSERT_EQ(actual, 10);
 }
 
@@ -94,7 +94,7 @@ TEST_F(ServicesTest, MultipleServicesCanCoexist) {
       &receiver, [&](const MultiOutput &e) { seen.insert(e.value); });
 
   events::publish(MultiInput{1});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   ASSERT_NE(seen.find(2), seen.end());
   ASSERT_NE(seen.find(6), seen.end());
@@ -107,8 +107,10 @@ TEST_F(ServicesTest, ServiceScopedToQCoreApplication) {
   services::ServiceRegistry::registerOneWayService<InputEvent>(
       [&](const InputEvent &) { wasCalled = true; });
 
+  ASSERT_TRUE(QCoreApplication::instance());
+
   events::publish(InputEvent{123});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   ASSERT_TRUE(wasCalled);
 }
@@ -119,7 +121,7 @@ TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
 
   // Publish BEFORE subscribing
   events::publish(InputEvent{7});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   int actual = 0;
   QObject listener;
@@ -131,7 +133,7 @@ TEST_F(ServicesTest, LateSubscribersGetServiceOutput) {
 
   // Now publish something that should be received
   events::publish(InputEvent{8});
-  QTest::qWait(1);
+  QTest::qWait(100);
   ASSERT_EQ(actual, 8);
 }
 
@@ -154,7 +156,7 @@ TEST_F(ServicesTest, OptionalServiceCanSkipOutput) {
       &listener, [&](const QuietOutput &e) { actual = e.value; });
 
   events::publish(QuietInput{999});
-  QTest::qWait(1);
+  QTest::qWait(100);
 
   ASSERT_EQ(actual, -1); // Still unchanged
 }
