@@ -1,6 +1,6 @@
 #include "CounterWidget.h"
 #include "../../../events/LogEvent.h"
-#include "../../../events/bus/EventBus.hpp"
+#include "../../../events/system/EventSystem.hpp"
 #include <fmt/core.h>
 
 CounterWidget::CounterWidget(QWidget *parent)

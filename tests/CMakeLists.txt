@@ -33,4 +33,6 @@ target_link_libraries(${UT_NAME} PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(${UT_NAME})
+gtest_discover_tests(${UT_NAME}
+  DISCOVERY_TIMEOUT 30
+)

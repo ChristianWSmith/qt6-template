@@ -34,7 +34,7 @@ void AppLogModel::addLogMessage(const QString &message) {
     trimmed = true;
   }
 
-  emit logChanged(LogDelta{timestampedMessage, trimmed});
+  emit logChanged(LogDelta{.message = timestampedMessage, .trimmed = trimmed});
 }
 
 void AppLogModel::clear() {

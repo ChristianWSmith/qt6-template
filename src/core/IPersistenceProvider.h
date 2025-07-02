@@ -1,4 +1,3 @@
-//---core/IPersistenceProvider.h---
 #pragma once
 #include <QJsonObject>
 #include <QObject>

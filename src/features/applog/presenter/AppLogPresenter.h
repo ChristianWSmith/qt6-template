@@ -4,7 +4,6 @@
 #include "../widget/AppLogWidget.h"
 
 #include "../../../events/LogEvent.h"
-#include "../../../events/bus/EventBus.hpp"
 
 #include <QObject>
 #include <QString>
@@ -33,5 +32,4 @@ private:
   friend class AppLogTest;
   AppLogModel *m_model;
   AppLogWidget *m_view;
-  events::Subscription<LogEvent> m_logEventSubscription;
 };

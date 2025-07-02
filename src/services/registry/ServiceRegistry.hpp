@@ -1,72 +1,35 @@
 #pragma once
 
-#include "../../events/bus/EventBus.hpp"
-#include <memory>
-#include <optional>
+#include "../../events/system/EventSystem.hpp"
 #include <vector>
 
+struct Dummy {};
+static_assert(std::is_same_v<decltype(events::publish<Dummy>), void(Dummy)>);
+
 namespace services {
+void registerAll(); // Forward declare so we can call it later
+}
 
-class ServiceRegistry {
-public:
-  static void registerAll();
+namespace services::detail {
 
-  static std::vector<std::shared_ptr<void>> &subscriptions_();
-  template <typename InputEvent, typename OutputEvent, typename Callable>
-  static void registerService(Callable &&func);
+using RegisterFunction = void (*)();
 
-  template <typename InputEvent, typename Callable>
-  static void registerOneWayService(Callable &&func);
+inline std::vector<RegisterFunction> &registry() {
+  static std::vector<RegisterFunction> fns;
+  return fns;
+}
 
-  template <typename InputEvent, typename OutputEvent, typename Callable>
-  static void registerOptionalService(Callable &&func);
+struct Registrar {
+  Registrar(RegisterFunction func) { registry().push_back(func); }
 };
 
-template <typename InputEvent, typename OutputEvent, typename Callable>
-events::Subscription<InputEvent> connectService(Callable &&func) {
-  return events::subscribe<InputEvent>(
-      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
-        OutputEvent out = func(inputEvent);
-        events::publish<OutputEvent>(out);
-      });
-}
+} // namespace services::detail
 
-template <typename InputEvent, typename Callable>
-events::Subscription<InputEvent> connectOneWayService(Callable &&func) {
-  return events::subscribe<InputEvent>(
-      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
-        func(inputEvent);
-      });
-}
-
-template <typename InputEvent, typename OutputEvent, typename Callable>
-events::Subscription<InputEvent> connectOptionalService(Callable &&func) {
-  return events::subscribe<InputEvent>(
-      [func = std::forward<Callable>(func)](const InputEvent &inputEvent) {
-        std::optional<OutputEvent> out = func(inputEvent);
-        if (out) {
-          events::publish<OutputEvent>(*out);
-        }
-      });
-}
-
-template <typename InputEvent, typename OutputEvent, typename Callable>
-void ServiceRegistry::registerService(Callable &&func) {
-  subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
-      connectService<InputEvent, OutputEvent>(std::forward<Callable>(func))));
-}
-
-template <typename InputEvent, typename Callable>
-void ServiceRegistry::registerOneWayService(Callable &&func) {
-  subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
-      connectOneWayService<InputEvent>(std::forward<Callable>(func))));
-}
-
-template <typename InputEvent, typename OutputEvent, typename Callable>
-void ServiceRegistry::registerOptionalService(Callable &&func) {
-  subscriptions_().push_back(std::make_shared<events::Subscription<InputEvent>>(
-      connectOptionalService<InputEvent, OutputEvent>(
-          std::forward<Callable>(func))));
-}
-
-} // namespace services
+// NOLINTBEGIN(cppcoreguidelines-macro-usage)
+#define REGISTER_SERVICE(FUNC)                                                 \
+  namespace {                                                                  \
+  static const services::detail::Registrar _registrar_##__COUNTER__([]() {     \
+    events::subscribe(std::move(FUNC));                                        \
+  });                                                                          \
+  }
+// NOLINTEND(cppcoreguidelines-macro-usage)

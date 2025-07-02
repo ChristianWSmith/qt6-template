@@ -1,4 +1,5 @@
 #include "AppLogPresenter.h"
+#include "../../../events/system/EventSystem.hpp"
 #include <QDebug>
 #include <QFuture>
 #include <QtConcurrent/QtConcurrent>
@@ -7,13 +8,10 @@
 
 AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                                  QObject *parent)
-    : QObject(parent), m_model(model), m_view(view),
-      m_logEventSubscription(
-          events::subscribe<LogEvent>([this](const LogEvent &logEvent) {
-            QMetaObject::invokeMethod(this, "onLogEventReceived",
-                                      Qt::QueuedConnection,
-                                      Q_ARG(LogEvent, logEvent));
-          })) {
+    : QObject(parent), m_model(model), m_view(view) {
+
+  events::subscribe<LogEvent>(this, &AppLogPresenter::onLogEventReceived);
+
   if (m_model == nullptr) {
     qWarning() << "AppLogPresenter instantiated without model";
   }

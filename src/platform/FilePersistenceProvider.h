@@ -1,4 +1,3 @@
-//---platform/FilePersistenceProvider.h---
 #pragma once
 #include "../core/IPersistenceProvider.h"
 

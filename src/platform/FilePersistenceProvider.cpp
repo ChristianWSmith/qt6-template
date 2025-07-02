@@ -1,4 +1,3 @@
-//---platform/FilePersistenceProvider.cpp---
 #include "FilePersistenceProvider.h"
 #include <QDebug>
 #include <QDir>

@@ -1,6 +1,6 @@
 #include "CounterModel.h"
 #include "../../../events/LogEvent.h"
-#include "../../../events/bus/EventBus.hpp"
+#include "../../../events/system/EventSystem.hpp"
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>

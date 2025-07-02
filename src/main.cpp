@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 
     qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
 
-    services::ServiceRegistry::registerAll();
+    services::registerAll();
 
     QApplication app(argc, argv);
     QApplication::setApplicationName(QString::fromStdString(APP_NAME));
