@@ -96,10 +96,10 @@ void subscribe(Obj *receiver, void (Obj::*method)(const T &))
       Qt::QueuedConnection);
 }
 
-template <typename T>
-void subscribe(QObject *owner, std::function<void(const T &)> func) {
+template <typename T> void subscribe(void (*func)(const T &)) {
+  static QObject owner;
   // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-  auto *wrapper = new LambdaWrapper<T>(std::move(func), owner);
+  auto *wrapper = new LambdaWrapper<T>(std::move(func), &owner);
   QObject::connect(&BusRegistry::dispatcher<T>(),
                    &EventDispatcherBase::eventPublished, wrapper,
                    &LambdaWrapper<T>::handle, Qt::QueuedConnection);
