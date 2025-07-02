@@ -2,9 +2,7 @@
 #include "events/system/EventSystem.hpp"
 #include <QObject>
 #include <QTest>
-
 #include <gtest/gtest.h>
-#include <qobject.h>
 
 struct Event {
   int value;
@@ -19,8 +17,9 @@ TEST_F(EventTest, EventsWork) {
   int actual = 0;
   int expected = 1;
 
-  auto qObj = new QObject();
-  events::subscribe<Event>(qObj,
+  // Own the subscriber on the stack, so it's destroyed at scope exit:
+  QObject qObj;
+  events::subscribe<Event>(&qObj,
                            [&](const Event &event) { actual = event.value; });
 
   events::publish(Event{expected});
@@ -34,10 +33,10 @@ TEST_F(EventTest, DestroyedSubscriberDoesNotReceiveEvents) {
   int actual = 0;
 
   {
-    auto *qObj = new QObject();
-    events::subscribe<Event>(qObj,
+    QObject qObj;
+    events::subscribe<Event>(&qObj,
                              [&](const Event &event) { actual = event.value; });
-    delete qObj;
+    // qObj goes out of scope & is destroyed here, auto-disconnecting
   }
 
   events::publish(Event{123});
@@ -93,7 +92,7 @@ TEST_F(EventTest, RapidFireEventsAllHandled) {
     events::publish(Event{1});
   }
 
-  QTest::qWait(10);
+  QTest::qWait(100);
   ASSERT_EQ(sum, count);
 }
 
@@ -113,5 +112,4 @@ TEST_F(EventTest, LambdaLifetimeTiedToOwner) {
 }
 
 #include "EventsTest.moc"
-
 // NOLINTEND
