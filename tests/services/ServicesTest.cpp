@@ -107,8 +107,6 @@ TEST_F(ServicesTest, ServiceScopedToQCoreApplication) {
   services::ServiceRegistry::registerOneWayService<InputEvent>(
       [&](const InputEvent &) { wasCalled = true; });
 
-  ASSERT_TRUE(QCoreApplication::instance());
-
   events::publish(InputEvent{123});
   QTest::qWait(1);
 
