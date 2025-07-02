@@ -9,6 +9,14 @@ struct Event {
   int value;
 };
 
+struct EventA {
+  int val;
+};
+
+struct EventB {
+  int val;
+};
+
 class EventTest : public ::testing::Test {
 protected:
   EventTest() {}
@@ -109,8 +117,6 @@ TEST_F(EventTest, LambdaLifetimeTiedToOwner) {
   ASSERT_EQ(actual, 0);
 }
 
-// New tests
-
 TEST_F(EventTest, SubscriberCanRegisterAnotherSubscriberMidDispatch) {
   int a = 0;
   int b = 0;
@@ -172,13 +178,6 @@ TEST_F(EventTest, ThousandsOfSubscribersAllFire) {
 
   ASSERT_EQ(hitCount, count);
 }
-
-struct EventA {
-  int val;
-};
-struct EventB {
-  int val;
-};
 
 TEST_F(EventTest, OneObjectCanSubscribeToMultipleEvents) {
   int a = 0, b = 0;
