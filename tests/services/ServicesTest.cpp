@@ -57,7 +57,6 @@ static std::optional<QuietOutput> alwaysSkipHandler(const QuietInput &) {
   return std::nullopt;
 }
 
-// Globals for test state mutation
 int oneWayActualValue = 0;
 bool wasServiceCalled = false;
 int lateSubscriberValue = 0;
@@ -109,7 +108,7 @@ TEST_F(ServicesTest, OptionalServiceOnlyPublishesWhenPopulated) {
 
   events::publish(InputEvent{-1});
   QTest::qWait(1);
-  ASSERT_EQ(actual, -1); // Should remain unchanged
+  ASSERT_EQ(actual, -1);
 
   events::publish(InputEvent{5});
   QTest::qWait(1);
@@ -182,8 +181,9 @@ TEST_F(ServicesTest, OptionalServiceCanSkipOutput) {
   events::publish(QuietInput{999});
   QTest::qWait(1);
 
-  ASSERT_EQ(quietOutputValue, -1); // Still unchanged
+  ASSERT_EQ(quietOutputValue, -1);
 }
 
 #include "ServicesTest.moc"
+
 // NOLINTEND

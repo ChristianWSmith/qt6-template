@@ -17,7 +17,6 @@ TEST_F(EventTest, EventsWork) {
   int actual = 0;
   int expected = 1;
 
-  // Own the subscriber on the stack, so it's destroyed at scope exit:
   QObject qObj;
   events::subscribe<Event>(&qObj,
                            [&](const Event &event) { actual = event.value; });
@@ -36,7 +35,6 @@ TEST_F(EventTest, DestroyedSubscriberDoesNotReceiveEvents) {
     QObject qObj;
     events::subscribe<Event>(&qObj,
                              [&](const Event &event) { actual = event.value; });
-    // qObj goes out of scope & is destroyed here, auto-disconnecting
   }
 
   events::publish(Event{123});
@@ -112,4 +110,5 @@ TEST_F(EventTest, LambdaLifetimeTiedToOwner) {
 }
 
 #include "EventsTest.moc"
+
 // NOLINTEND
