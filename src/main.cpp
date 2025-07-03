@@ -1,6 +1,7 @@
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
+#include "platform/theme/theme.hpp"
 #include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
 #include <QDebug>
@@ -68,6 +69,8 @@ int main(int argc, char *argv[]) {
 
     AppMainWindow mainWindow;
 
+    setTheme();
+
     if (parsedArgs.contains("smoke-test")) {
       qInfo() << "Smoke test successful: Application initialized and exiting.";
       return 0;
@@ -76,8 +79,11 @@ int main(int argc, char *argv[]) {
     mainWindow.show();
 
     return QApplication::exec();
+  } catch (const std::exception &e) {
+    std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
+    return 1;
   } catch (...) {
-    std::cerr << "UNKNOWN EXTREME FAILURE\n";
+    std::cerr << "UNKNOWN EXCEPTION\n";
     return 1;
   }
 }
