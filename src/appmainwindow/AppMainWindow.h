@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../platform/FilePersistenceProvider.h"
+#include "../platform/core/FilePersistenceProvider.h"
 #include "ui_AppMainWindow.h"
 #include <QMainWindow>
 

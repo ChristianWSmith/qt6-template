@@ -1,6 +1,7 @@
 #include "appmainwindow/AppMainWindow.h"
 
 #include "logging/logging.h"
+#include "platform/theme/theme.hpp"
 #include "services/registry/ServiceRegistry.hpp"
 #include <QApplication>
 #include <QDebug>
@@ -67,6 +68,8 @@ int main(int argc, char *argv[]) {
     setupLocalization();
 
     AppMainWindow mainWindow;
+
+    setTheme();
 
     if (parsedArgs.contains("smoke-test")) {
       qInfo() << "Smoke test successful: Application initialized and exiting.";

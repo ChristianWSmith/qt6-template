@@ -1,5 +1,5 @@
 #pragma once
-#include "../core/IPersistenceProvider.h"
+#include "../../core/IPersistenceProvider.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -13,7 +13,7 @@
 inline void flushToDisk(QFile &file) {
   file.flush();
   file.waitForBytesWritten(-1);
-#ifdef _WIN32
+#ifdef Q_OS_WIN
   HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(file.handle()));
   if (h != INVALID_HANDLE_VALUE) {
     FlushFileBuffers(h);
