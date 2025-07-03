@@ -79,8 +79,11 @@ int main(int argc, char *argv[]) {
     mainWindow.show();
 
     return QApplication::exec();
+  } catch (const std::exception &e) {
+    std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
+    return 1;
   } catch (...) {
-    std::cerr << "UNKNOWN EXTREME FAILURE\n";
+    std::cerr << "UNKNOWN EXCEPTION\n";
     return 1;
   }
 }
