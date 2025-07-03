@@ -3,7 +3,10 @@
         <file>icons/app_icon.icns</file>
         <file>icons/app_icon.ico</file>
         <file>icons/app_icon.png</file>
-        <file>styles/windows_dark.qss</file>
-        <file>styles/windows_light.qss</file>
+        <file>styles/windows/dark.qss</file>
+        <file>styles/windows/light.qss</file>
+        <file>styles/linux/base.qss</file>
+        <file>styles/macos/base.qss</file>
+        <file>styles/custom.qss</file>
     </qresource>
 </RCC>
