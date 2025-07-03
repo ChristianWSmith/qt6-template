@@ -74,6 +74,7 @@ QScrollBar:horizontal, QScrollBar:vertical {
     background: rgb(28, 28, 28);
     margin: 0px; padding: 0px;
     width: 12px; height: 12px;
+    border-radius: 6px;
 }
 QScrollBar::handle {
     background: rgb(70, 70, 70);
