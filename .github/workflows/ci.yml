@@ -52,6 +52,9 @@ jobs:
 
       - name: Build and test
         shell: bash
-        run: pipenv run bash scripts/build.sh --test ON
+        run: |
+          source scripts/env.sh
+          export PATH="${QT_BIN}:${PATH}"
+          pipenv run bash scripts/build.sh --test ON
         env:
           QT_QPA_PLATFORM: offscreen
