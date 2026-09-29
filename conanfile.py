@@ -15,6 +15,9 @@ class MyConanApp(ConanFile):
         "fmt/[>=12.0.0 <13]",
         "cxxopts/[>=3.3.1 <4]",
     ]
+    build_requires = [
+        "ninja/[*]",
+    ]
     test_requires = [
         "gtest/[>=1.18.0 <2]",
     ]
