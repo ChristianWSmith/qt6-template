@@ -48,7 +48,6 @@ jobs:
 
       - name: Build and test
         shell: bash
-        run: pipenv run ./scripts/build.sh --test ON
+        run: pipenv run bash scripts/build.sh --test ON
         env:
-          SHELL: bash
           QT_QPA_PLATFORM: offscreen
