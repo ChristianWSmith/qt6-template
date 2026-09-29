@@ -25,6 +25,7 @@ See that green `Use this template ▼` button in the upper right corner of this 
 - Python
 - Pipenv
 - CMake
+- Ninja
 - C++ compiler (MSVC, Clang, or GCC)
 - `clangd` and `clang-tidy` if using vscode integrations
 
