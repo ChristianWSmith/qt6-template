@@ -9,3 +9,4 @@ os=Windows
 
 [conf]
 tools.cmake.cmaketoolchain:generator=Ninja
+tools.microsoft.msbuild:vs_version=18
