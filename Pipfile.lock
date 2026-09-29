@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1f5af7910b3d48276bea5c98fa81ae4f5a0eaaaecf2f45d2dd129a81dc3ce593"
+            "sha256": "442166f4d476f274abc8d0b0b04e937861e3fe1c17435309afb95e2f034b9c22"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,13 +17,8 @@
     },
     "default": {
         "aqtinstall": {
-            "hashes": [
-                "sha256:9c7d85fbe7258be2d7d23fda33f8aff2e8b7536817255eaeaaf4226da8546a31",
-                "sha256:e88dbd87226f276fdd5d05347a44578d390d93a7f176e9476fbda0a7c9635f69"
-            ],
-            "index": "pip_conf_index_global",
-            "markers": "python_version >= '3.9'",
-            "version": "==3.3.0"
+            "git": "https://github.com/miurahr/aqtinstall.git",
+            "ref": "076e1659807d0b362a3ed684d54c2e9c775eb9c7"
         },
         "beautifulsoup4": {
             "hashes": [
@@ -349,12 +344,12 @@
         },
         "conan": {
             "hashes": [
-                "sha256:59a033862bc46f99c4e4fd72c2741f44b8742377864ba33b28a698cd7361471e",
-                "sha256:9ce550b3d6a6496250624cb7f8bb625a79227f4db48a332f04ffcd16a75909a9"
+                "sha256:2e0f890b736d42049f40ef5b96225bac5866cd71a504ca3eca620b25d8333a72",
+                "sha256:42da05f6cd12e0404d38463b2fa1f6ae3f809700fbbf8b704d0c597f0175ae87"
             ],
             "index": "pip_conf_index_global",
-            "markers": "python_version >= '3.7'",
-            "version": "==2.32.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==2.33.0"
         },
         "defusedxml": {
             "hashes": [
@@ -936,6 +931,14 @@
                 "sha256:72227d592c82b3d7f672731ae73e4d1f88cd8e2ef5b075a7a7f01a23a3743917"
             ],
             "version": "==1.7.0"
+        },
+        "truststore": {
+            "hashes": [
+                "sha256:9d91bd436463ad5e4ee4aba766628dd6cd7010cf3e2461756b3303710eebc301",
+                "sha256:adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981"
+            ],
+            "markers": "python_version >= '3.10'",
+            "version": "==0.10.4"
         },
         "typing-extensions": {
             "hashes": [
