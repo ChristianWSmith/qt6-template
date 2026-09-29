@@ -15,6 +15,12 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      # Set from app.env so conan/cmake find Qt and use correct app name
+      APP_NAME: MyApp
+      APP_VERSION: "0.1.0"
+      QT_VERSION: "6.11.1"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,43 +52,31 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0
 
-      - name: Set up build environment
-        id: build_env
+      - name: Determine platform vars
+        id: platform
         shell: bash
         run: |
-          # Source app.env for APP_NAME etc.
-          source app.env
-
-          # Detect platform
           PLATFORM=$(python -c 'import platform; print(platform.system().lower())')
-
           case "${PLATFORM}" in
             linux)
-              COMPILER_DIR="gcc_64"
-              CONAN_PROFILE="conan/profiles/linux"
+              echo "compiler_dir=gcc_64" >> "$GITHUB_OUTPUT"
+              echo "conan_profile=conan/profiles/linux" >> "$GITHUB_OUTPUT"
               ;;
             windows)
-              COMPILER_DIR="msvc2022_64"
-              CONAN_PROFILE="conan/profiles/windows"
+              echo "compiler_dir=msvc2022_64" >> "$GITHUB_OUTPUT"
+              echo "conan_profile=conan/profiles/windows" >> "$GITHUB_OUTPUT"
               ;;
             darwin)
-              COMPILER_DIR="macos"
-              CONAN_PROFILE="conan/profiles/darwin"
+              echo "compiler_dir=macos" >> "$GITHUB_OUTPUT"
+              echo "conan_profile=conan/profiles/darwin" >> "$GITHUB_OUTPUT"
               ;;
           esac
-
-          QT_ROOT="Qt/${QT_VERSION}/${COMPILER_DIR}"
-          QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
-
-          echo "qt_root=${QT_ROOT}" >> "$GITHUB_OUTPUT"
-          echo "qt_cmake_dir=${QT_CMAKE_DIR}" >> "$GITHUB_OUTPUT"
-          echo "conan_profile=${CONAN_PROFILE}" >> "$GITHUB_OUTPUT"
-          echo "app_name=${APP_NAME}" >> "$GITHUB_OUTPUT"
 
       - name: Install Qt
         shell: bash
         run: |
-          if [ ! -e "${{ steps.build_env.outputs.qt_root }}" ]; then
+          QT_ROOT="Qt/${QT_VERSION}/${{ steps.platform.outputs.compiler_dir }}"
+          if [ ! -e "${QT_ROOT}" ]; then
             ./scripts/install-qt.sh
           fi
 
@@ -92,8 +86,8 @@ jobs:
           touch CMakeLists.txt tests/CMakeLists.txt
           pipenv run conan build . \
             --output-folder build \
-            --profile:build="${{ steps.build_env.outputs.conan_profile }}" \
-            --profile:host="${{ steps.build_env.outputs.conan_profile }}" \
+            --profile:build="${{ steps.platform.outputs.conan_profile }}" \
+            --profile:host="${{ steps.platform.outputs.conan_profile }}" \
             -s build_type=Release \
             --build=missing
         env:
