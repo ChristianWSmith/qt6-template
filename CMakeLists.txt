@@ -3,12 +3,6 @@ cmake_minimum_required(VERSION 3.21)
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_definitions(-DAPP_NAME="${APP_NAME}")
-add_definitions(-DAPP_DESCRIPTION="${APP_DESCRIPTION}")
-add_definitions(-DAPP_VERSION="${APP_VERSION}")
-add_definitions(-DORGANIZATION_NAME="${ORGANIZATION_NAME}")
-add_definitions(-DAPP_ID="${APP_ID}")
-
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)

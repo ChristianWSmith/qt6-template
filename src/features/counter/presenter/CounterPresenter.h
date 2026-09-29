@@ -4,7 +4,6 @@
 #include "../model/CounterModel.h"
 #include "../widget/CounterWidget.h"
 #include <QObject>
-#include <QtPlugin>
 
 class CounterPresenter : public QObject, public IPresenter {
   Q_OBJECT
@@ -12,8 +11,6 @@ class CounterPresenter : public QObject, public IPresenter {
 public:
   explicit CounterPresenter(CounterModel *model, CounterWidget *view,
                             QObject *parent = nullptr);
-
-  void shutdown() override;
 
 private slots:
   void handleIncrementRequest();

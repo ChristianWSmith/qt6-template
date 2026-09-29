@@ -29,7 +29,7 @@ struct Registrar {
 #define REGISTER_SERVICE(FUNC)                                                 \
   namespace {                                                                  \
   static const services::detail::Registrar _registrar_##__COUNTER__([]() {     \
-    events::subscribe(std::move(FUNC));                                        \
+    events::subscribe(FUNC);                                                   \
   });                                                                          \
   }
 // NOLINTEND(cppcoreguidelines-macro-usage)

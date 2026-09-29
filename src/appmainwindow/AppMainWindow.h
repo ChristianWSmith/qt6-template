@@ -29,7 +29,6 @@ public:
   AppMainWindow &operator=(AppMainWindow &&) = delete;
 
   void closeEvent(QCloseEvent *event);
-  void shutdown();
 
 private:
   Ui::AppMainWindow *ui;

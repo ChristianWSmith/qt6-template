@@ -12,11 +12,13 @@ class MyConanApp(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "VCVars", "CMakeToolchain"
     requires = [
-        "fmt/[>=11.2.0 <12]",
+        "fmt/[>=12.0.0 <13]",
         "vulkan-loader/[>=1.4.309.0 <2]",
         "vulkan-headers/[>=1.4.309.0 <2]",
         "cxxopts/[>=3.3.1 <4]",
-        "gtest/[>=1.16.0 <2]",
+    ]
+    test_requires = [
+        "gtest/[>=1.18.0 <2]",
     ]
 
     def layout(self):

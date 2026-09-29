@@ -4,8 +4,8 @@
         "xorg/system#98f82cb669e4ebc6b4d9d8a4f3f1faf4%1725460968.361",
         "vulkan-loader/1.4.309.0#514f7fa2e866e59c43523869a7a23905%1742462310.255",
         "vulkan-headers/1.4.309.0#2f581b3b123240016ffaf61d3dd6816f%1741881167.188",
-        "gtest/1.16.0#4fd8d9d80636ea9504de6a0ec1ab8686%1743410803.513",
-        "fmt/11.2.0#579bb2cdf4a7607621beea4eb4651e0f%1746298708.362",
+        "gtest/1.18.0#e2507fc4efe2ec9e2db9e5c91eefab9f%1786446847.733",
+        "fmt/12.2.0#b445244e6d0151a425e229248cd2bed8%1785754552.386",
         "cxxopts/3.3.1#047ef7b8ae49e0d48a1450f4522dc041%1748330656.693"
     ],
     "build_requires": [

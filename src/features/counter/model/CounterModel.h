@@ -2,9 +2,7 @@
 #include "../../../core/IModel.h"
 #include "../../../core/IPersistenceProvider.h"
 #include "../countercommon.h"
-#include <QMetaMethod>
 #include <QObject>
-#include <QtPlugin>
 
 class CounterModel : public QObject, public IModel {
   Q_OBJECT
@@ -13,7 +11,6 @@ public:
   explicit CounterModel(IPersistenceProvider *provider = nullptr,
                         QObject *parent = nullptr);
 
-  void shutdown() override;
   void saveState() const override;
   void loadState() override;
 

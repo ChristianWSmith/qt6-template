@@ -1,6 +1,7 @@
 #include "logging.h"
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <iostream>
+#include <unordered_map>
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static LogLevel g_minLogLevel = LogLevel::Info;

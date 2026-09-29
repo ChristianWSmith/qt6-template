@@ -11,7 +11,7 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 
-bool isWindowsDarkModeEnabled() {
+inline bool isWindowsDarkModeEnabled() {
   DWORD value = 1;
   DWORD dataSize = sizeof(value);
   if (RegGetValueW(
@@ -24,10 +24,10 @@ bool isWindowsDarkModeEnabled() {
   return value == 0;
 }
 #else
-bool isWindowsDarkModeEnabled() { return false; };
+inline bool isWindowsDarkModeEnabled() { return false; };
 #endif
 
-QString loadQSS(const QString &path) {
+inline QString loadQSS(const QString &path) {
   QFile file(path);
   if (!file.open(QFile::ReadOnly | QFile::Text)) {
     qWarning("Could not open QSS file: %s", qUtf8Printable(path));
@@ -36,7 +36,7 @@ QString loadQSS(const QString &path) {
   return QString::fromUtf8(file.readAll()).trimmed();
 }
 
-void setTheme() {
+inline void setTheme() {
   QString filePath;
 
   if (QOperatingSystemVersion::currentType() ==

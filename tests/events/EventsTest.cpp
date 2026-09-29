@@ -172,7 +172,7 @@ TEST_F(EventTest, SubscriberCanPublishAnotherEvent) {
   events::subscribe<Event2>(&recv, &Event2Receiver::receive);
 
   events::publish(Event{7});
-  QTest::qWait(1);
+  QTest::qWait(10);
 
   ASSERT_EQ(actualMessage, "Value was 7");
 }

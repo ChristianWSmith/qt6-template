@@ -1,6 +1,6 @@
 #include "AppLogWidget.h"
 #include <QScrollBar>
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppLogWidget) {
@@ -37,5 +37,3 @@ void AppLogWidget::setLogMessages(const QVector<QString> &messages) {
 }
 
 void AppLogWidget::on_clearButton_clicked() { emit clearRequested(); }
-
-void AppLogWidget::shutdown() { qInfo() << "AppLogWidget::shutdown()"; }

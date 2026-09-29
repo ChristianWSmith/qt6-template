@@ -6,11 +6,9 @@
 #include "../../../events/LogEvent.h"
 
 #include <QObject>
-#include <QString>
 
 #include "../../../core/IPresenter.h"
 #include "../applogcommon.h"
-#include <QtPlugin>
 
 class AppLogPresenter : public QObject, public IPresenter {
   Q_OBJECT
@@ -18,8 +16,6 @@ class AppLogPresenter : public QObject, public IPresenter {
 public:
   explicit AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                            QObject *parent = nullptr);
-
-  void shutdown() override;
 
 private slots:
   void onLogEventReceived(const LogEvent &event);

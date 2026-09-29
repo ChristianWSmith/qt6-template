@@ -12,11 +12,12 @@
 #include <QLocale>
 #include <QTranslator>
 #include <cxxopts.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <iostream>
 
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
-cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {
+std::optional<cxxopts::ParseResult>
+parseCommandLine(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
   options.add_options()("l,log", "Log level (debug, info, warn, error, none)",
                         cxxopts::value<std::string>()->default_value("info"))(
@@ -27,7 +28,7 @@ cxxopts::ParseResult parseCommandLine(int argc, char *argv[]) {
 
   if (parsedArgs.contains("help")) {
     std::cout << options.help().c_str() << '\n';
-    exit(0);
+    return std::nullopt;
   }
 
   return parsedArgs;
@@ -38,7 +39,7 @@ void setupLocalization() {
   QString langCode = locale.name();
   QString baseLang = langCode.section('_', 0, 0);
 
-  QTranslator translator;
+  static QTranslator translator;
   if (translator.load(QString("%1_%2.qm").arg(APP_NAME).arg(baseLang),
                       ":/i18n")) {
     QCoreApplication::installTranslator(&translator);
@@ -49,16 +50,19 @@ void setupLocalization() {
 
 int main(int argc, char *argv[]) {
   try {
-    cxxopts::ParseResult parsedArgs = parseCommandLine(argc, argv);
+    auto parsedArgs = parseCommandLine(argc, argv);
+    if (!parsedArgs.has_value()) {
+      return 0;
+    }
 
-    setLogLevel(parseLogLevel(parsedArgs["log"].as<std::string>()));
+    setLogLevel(parseLogLevel(parsedArgs->operator[]("log").as<std::string>()));
     qInstallMessageHandler(messageHandler);
 
     qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
 
-    services::registerAll();
-
     QApplication app(argc, argv);
+
+    services::registerAll();
     QApplication::setApplicationName(QString::fromStdString(APP_NAME));
     QApplication::setOrganizationName(
         QString::fromStdString(ORGANIZATION_NAME));
@@ -71,7 +75,7 @@ int main(int argc, char *argv[]) {
 
     setTheme();
 
-    if (parsedArgs.contains("smoke-test")) {
+    if (parsedArgs->contains("smoke-test")) {
       qInfo() << "Smoke test successful: Application initialized and exiting.";
       return 0;
     }

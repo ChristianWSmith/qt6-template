@@ -1,9 +1,7 @@
 #include "AppLogPresenter.h"
 #include "../../../events/system/EventSystem.hpp"
 #include <QDebug>
-#include <QFuture>
-#include <QtConcurrent/QtConcurrent>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <qlogging.h>
 
 AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
@@ -59,21 +57,4 @@ void AppLogPresenter::handleClearRequested() {
   if (m_model != nullptr) {
     m_model->clear();
   }
-}
-
-void AppLogPresenter::shutdown() {
-  qInfo() << "AppLogPresenter::shutdown()";
-
-  QFuture<void> modelFuture;
-  QFuture<void> viewFuture;
-
-  if (m_view != nullptr) {
-    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
-  }
-  if (m_model != nullptr) {
-    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
-  }
-
-  modelFuture.waitForFinished();
-  viewFuture.waitForFinished();
 }

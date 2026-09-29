@@ -10,25 +10,30 @@
 
 #include <QFile>
 
-inline void flushToDisk(QFile &file) {
-  file.flush();
-  file.waitForBytesWritten(-1);
+inline bool flushToDisk(QFile &file) {
+  if (!file.flush()) {
+    return false;
+  }
+  if (!file.waitForBytesWritten(-1)) {
+    return false;
+  }
 #ifdef Q_OS_WIN
   HANDLE h = reinterpret_cast<HANDLE>(_get_osfhandle(file.handle()));
   if (h != INVALID_HANDLE_VALUE) {
-    FlushFileBuffers(h);
+    return FlushFileBuffers(h) != 0;
   }
+  return false;
 #else
-  ::fsync(file.handle());
+  return ::fsync(file.handle()) == 0;
 #endif
 }
 
 class FilePersistenceProvider : public QObject, public IPersistenceProvider {
   Q_OBJECT
-  Q_PLUGIN_METADATA(IID IPersistenceProvider_iid)
-  Q_INTERFACES(IPersistenceProvider)
 
 public:
-  QJsonObject loadState(const QString &key) override;
-  void saveState(const QString &key, const QJsonObject &state) override;
+  explicit FilePersistenceProvider(QObject *parent = nullptr);
+  PersistenceResult<QJsonObject> loadState(const QString &key) override;
+  PersistenceResult<void> saveState(const QString &key,
+                                    const QJsonObject &state) override;
 };

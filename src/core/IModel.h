@@ -10,8 +10,6 @@ public:
   IModel(IModel &&) = delete;
   IModel &operator=(IModel &&) = delete;
 
-  virtual void shutdown() = 0;
-
   virtual void loadState() = 0;
   virtual void saveState() const = 0;
 };

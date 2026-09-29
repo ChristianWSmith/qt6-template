@@ -1,16 +1,11 @@
 #include "AppLogModel.h"
 #include <QDateTime>
 #include <QDebug>
-#include <QDir>
-#include <QFile>
 #include <QJsonArray>
-#include <QJsonDocument>
 #include <QJsonObject>
-#include <QStandardPaths>
-#include <fmt/core.h>
 
 namespace {
-const int MAX_LOG_SIZE = 100;
+constexpr int MAX_LOG_SIZE = 100;
 constexpr auto KEY_LOG_MESSAGES = "logMessages";
 } // namespace
 
@@ -51,7 +46,15 @@ void AppLogModel::loadState() {
     return;
   }
 
-  QJsonObject obj = m_provider->loadState(m_key);
+  auto result = m_provider->loadState(m_key);
+  if (result.hasError()) {
+    if (result.error() != PersistenceError::NotFound) {
+      qWarning() << "Failed to load applog state:" << static_cast<int>(result.error());
+    }
+    return;
+  }
+
+  const auto obj = *result;
   const QJsonArray messages = obj.value(KEY_LOG_MESSAGES).toArray();
 
   m_logMessages.clear();
@@ -77,11 +80,10 @@ void AppLogModel::saveState() const {
   QJsonObject obj;
   obj[KEY_LOG_MESSAGES] = messages;
 
-  m_provider->saveState(m_key, obj);
-  qInfo() << "Saved" << m_logMessages.size() << "log messages";
-}
-
-void AppLogModel::shutdown() {
-  qInfo() << "AppLogModel::shutdown()";
-  saveState();
+  auto result = m_provider->saveState(m_key, obj);
+  if (result.hasError()) {
+    qWarning() << "Failed to save applog state:" << static_cast<int>(result.error());
+  } else {
+    qInfo() << "Saved" << m_logMessages.size() << "log messages";
+  }
 }

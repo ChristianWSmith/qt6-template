@@ -3,7 +3,6 @@
 #include "../countercommon.h"
 #include "ui_CounterWidget.h"
 #include <QWidget>
-#include <QtPlugin>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -20,8 +19,6 @@ public:
   CounterWidget &operator=(const CounterWidget &) = delete;
   CounterWidget(CounterWidget &&) = delete;
   CounterWidget &operator=(CounterWidget &&) = delete;
-
-  void shutdown() override;
 
   void displayCounter(int value);
 

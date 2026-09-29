@@ -69,7 +69,6 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
 #include "$(realpath --relative-to="${WIDGET_DIR}" "${SRC_DIR}/core")/IWidget.h"
 #include "ui_${NAME_TITLE}Widget.h"
 #include <QWidget>
-#include <QtPlugin>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -86,9 +85,6 @@ public:
   ${NAME_TITLE}Widget &operator=(const ${NAME_TITLE}Widget &) = delete;
   ${NAME_TITLE}Widget(${NAME_TITLE}Widget &&) = delete;
   ${NAME_TITLE}Widget &operator=(${NAME_TITLE}Widget &&) = delete;
-
-  // IWidget
-  void shutdown() override;
 
 signals:
   // Signals emitted by this Widget to be connected to ${PRESENTER_STRING} Slots
@@ -108,15 +104,13 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp" <<EOF
 #include "${NAME_TITLE}Widget.h"
 
 ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
-    : ui(new Ui::${NAME_TITLE}Widget) {
+    : QWidget(parent), ui(new Ui::${NAME_TITLE}Widget) {
   ui->setupUi(this);
 }
 
 ${NAME_TITLE}Widget::~${NAME_TITLE}Widget() { delete ui; }
 
 // Implements UI slots, typically emitting signals to the Presenter
-
-void ${NAME_TITLE}Widget::shutdown() {}
 
 EOF
 format "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp"
@@ -171,19 +165,16 @@ cat > "${MODEL_DIR}/${NAME_TITLE}Model.h" <<EOF
 #include "../${NAME_LOWER}common.h"
 #include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IPersistenceProvider.h"
 #include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IModel.h"
-#include <QMetaMethod>
 #include <QObject>
-#include <QtPlugin>
 
 class ${NAME_TITLE}Model : public QObject, public IModel {
   Q_OBJECT
 
 public:
   explicit ${NAME_TITLE}Model(IPersistenceProvider *provider = nullptr,
-                                      QObject *parent = nullptr);
+                              QObject *parent = nullptr);
 
   // IModel
-  void shutdown() override;
   void saveState() const override;
   void loadState() override;
 
@@ -207,6 +198,8 @@ format "${MODEL_DIR}/${NAME_TITLE}Model.h"
 # MODEL CPP
 cat > "${MODEL_DIR}/${NAME_TITLE}Model.cpp" <<EOF
 #include "${NAME_TITLE}Model.h"
+#include <QDebug>
+#include <QJsonObject>
 
 namespace {
 // constexpr auto KEY_MY_VALUE = "myValue";
@@ -214,12 +207,8 @@ namespace {
 
 ${NAME_TITLE}Model::${NAME_TITLE}Model(IPersistenceProvider *provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
+  qDebug() << "${NAME_TITLE}Model instantiated";
   ${NAME_TITLE}Model::loadState();
-}
-
-void ${NAME_TITLE}Model::shutdown() {
-  // Perform model shutdown actions
-  saveState();
 }
 
 void ${NAME_TITLE}Model::saveState() const {
@@ -228,15 +217,25 @@ void ${NAME_TITLE}Model::saveState() const {
   }
   // QJsonObject obj;
   // obj[KEY_MY_VALUE] = m_myvalue;
-  // m_provider->saveState(m_key, obj);
+  // auto result = m_provider->saveState(m_key, obj);
+  // if (result.hasError()) {
+  //   qWarning() << "Failed to save state:" << static_cast<int>(result.error());
+  // }
 }
 
 void ${NAME_TITLE}Model::loadState() {
   if (m_provider == nullptr) {
     return;
   }
-  // QJsonObject obj = m_provider->loadState(m_key);
-  // m_myvalue = obj[KEY_MY_VALUE]
+  // auto result = m_provider->loadState(m_key);
+  // if (result.hasError()) {
+  //   if (result.error() != PersistenceError::NotFound) {
+  //     qWarning() << "Failed to load state:" << static_cast<int>(result.error());
+  //   }
+  //   return;
+  // }
+  // const auto obj = *result;
+  // m_myvalue = obj[KEY_MY_VALUE].toInt();
 }
 
 EOF
@@ -251,7 +250,6 @@ cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h" <<EOF
 #include "../model/${NAME_TITLE}Model.h"
 #include "../widget/${NAME_TITLE}Widget.h"
 #include <QObject>
-#include <QtPlugin>
 
 class ${NAME_TITLE}Presenter : public QObject, public IPresenter {
   Q_OBJECT
@@ -261,11 +259,8 @@ public:
                                    ${NAME_TITLE}Widget *view,
                                    QObject *parent = nullptr);
 
-  // IPresenter
-  void shutdown() override;
-
 private slots:
-  // Slots to be connected to ${NAME_TITLE}Model/${NAME_TITLE}View Signals
+  // Slots to be connected to ${NAME_TITLE}Model/${NAME_TITLE}Widget Signals
 
 private:
   friend class ${NAME_TITLE}Test;
@@ -280,12 +275,10 @@ format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h"
 # PRESENTER CPP
 cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp" <<EOF
 #include "${NAME_TITLE}Presenter.h"
-#include <QFuture>
-#include <QtConcurrent/QtConcurrent>
 
 ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
-                                                 ${NAME_TITLE}Widget *view,
-                                                 QObject *parent)
+                                                ${NAME_TITLE}Widget *view,
+                                                QObject *parent)
     : QObject(parent), m_model(model), m_view(view) {
 
   if (m_model == nullptr) {
@@ -294,25 +287,20 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   if (m_view == nullptr) {
     qWarning() << "${NAME_TITLE}Presenter instantiated without view";
   }
-  // Connect ${NAME_TITLE}Model/${NAME_TITLE}View Signals to ${NAME_TITLE}Presenter Slots
+
+  // Connect ${NAME_TITLE}Model/${NAME_TITLE}Widget Signals to ${NAME_TITLE}Presenter Slots
+  // Example:
+  // if (m_view != nullptr) {
+  //   connect(m_view, &${NAME_TITLE}Widget::someAction, this,
+  //           &${NAME_TITLE}Presenter::handleSomeAction);
+  // }
+  // if (m_model != nullptr) {
+  //   connect(m_model, &${NAME_TITLE}Model::someStateChanged, this,
+  //           &${NAME_TITLE}Presenter::handleSomeStateChanged);
+  // }
 }
 
 // Implements presenter slots
-
-void ${NAME_TITLE}Presenter::shutdown() {
-  QFuture<void> modelFuture;
-  QFuture<void> viewFuture;
-
-  if (m_model != nullptr) {
-    modelFuture = QtConcurrent::run([this]() { m_model->shutdown(); });
-  }
-  if (m_view != nullptr) {
-    viewFuture = QtConcurrent::run([this]() { m_view->shutdown(); });
-  }
-
-  modelFuture.waitForFinished();
-  viewFuture.waitForFinished();
-}
 
 EOF
 format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp"

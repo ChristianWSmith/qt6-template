@@ -7,7 +7,6 @@
 #include "../applogcommon.h"
 #include <QString>
 #include <QWidget>
-#include <QtPlugin>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -24,8 +23,6 @@ public:
   AppLogWidget &operator=(const AppLogWidget &) = delete;
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
-
-  void shutdown() override;
 
   void clear();
   void setLogMessages(const QVector<QString> &messages);

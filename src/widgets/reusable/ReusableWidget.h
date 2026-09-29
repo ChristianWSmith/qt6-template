@@ -2,7 +2,6 @@
 #include "../../core/IWidget.h"
 #include "ui_ReusableWidget.h"
 #include <QWidget>
-#include <QtPlugin>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}
@@ -19,9 +18,6 @@ public:
   ReusableWidget &operator=(const ReusableWidget &) = delete;
   ReusableWidget(ReusableWidget &&) = delete;
   ReusableWidget &operator=(ReusableWidget &&) = delete;
-
-  // IWidget
-  void shutdown() override;
 
 signals:
   // Signals emitted by this Widget to be connected to Presenter Slots

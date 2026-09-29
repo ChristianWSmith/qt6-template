@@ -119,12 +119,14 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 
 This project follows a **strictly modular feature-first architecture**. Each feature exists as a self-contained unit under the `features/` directory, with a standard structure:
 
-- `model/`: The data/state layer (e.g. `FooModel`, `IFooModel`)
-- `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`, `IFooPresenter`)
-- `widget/`: The view/UI layer (e.g. `FooWidget`, `IFooWidget`)
+- `model/`: The data/state layer (e.g. `FooModel`)
+- `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`)
+- `widget/`: The view/UI layer (e.g. `FooWidget`)
 - Tests are mirrored under `tests/features/` using the same hierarchy.
 
-All communication between features must happen **exclusively via the centralized event system** (see `src/events/`), not via direct references. This ensures loose coupling and high testability.
+Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system.
+
+See `AGENTS.md` for the full architectural contract.
 
 To standardize and accelerate feature development, the repo includes a script:
 
@@ -167,8 +169,8 @@ Edit `conanfile.py`:
 
 ```python
 requires = [
-    "fmt/[>=10.2.1]",
-    "spdlog/[>=1.12]",
+    "fmt/[>=12.0.0 <13]",
+    "cxxopts/[>=3.3.1 <4>",
 ]
 ```
 
