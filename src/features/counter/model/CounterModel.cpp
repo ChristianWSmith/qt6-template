@@ -1,14 +1,14 @@
 #include "CounterModel.h"
-#include <QDebug>
+#include "logging/logging.h"
 #include <QJsonObject>
 
 namespace {
 constexpr auto KEY_VALUE = "value";
 } // namespace
 
-CounterModel::CounterModel(IPersistenceProvider *provider, QObject *parent)
+CounterModel::CounterModel(IPersistenceProvider &provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
-  qDebug() << "CounterModel instantiated";
+  qCDebug(appPersistence) << "CounterModel instantiated";
   CounterModel::loadState();
 }
 
@@ -25,13 +25,10 @@ void CounterModel::reset() {
 }
 
 void CounterModel::loadState() {
-  if (m_provider == nullptr) {
-    return;
-  }
-  auto result = m_provider->loadState(m_key);
+  auto result = m_provider.loadState(m_key);
   if (result.hasError()) {
     if (result.error() != PersistenceError::NotFound) {
-      qWarning() << "Failed to load counter state:" << static_cast<int>(result.error());
+      qCWarning(appPersistence) << "Failed to load counter state:" << toString(result.error());
     }
     return;
   }
@@ -42,13 +39,10 @@ void CounterModel::loadState() {
 }
 
 void CounterModel::saveState() const {
-  if (m_provider == nullptr) {
-    return;
-  }
   QJsonObject obj;
   obj[KEY_VALUE] = m_value;
-  auto result = m_provider->saveState(m_key, obj);
+  auto result = m_provider.saveState(m_key, obj);
   if (result.hasError()) {
-    qWarning() << "Failed to save counter state:" << static_cast<int>(result.error());
+    qCWarning(appPersistence) << "Failed to save counter state:" << toString(result.error());
   }
 }

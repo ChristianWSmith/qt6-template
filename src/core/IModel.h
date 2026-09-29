@@ -1,5 +1,14 @@
 #pragma once
 
+/// Models own application state and feature behavior.
+///
+/// Lifecycle:
+///   - Constructors may call loadState() to restore persisted state.
+///   - Missing state (NotFound) is a normal first-run condition.
+///   - Other persistence errors are logged but do not prevent operation.
+///   - saveState() should be called when state needs to persist.
+///   - saveState() is synchronous and durable before returning.
+///   - All methods execute on the GUI thread.
 class IModel {
 public:
   IModel() = default;

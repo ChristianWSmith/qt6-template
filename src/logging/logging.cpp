@@ -1,50 +1,15 @@
 #include "logging.h"
 #include <fmt/format.h>
 #include <iostream>
-#include <unordered_map>
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static LogLevel g_minLogLevel = LogLevel::Info;
-
-void setLogLevel(LogLevel logLevel) { g_minLogLevel = logLevel; }
-
-LogLevel parseLogLevel(const std::string &levelStr) {
-  static const std::unordered_map<std::string, LogLevel> map = {
-      {"debug", LogLevel::Debug}, {"info", LogLevel::Info},
-      {"warn", LogLevel::Warn},   {"warning", LogLevel::Warn},
-      {"error", LogLevel::Error}, {"none", LogLevel::None}};
-
-  auto levelIterator = map.find(levelStr);
-  if (levelIterator != map.end()) {
-    return levelIterator->second;
-  }
-  std::cerr << "Invalid log level, defaulting to info\n";
-  return LogLevel::Info;
-}
-
-bool shouldLog(QtMsgType type) {
-  switch (g_minLogLevel) {
-  case LogLevel::Debug:
-    return true;
-  case LogLevel::Info:
-    return type != QtDebugMsg;
-  case LogLevel::Warn:
-    return type == QtWarningMsg || type == QtCriticalMsg || type == QtFatalMsg;
-  case LogLevel::Error:
-    return type == QtCriticalMsg || type == QtFatalMsg;
-  case LogLevel::None:
-    return type == QtFatalMsg;
-  default:
-    return true;
-  }
-}
+Q_LOGGING_CATEGORY(appMain, "app.main")
+Q_LOGGING_CATEGORY(appFeature, "app.feature")
+Q_LOGGING_CATEGORY(appPersistence, "app.persistence")
+Q_LOGGING_CATEGORY(appEvent, "app.event")
+Q_LOGGING_CATEGORY(appService, "app.service")
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg) {
-  if (!shouldLog(type)) {
-    return;
-  }
-
   static QMutex mutex;
   QMutexLocker lock(&mutex);
 

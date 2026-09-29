@@ -7,11 +7,11 @@
 #include <QMutex>
 #include <QMutexLocker>
 
-enum class LogLevel : std::uint8_t { Debug, Info, Warn, Error, None };
+Q_DECLARE_LOGGING_CATEGORY(appMain)
+Q_DECLARE_LOGGING_CATEGORY(appFeature)
+Q_DECLARE_LOGGING_CATEGORY(appPersistence)
+Q_DECLARE_LOGGING_CATEGORY(appEvent)
+Q_DECLARE_LOGGING_CATEGORY(appService)
 
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg);
-
-void setLogLevel(LogLevel logLevel);
-
-LogLevel parseLogLevel(const std::string &levelStr);

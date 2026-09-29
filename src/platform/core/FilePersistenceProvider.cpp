@@ -1,22 +1,23 @@
 #include "FilePersistenceProvider.h"
-#include <QDebug>
+#include "../../logging/logging.h"
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
+#include <QSaveFile>
 #include <QStandardPaths>
 
 FilePersistenceProvider::FilePersistenceProvider(QObject *parent)
     : QObject(parent) {}
 
-static QString filePath(const QString &key) {
+static QString getFilePath(const QString &key) {
   return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) +
          "/" + key + ".json";
 }
 
 PersistenceResult<QJsonObject>
 FilePersistenceProvider::loadState(const QString &key) {
-  QFile file(filePath(key));
+  QFile file(getFilePath(key));
   if (!file.open(QIODevice::ReadOnly)) {
     if (file.exists()) {
       return PersistenceResult<QJsonObject>::failure(
@@ -31,7 +32,7 @@ FilePersistenceProvider::loadState(const QString &key) {
   const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
 
   if (parseError.error != QJsonParseError::NoError) {
-    qWarning() << "JSON parse error:" << parseError.errorString();
+    qCWarning(appPersistence) << "JSON parse error:" << parseError.errorString();
     return PersistenceResult<QJsonObject>::failure(
         PersistenceError::InvalidData);
   }
@@ -47,44 +48,24 @@ FilePersistenceProvider::loadState(const QString &key) {
 PersistenceResult<void>
 FilePersistenceProvider::saveState(const QString &key,
                                    const QJsonObject &state) {
-  const QString destPath = filePath(key);
-  const QString dirPath = QFileInfo(destPath).absolutePath();
-
-  if (!QDir().mkpath(dirPath)) {
-    qWarning() << "Could not create directory:" << dirPath;
+  const QString filePath = getFilePath(key);
+  QDir dir;
+  if (!dir.mkpath(QFileInfo(filePath).absolutePath())) {
     return PersistenceResult<void>::failure(PersistenceError::IoError);
   }
 
-  const QString tempPath = destPath + ".tmp";
-
-  QFile file(tempPath);
-  if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    qWarning() << "Could not write state file:" << file.errorString();
+  QSaveFile file(filePath);
+  if (!file.open(QIODevice::WriteOnly)) {
     return PersistenceResult<void>::failure(PersistenceError::IoError);
   }
 
-  const QByteArray data =
-      QJsonDocument(state).toJson(QJsonDocument::Compact);
-
+  const QByteArray data = QJsonDocument(state).toJson(QJsonDocument::Compact);
   if (file.write(data) != data.size()) {
-    qWarning() << "Incomplete write to state file";
-    file.remove();
     return PersistenceResult<void>::failure(PersistenceError::IoError);
   }
 
-  if (!flushToDisk(file)) {
-    qWarning() << "Flush/fsync failed for state file";
-    file.remove();
+  if (!file.commit()) {
     return PersistenceResult<void>::failure(PersistenceError::DurabilityFailure);
-  }
-
-  file.close();
-
-  if (!file.rename(destPath)) {
-    qWarning() << "Could not rename temp file to destination:"
-               << file.errorString();
-    file.remove();
-    return PersistenceResult<void>::failure(PersistenceError::IoError);
   }
 
   return PersistenceResult<void>::success();

@@ -13,16 +13,12 @@ set_directory_properties(PROPERTIES QT_EXCLUDE_FROM_TRANSLATION ON)
 
 target_include_directories(${UT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/MyApp_lib_autogen/include
 )
 
-target_compile_definitions(${UT_NAME} PRIVATE
-    APP_NAME="${APP_NAME}"
-    APP_DESCRIPTION="${APP_DESCRIPTION}"
-    APP_VERSION="${APP_VERSION}"
-    ORGANIZATION_NAME="${ORGANIZATION_NAME}"
-    APP_ID="${APP_ID}"
-)
+apply_app_metadata(${UT_NAME})
 
 target_link_libraries(${UT_NAME} PRIVATE
     GTest::gtest_main

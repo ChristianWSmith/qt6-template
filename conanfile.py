@@ -13,8 +13,6 @@ class MyConanApp(ConanFile):
     generators = "CMakeDeps", "VCVars", "CMakeToolchain"
     requires = [
         "fmt/[>=12.0.0 <13]",
-        "vulkan-loader/[>=1.4.309.0 <2]",
-        "vulkan-headers/[>=1.4.309.0 <2]",
         "cxxopts/[>=3.3.1 <4]",
     ]
     test_requires = [

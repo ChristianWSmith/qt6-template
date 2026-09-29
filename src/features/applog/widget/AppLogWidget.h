@@ -3,7 +3,6 @@
 #include "ui_AppLogWidget.h"
 #include <QTextEdit>
 
-#include "../../../core/IWidget.h"
 #include "../applogcommon.h"
 #include <QString>
 #include <QWidget>
@@ -12,7 +11,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui {}
 QT_END_NAMESPACE
 
-class AppLogWidget : public QWidget, public IWidget {
+class AppLogWidget : public QWidget {
   Q_OBJECT
 
 public:

@@ -1,11 +1,12 @@
 #include "AppLogWidget.h"
+#include "../../../logging/logging.h"
 #include <QScrollBar>
 #include <fmt/format.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppLogWidget) {
   ui->setupUi(this);
-  qDebug() << "AppLogWidget instantiated";
+  qCDebug(appFeature) << "AppLogWidget instantiated";
 }
 
 AppLogWidget::~AppLogWidget() { delete ui; }

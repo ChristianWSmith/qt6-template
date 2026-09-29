@@ -1,4 +1,5 @@
 // NOLINTBEGIN
+#include "MemoryPersistenceProvider.h"
 #include "events/LogEvent.h"
 #include "events/system/EventSystem.hpp"
 #include "features/applog/applogcommon.h"
@@ -14,12 +15,13 @@
 
 class AppLogTest : public ::testing::Test {
 protected:
+  MemoryPersistenceProvider provider;
   AppLogModel model;
   AppLogWidget view;
   AppLogPresenter presenter;
 
   AppLogTest()
-      : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
+      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(AppLogTest, ModelEmitsLogChanged) {

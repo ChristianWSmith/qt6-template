@@ -1,11 +1,10 @@
 #pragma once
-#include "../../../core/IPresenter.h"
 #include "../countercommon.h"
 #include "../model/CounterModel.h"
 #include "../widget/CounterWidget.h"
 #include <QObject>
 
-class CounterPresenter : public QObject, public IPresenter {
+class CounterPresenter : public QObject {
   Q_OBJECT
 
 public:

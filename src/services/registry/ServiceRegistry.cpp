@@ -1,11 +1,11 @@
 #include "ServiceRegistry.hpp"
+#include "../ConsoleLogService.hpp"
+#include "../../events/LogEvent.h"
 
 namespace services {
 
 void registerAll() {
-  for (auto func : detail::registry()) {
-    func();
-  }
+    events::subscribe<LogEvent>(ConsoleLogService::handle);
 }
 
 } // namespace services

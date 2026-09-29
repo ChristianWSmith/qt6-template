@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QIcon>
 #include <QLocale>
+#include <QLoggingCategory>
 #include <QTranslator>
 #include <cxxopts.hpp>
 #include <fmt/format.h>
@@ -44,8 +45,33 @@ void setupLocalization() {
                       ":/i18n")) {
     QCoreApplication::installTranslator(&translator);
   } else {
-    qWarning() << "Failed to load translation for" << baseLang;
+    qCWarning(appMain) << "Failed to load translation for" << baseLang;
   }
+}
+
+void configureLogLevel(const std::string &levelStr) {
+  if (levelStr.empty()) {
+    return;
+  }
+
+  QStringList rules;
+  if (levelStr == "debug") {
+    rules << "*.debug=true" << "*.info=true" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "info") {
+    rules << "*.debug=false" << "*.info=true" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "warn" || levelStr == "warning") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "error") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
+          << "*.critical=true";
+  } else if (levelStr == "none") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
+          << "*.critical=false";
+  }
+  QLoggingCategory::setFilterRules(rules.join('\n'));
 }
 
 int main(int argc, char *argv[]) {
@@ -55,10 +81,11 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    setLogLevel(parseLogLevel(parsedArgs->operator[]("log").as<std::string>()));
     qInstallMessageHandler(messageHandler);
+    configureLogLevel(parsedArgs->operator[]("log").as<std::string>());
 
-    qInfo() << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
+    qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
+                           .c_str();
 
     QApplication app(argc, argv);
 
@@ -76,7 +103,8 @@ int main(int argc, char *argv[]) {
     setTheme();
 
     if (parsedArgs->contains("smoke-test")) {
-      qInfo() << "Smoke test successful: Application initialized and exiting.";
+      qCInfo(appMain)
+          << "Smoke test successful: Application initialized and exiting.";
       return 0;
     }
 

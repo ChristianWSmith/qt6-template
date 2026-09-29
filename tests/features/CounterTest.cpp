@@ -1,4 +1,5 @@
 // NOLINTBEGIN
+#include "MemoryPersistenceProvider.h"
 #include "features/counter/model/CounterModel.h"
 #include "features/counter/presenter/CounterPresenter.h"
 #include "features/counter/widget/CounterWidget.h"
@@ -11,12 +12,13 @@
 
 class CounterTest : public ::testing::Test {
 protected:
+  MemoryPersistenceProvider provider;
   CounterModel model;
   CounterWidget view;
   CounterPresenter presenter;
 
   CounterTest()
-      : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
+      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(CounterTest, ModelStartsAtZero) { EXPECT_EQ(model.value(), 0); }

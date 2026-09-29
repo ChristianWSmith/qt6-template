@@ -10,9 +10,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(fmt REQUIRED)
-find_package(Vulkan REQUIRED)
 find_package(cxxopts REQUIRED)
 
 qt_standard_project_setup(
@@ -27,20 +26,26 @@ add_library(${APP_NAME}_lib STATIC
     ${LIB_SOURCES}
 )
 
+function(apply_app_metadata target)
+    target_compile_definitions(${target} PRIVATE
+        APP_NAME="${APP_NAME}"
+        APP_DESCRIPTION="${APP_DESCRIPTION}"
+        APP_VERSION="${APP_VERSION}"
+        ORGANIZATION_NAME="${ORGANIZATION_NAME}"
+        APP_ID="${APP_ID}"
+    )
+endfunction()
+
 target_link_libraries(${APP_NAME}_lib PRIVATE
     Qt6::Widgets
-    Qt6::Concurrent
     fmt::fmt
-    Vulkan::Vulkan
     cxxopts::cxxopts
 )
 
-target_compile_definitions(${APP_NAME}_lib PRIVATE
-    APP_NAME="${APP_NAME}"
-    APP_DESCRIPTION="${APP_DESCRIPTION}"
-    APP_VERSION="${APP_VERSION}"
-    ORGANIZATION_NAME="${ORGANIZATION_NAME}"
-    APP_ID="${APP_ID}"
+apply_app_metadata(${APP_NAME}_lib)
+
+target_include_directories(${APP_NAME}_lib PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 if(APPLE)

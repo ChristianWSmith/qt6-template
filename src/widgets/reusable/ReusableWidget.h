@@ -1,5 +1,4 @@
 #pragma once
-#include "../../core/IWidget.h"
 #include "ui_ReusableWidget.h"
 #include <QWidget>
 
@@ -7,7 +6,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui {}
 QT_END_NAMESPACE
 
-class ReusableWidget : public QWidget, public IWidget {
+class ReusableWidget : public QWidget {
   Q_OBJECT
 
 public:

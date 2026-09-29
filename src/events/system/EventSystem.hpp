@@ -6,8 +6,10 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <type_traits>
 #include <typeindex>
 #include <unordered_map>
+#include <utility>
 
 namespace events {
 
@@ -71,18 +73,6 @@ private:
   std::mutex mutex_;
 };
 
-template <typename T> class LambdaWrapper : public QObject {
-public:
-  explicit LambdaWrapper(std::function<void(const T &)> func,
-                         QObject *parent = nullptr)
-      : QObject(parent), func_(std::move(func)) {}
-
-  void handle(const QVariant &var) { func_(var.value<T>()); }
-
-private:
-  std::function<void(const T &)> func_;
-};
-
 template <typename T, typename Obj>
 void subscribe(Obj *receiver, void (Obj::*method)(const T &))
   requires(std::is_base_of_v<QObject, Obj>)
@@ -91,18 +81,66 @@ void subscribe(Obj *receiver, void (Obj::*method)(const T &))
       &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
       receiver,
       [receiver, method](const QVariant &var) {
+        Q_ASSERT(var.userType() == qMetaTypeId<T>());
         (receiver->*method)(var.value<T>());
       },
       Qt::QueuedConnection);
 }
 
-template <typename T> void subscribe(void (*func)(const T &)) {
-  static QObject owner;
-  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-  auto *wrapper = new LambdaWrapper<T>(std::move(func), &owner);
-  QObject::connect(&BusRegistry::dispatcher<T>(),
-                   &EventDispatcherBase::eventPublished, wrapper,
-                   &LambdaWrapper<T>::handle, Qt::QueuedConnection);
+class Subscription {
+public:
+  Subscription() = default;
+  ~Subscription() { reset(); }
+
+  Subscription(const Subscription &) = delete;
+  Subscription &operator=(const Subscription &) = delete;
+
+  Subscription(Subscription &&other) noexcept
+      : connection_(std::exchange(other.connection_, {}))
+      , owner_(std::exchange(other.owner_, nullptr)) {}
+
+  Subscription &operator=(Subscription &&other) noexcept {
+    if (this != &other) {
+      reset();
+      connection_ = std::exchange(other.connection_, {});
+      owner_ = std::exchange(other.owner_, nullptr);
+    }
+    return *this;
+  }
+
+  [[nodiscard]] bool isConnected() const { return static_cast<bool>(connection_); }
+
+  void reset() {
+    if (static_cast<bool>(connection_)) {
+      QObject::disconnect(connection_);
+      connection_ = {};
+    }
+    if (owner_) {
+      owner_->deleteLater();
+      owner_ = nullptr;
+    }
+  }
+
+  Subscription(QMetaObject::Connection conn, QObject *owner)
+      : connection_(std::move(conn)), owner_(owner) {}
+
+private:
+  QMetaObject::Connection connection_;
+  QObject *owner_ = nullptr;
+};
+
+template <typename T>
+Subscription subscribe(void (*func)(const T &)) {
+  auto *wrapper = new QObject();
+  auto conn = QObject::connect(
+      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
+      wrapper,
+      [func](const QVariant &var) {
+        Q_ASSERT(var.userType() == qMetaTypeId<T>());
+        func(var.value<T>());
+      },
+      Qt::QueuedConnection);
+  return Subscription(std::move(conn), wrapper);
 }
 
 template <typename T> void publish(T event) {

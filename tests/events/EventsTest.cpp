@@ -119,6 +119,16 @@ public slots:
   }
 };
 
+// --- Free-function helpers ---
+
+static int g_freeValue = 0;
+
+static void freeHandler(const Event &e) { g_freeValue = e.value; }
+
+static int g_freeCallCount = 0;
+
+static void freeCountHandler(const Event &) { ++g_freeCallCount; }
+
 // --- TESTS ---
 
 TEST_F(EventTest, EventsWork) {
@@ -271,6 +281,108 @@ TEST_F(EventTest, OneObjectCanSubscribeToMultipleEvents) {
 
   ASSERT_EQ(a, 1);
   ASSERT_EQ(b, 2);
+}
+
+TEST_F(EventTest, FreeFunctionSubscriptionReceivesEvents) {
+  g_freeValue = 0;
+  events::Subscription sub = events::subscribe<Event>(freeHandler);
+
+  events::publish(Event{77});
+  QTest::qWait(1);
+
+  ASSERT_EQ(g_freeValue, 77);
+}
+
+TEST_F(EventTest, FreeFunctionSubscriptionStopsOnDestruction) {
+  g_freeValue = 0;
+
+  {
+    events::Subscription sub = events::subscribe<Event>(freeHandler);
+    events::publish(Event{1});
+    QTest::qWait(1);
+    ASSERT_EQ(g_freeValue, 1);
+  }
+
+  g_freeValue = 0;
+  events::publish(Event{99});
+  QTest::qWait(1);
+
+  ASSERT_EQ(g_freeValue, 0);
+}
+
+TEST_F(EventTest, MultipleFreeFunctionSubscriptions) {
+  g_freeValue = 0;
+  g_freeCallCount = 0;
+
+  events::Subscription sub1 = events::subscribe<Event>(freeHandler);
+  events::Subscription sub2 = events::subscribe<Event>(freeCountHandler);
+
+  events::publish(Event{55});
+  QTest::qWait(1);
+
+  ASSERT_EQ(g_freeValue, 55);
+  ASSERT_EQ(g_freeCallCount, 1);
+}
+
+TEST_F(EventTest, SubscriptionMoveTransfersOwnership) {
+  g_freeValue = 0;
+
+  events::Subscription sub1 = events::subscribe<Event>(freeHandler);
+  events::Subscription sub2 = std::move(sub1);
+
+  ASSERT_FALSE(sub1.isConnected());
+  ASSERT_TRUE(sub2.isConnected());
+
+  events::publish(Event{42});
+  QTest::qWait(1);
+
+  ASSERT_EQ(g_freeValue, 42);
+
+  sub2.reset();
+  g_freeValue = 0;
+  events::publish(Event{100});
+  QTest::qWait(1);
+
+  ASSERT_EQ(g_freeValue, 0);
+}
+
+TEST_F(EventTest, SubscriptionResetStopsDelivery) {
+  g_freeValue = 0;
+
+  events::Subscription sub = events::subscribe<Event>(freeHandler);
+  events::publish(Event{10});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 10);
+
+  sub.reset();
+  ASSERT_FALSE(sub.isConnected());
+
+  g_freeValue = 0;
+  events::publish(Event{20});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 0);
+}
+
+TEST_F(EventTest, RepeatedSubscribeUnsubscribe) {
+  g_freeValue = 0;
+
+  for (int i = 0; i < 10; ++i) {
+    events::Subscription sub = events::subscribe<Event>(freeHandler);
+    events::publish(Event{i});
+    QTest::qWait(1);
+    ASSERT_EQ(g_freeValue, i);
+  }
+}
+
+TEST_F(EventTest, SubscriptionIsConnected) {
+  events::Subscription empty;
+  ASSERT_FALSE(empty.isConnected());
+
+  events::Subscription sub = events::subscribe<Event>(freeHandler);
+  ASSERT_TRUE(sub.isConnected());
+
+  sub.reset();
+  ASSERT_FALSE(sub.isConnected());
 }
 
 #include "EventsTest.moc"

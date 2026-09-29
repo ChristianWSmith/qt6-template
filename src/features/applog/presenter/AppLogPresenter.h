@@ -7,10 +7,9 @@
 
 #include <QObject>
 
-#include "../../../core/IPresenter.h"
 #include "../applogcommon.h"
 
-class AppLogPresenter : public QObject, public IPresenter {
+class AppLogPresenter : public QObject {
   Q_OBJECT
 
 public:

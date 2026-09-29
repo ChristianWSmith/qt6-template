@@ -66,7 +66,6 @@ mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
 #pragma once
 <GEN:COMMON_H>
-#include "$(realpath --relative-to="${WIDGET_DIR}" "${SRC_DIR}/core")/IWidget.h"
 #include "ui_${NAME_TITLE}Widget.h"
 #include <QWidget>
 
@@ -74,7 +73,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui {}
 QT_END_NAMESPACE
 
-class ${NAME_TITLE}Widget : public QWidget, public IWidget {
+class ${NAME_TITLE}Widget : public QWidget {
   Q_OBJECT
 
 public:
@@ -246,12 +245,11 @@ mkdir -p "${PRESENTER_DIR}"
 cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h" <<EOF
 #pragma once
 #include "../${NAME_LOWER}common.h"
-#include "$(realpath --relative-to="${PRESENTER_DIR}" "${SRC_DIR}/core")/IPresenter.h"
 #include "../model/${NAME_TITLE}Model.h"
 #include "../widget/${NAME_TITLE}Widget.h"
 #include <QObject>
 
-class ${NAME_TITLE}Presenter : public QObject, public IPresenter {
+class ${NAME_TITLE}Presenter : public QObject {
   Q_OBJECT
 
 public:

@@ -3,15 +3,25 @@
 #include <QObject>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 #include <variant>
 
 enum class PersistenceError : std::uint8_t {
   NotFound,
-  PermissionDenied,
   IoError,
   InvalidData,
   DurabilityFailure,
 };
+
+constexpr std::string_view toString(PersistenceError error) {
+  switch (error) {
+  case PersistenceError::NotFound: return "NotFound";
+  case PersistenceError::IoError: return "IoError";
+  case PersistenceError::InvalidData: return "InvalidData";
+  case PersistenceError::DurabilityFailure: return "DurabilityFailure";
+  }
+  return "Unknown";
+}
 
 template <typename T> struct PersistenceResult {
   std::variant<T, PersistenceError> value;

@@ -11,7 +11,7 @@ class AppLogModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit AppLogModel(IPersistenceProvider *provider = nullptr,
+  explicit AppLogModel(IPersistenceProvider &provider,
                        QObject *parent = nullptr);
 
   void saveState() const override;
@@ -28,7 +28,7 @@ signals:
 private:
   friend class AppLogTest;
 
-  IPersistenceProvider *m_provider;
+  IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".AppLogState"};
 
   QVector<QString> m_logMessages;

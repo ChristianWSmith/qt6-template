@@ -1,6 +1,6 @@
 #include "AppLogModel.h"
+#include "logging/logging.h"
 #include <QDateTime>
-#include <QDebug>
 #include <QJsonArray>
 #include <QJsonObject>
 
@@ -9,9 +9,9 @@ constexpr int MAX_LOG_SIZE = 100;
 constexpr auto KEY_LOG_MESSAGES = "logMessages";
 } // namespace
 
-AppLogModel::AppLogModel(IPersistenceProvider *provider, QObject *parent)
+AppLogModel::AppLogModel(IPersistenceProvider &provider, QObject *parent)
     : QObject(parent), m_provider(provider) {
-  qDebug() << "AppLogModel instantiated";
+  qCDebug(appPersistence) << "AppLogModel instantiated";
   AppLogModel::loadState();
 }
 
@@ -42,14 +42,10 @@ const QVector<QString> &AppLogModel::getLogMessages() const {
 }
 
 void AppLogModel::loadState() {
-  if (m_provider == nullptr) {
-    return;
-  }
-
-  auto result = m_provider->loadState(m_key);
+  auto result = m_provider.loadState(m_key);
   if (result.hasError()) {
     if (result.error() != PersistenceError::NotFound) {
-      qWarning() << "Failed to load applog state:" << static_cast<int>(result.error());
+      qCWarning(appPersistence) << "Failed to load applog state:" << toString(result.error());
     }
     return;
   }
@@ -64,14 +60,10 @@ void AppLogModel::loadState() {
     }
   }
 
-  qInfo() << "Loaded" << m_logMessages.size() << "log messages";
+  qCInfo(appPersistence) << "Loaded" << m_logMessages.size() << "log messages";
 }
 
 void AppLogModel::saveState() const {
-  if (m_provider == nullptr) {
-    return;
-  }
-
   QJsonArray messages;
   for (const QString &msg : m_logMessages) {
     messages.append(msg);
@@ -80,10 +72,10 @@ void AppLogModel::saveState() const {
   QJsonObject obj;
   obj[KEY_LOG_MESSAGES] = messages;
 
-  auto result = m_provider->saveState(m_key, obj);
+  auto result = m_provider.saveState(m_key, obj);
   if (result.hasError()) {
-    qWarning() << "Failed to save applog state:" << static_cast<int>(result.error());
+    qCWarning(appPersistence) << "Failed to save applog state:" << toString(result.error());
   } else {
-    qInfo() << "Saved" << m_logMessages.size() << "log messages";
+    qCInfo(appPersistence) << "Saved" << m_logMessages.size() << "log messages";
   }
 }

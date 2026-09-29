@@ -8,7 +8,7 @@ class CounterModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit CounterModel(IPersistenceProvider *provider = nullptr,
+  explicit CounterModel(IPersistenceProvider &provider,
                         QObject *parent = nullptr);
 
   void saveState() const override;
@@ -24,7 +24,7 @@ signals:
 private:
   friend class CounterTest;
 
-  IPersistenceProvider *m_provider;
+  IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".CounterState"};
 
   int m_value{0};

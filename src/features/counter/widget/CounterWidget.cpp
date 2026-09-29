@@ -1,9 +1,10 @@
 #include "CounterWidget.h"
+#include "../../../logging/logging.h"
 
 CounterWidget::CounterWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::CounterWidget) {
   ui->setupUi(this);
-  qDebug() << "CounterWidget instantiated";
+  qCDebug(appFeature) << "CounterWidget instantiated";
 }
 
 CounterWidget::~CounterWidget() { delete ui; }
