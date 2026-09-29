@@ -10,7 +10,7 @@ class MyConanApp(ConanFile):
     name = os.environ.get('APP_NAME', 'DEFAULT_APP_NAME')
     version = os.environ.get('APP_VERSION', 'DEFAULT_APP_VERSION')
     settings = "os", "arch", "compiler", "build_type"
-    generators = "CMakeDeps", "VCVars", "CMakeToolchain"
+    generators = "CMakeDeps", "CMakeToolchain"
     requires = [
         "fmt/[>=12.0.0 <13]",
         "cxxopts/[>=3.3.1 <4]",
