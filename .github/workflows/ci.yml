@@ -37,17 +37,6 @@ jobs:
       - name: Install Python dependencies
         run: pipenv install --dev --deploy
 
-      - name: Install system dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb1-dev libfontenc-dev libice-dev libsm-dev \
-            libxaw7-dev libxcomposite-dev libxcursor-dev libxdamage-dev \
-            libxdmcp-dev libxtst-dev libxinerama-dev libxkbfile-dev \
-            libxrandr-dev libxres-dev libxss-dev libxcb-util-dev \
-            libxcb-util-wm-dev libxcb-util-image-dev libxcb-util-keysyms-dev \
-            libxcb-util-renderutil-dev libxxf86vm-dev libxv-dev \
-            libxcb-cursor-dev libx11-xcb-dev
-
       - name: Build and test
+        shell: bash
         run: pipenv run ./scripts/build.sh --test ON
