@@ -32,16 +32,19 @@ jobs:
           python-version: ${{ steps.python_version.outputs.python-version }}
 
       - name: Install pipenv
+        shell: bash
         run: pip install pipenv
 
       - name: Install Python dependencies
+        shell: bash
         run: pipenv install --dev --deploy
 
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl-dev libxkbcommon-dev
+          sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev
 
       - name: Build and test
         shell: bash
