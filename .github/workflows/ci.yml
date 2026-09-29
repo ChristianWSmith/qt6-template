@@ -15,12 +15,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    env:
-      # Set from app.env so conan/cmake find Qt and use correct app name
-      APP_NAME: MyApp
-      APP_VERSION: "0.1.0"
-      QT_VERSION: "6.11.1"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,43 +46,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0
 
-      - name: Determine platform vars
-        id: platform
-        shell: bash
-        run: |
-          PLATFORM=$(python -c 'import platform; print(platform.system().lower())')
-          case "${PLATFORM}" in
-            linux)
-              echo "compiler_dir=gcc_64" >> "$GITHUB_OUTPUT"
-              echo "conan_profile=conan/profiles/linux" >> "$GITHUB_OUTPUT"
-              ;;
-            windows)
-              echo "compiler_dir=msvc2022_64" >> "$GITHUB_OUTPUT"
-              echo "conan_profile=conan/profiles/windows" >> "$GITHUB_OUTPUT"
-              ;;
-            darwin)
-              echo "compiler_dir=macos" >> "$GITHUB_OUTPUT"
-              echo "conan_profile=conan/profiles/darwin" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
-      - name: Install Qt
-        shell: bash
-        run: |
-          QT_ROOT="Qt/${QT_VERSION}/${{ steps.platform.outputs.compiler_dir }}"
-          if [ ! -e "${QT_ROOT}" ]; then
-            ./scripts/install-qt.sh
-          fi
-
       - name: Build and test
         shell: bash
-        run: |
-          touch CMakeLists.txt tests/CMakeLists.txt
-          pipenv run conan build . \
-            --output-folder build \
-            --profile:build="${{ steps.platform.outputs.conan_profile }}" \
-            --profile:host="${{ steps.platform.outputs.conan_profile }}" \
-            -s build_type=Release \
-            --build=missing
+        run: pipenv run ./scripts/build.sh --test ON
         env:
+          SHELL: bash
           QT_QPA_PLATFORM: offscreen

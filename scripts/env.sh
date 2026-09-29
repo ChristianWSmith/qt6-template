@@ -29,7 +29,7 @@ export UT_NAME="UnitTests"
 export LLDB_PORT="${LLDB_PORT:-12345}"
 
 # --- OS DETECTION ---
-export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
+export PLATFORM="$(python -c 'import platform; print(platform.system().lower())')"
 
 case "${PLATFORM}" in
   linux)
