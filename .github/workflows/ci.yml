@@ -46,6 +46,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0
 
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build and test
         shell: bash
         run: pipenv run bash scripts/build.sh --test ON
