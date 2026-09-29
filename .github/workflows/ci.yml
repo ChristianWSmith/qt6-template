@@ -44,8 +44,57 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev
+          sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0
+
+      - name: Set up build environment
+        id: build_env
+        shell: bash
+        run: |
+          # Source app.env for APP_NAME etc.
+          source app.env
+
+          # Detect platform
+          PLATFORM=$(python -c 'import platform; print(platform.system().lower())')
+
+          case "${PLATFORM}" in
+            linux)
+              COMPILER_DIR="gcc_64"
+              CONAN_PROFILE="conan/profiles/linux"
+              ;;
+            windows)
+              COMPILER_DIR="msvc2022_64"
+              CONAN_PROFILE="conan/profiles/windows"
+              ;;
+            darwin)
+              COMPILER_DIR="macos"
+              CONAN_PROFILE="conan/profiles/darwin"
+              ;;
+          esac
+
+          QT_ROOT="Qt/${QT_VERSION}/${COMPILER_DIR}"
+          QT_CMAKE_DIR="${QT_ROOT}/lib/cmake/Qt6"
+
+          echo "qt_root=${QT_ROOT}" >> "$GITHUB_OUTPUT"
+          echo "qt_cmake_dir=${QT_CMAKE_DIR}" >> "$GITHUB_OUTPUT"
+          echo "conan_profile=${CONAN_PROFILE}" >> "$GITHUB_OUTPUT"
+          echo "app_name=${APP_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Qt
+        shell: bash
+        run: |
+          if [ ! -e "${{ steps.build_env.outputs.qt_root }}" ]; then
+            ./scripts/install-qt.sh
+          fi
 
       - name: Build and test
         shell: bash
-        run: pipenv run ./scripts/build.sh --test ON
+        run: |
+          touch CMakeLists.txt tests/CMakeLists.txt
+          pipenv run conan build . \
+            --output-folder build \
+            --profile:build="${{ steps.build_env.outputs.conan_profile }}" \
+            --profile:host="${{ steps.build_env.outputs.conan_profile }}" \
+            -s build_type=Release \
+            --build=missing
+        env:
+          QT_QPA_PLATFORM: offscreen
