@@ -16,7 +16,7 @@
 #include <fmt/format.h>
 #include <iostream>
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
+// NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 std::optional<cxxopts::ParseResult>
 parseCommandLine(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
@@ -34,13 +34,13 @@ parseCommandLine(int argc, char *argv[]) {
 
   return parsedArgs;
 }
+// NOLINTEND(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
-void setupLocalization() {
+void setupLocalization(QTranslator &translator) {
   QLocale locale = QLocale::system();
   QString langCode = locale.name();
   QString baseLang = langCode.section('_', 0, 0);
 
-  static QTranslator translator;
   if (translator.load(QString("%1_%2.qm").arg(APP_NAME).arg(baseLang),
                       ":/i18n")) {
     QCoreApplication::installTranslator(&translator);
@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
     }
 
     qInstallMessageHandler(messageHandler);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
     configureLogLevel(parsedArgs->operator[]("log").as<std::string>());
 
     qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
@@ -96,7 +97,11 @@ int main(int argc, char *argv[]) {
     QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
     QGuiApplication::setDesktopFileName(APP_ID);
 
-    setupLocalization();
+    // Declared after QApplication so it is destroyed before the application
+    // on scope exit. Removed explicitly before return so QCoreApplication
+    // never observes a destroyed translator.
+    QTranslator translator;
+    setupLocalization(translator);
 
     AppMainWindow mainWindow;
 
@@ -105,12 +110,15 @@ int main(int argc, char *argv[]) {
     if (parsedArgs->contains("smoke-test")) {
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
+      QCoreApplication::removeTranslator(&translator);
       return 0;
     }
 
     mainWindow.show();
 
-    return QApplication::exec();
+    const int exitCode = QApplication::exec();
+    QCoreApplication::removeTranslator(&translator);
+    return exitCode;
   } catch (const std::exception &e) {
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;

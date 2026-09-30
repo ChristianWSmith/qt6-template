@@ -1,7 +1,6 @@
 #include "AppLogWidget.h"
 #include "../../../logging/logging.h"
 #include <QScrollBar>
-#include <fmt/format.h>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppLogWidget) {

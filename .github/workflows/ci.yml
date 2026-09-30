@@ -70,6 +70,19 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
 
+      - name: Generator smoke test
+        shell: bash
+        run: |
+          source scripts/env.sh
+          export PATH="${QT_BIN}:${PATH}"
+          if [ -f scripts/test-generator.sh ]; then
+            bash scripts/test-generator.sh
+          else
+            echo "scripts/test-generator.sh not present; skipping generator smoke test."
+          fi
+        env:
+          QT_QPA_PLATFORM: offscreen
+
       - name: Bundle Application Native (Linux)
         if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash

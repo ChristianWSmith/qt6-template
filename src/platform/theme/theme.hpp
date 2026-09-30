@@ -7,6 +7,10 @@
 #include <QStyleFactory>
 #include <QStyleHints>
 
+// App-global bootstrap theming. Call once after window construction.
+// Empty platform QSS files mean Qt default styling; custom.qss is the
+// primary application override extension point (see AGENTS.md Build notes).
+
 inline bool isDarkMode() {
     return QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 }

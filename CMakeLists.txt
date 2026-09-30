@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.21)
 
+# Application metadata must come from app.env via scripts/env.sh → Conan → CMake.
+# Fail fast with a clear message instead of configuring a nameless project.
+foreach(_required_var APP_NAME APP_VERSION APP_DESCRIPTION ORGANIZATION_NAME APP_ID)
+    if(NOT DEFINED ${_required_var} OR "${${_required_var}}" STREQUAL "")
+        message(FATAL_ERROR
+            "${_required_var} is missing. Configure the project through app.env/scripts "
+            "(source scripts/env.sh, then build via ./scripts/build.sh).")
+    endif()
+endforeach()
+
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

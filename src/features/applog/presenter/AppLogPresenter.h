@@ -25,6 +25,9 @@ private slots:
 
 private:
   friend class AppLogTest;
+  // Non-owning. Lifetime is structurally guaranteed by AppMainWindow:
+  // model and widget are constructed before the presenter and owned via
+  // Qt parent-child. The presenter does not outlive its dependencies.
   AppLogModel *m_model;
   AppLogWidget *m_view;
 };
