@@ -425,18 +425,25 @@ TEST_F(EventTest, RepeatedResetIsSafe) {
 }
 
 TEST_F(EventTest, DispatchersAreApplicationOwned) {
-  // First use creates the dispatcher; it must be parented to QApplication.
-  auto *dispatcher = &events::BusRegistry::dispatcher<Event>();
-  ASSERT_NE(dispatcher, nullptr);
-  EXPECT_EQ(dispatcher->parent(), QCoreApplication::instance());
-
+  // First use creates the dispatcher via the public publish API.
+  // BusRegistry::dispatcher<T>() is private (F-10); ownership is observable
+  // through the QObject parent tree — dispatchers are parented to
+  // QCoreApplication.
   events::publish(Event{1});
   QTest::qWait(1);
+
+  const auto children = QCoreApplication::instance()
+                            ->findChildren<events::EventDispatcherBase *>();
+  ASSERT_FALSE(children.isEmpty());
+  for (const auto *child : children) {
+    EXPECT_EQ(child->parent(), QCoreApplication::instance());
+  }
 }
 
-TEST_F(EventTest, FreeFunctionWrapperIsApplicationOwned) {
-  // Subscription does not expose owner_; verify delivery still works after
-  // reset without requiring deleteLater (wrapper remains app-owned).
+TEST_F(EventTest, FreeFunctionSubscriptionUsesApplicationContext) {
+  // Free-function subscriptions use QCoreApplication::instance() as the
+  // connection context — no wrapper QObject is allocated. Delivery and
+  // reset() (disconnect only, no deleteLater) must still work.
   g_freeValue = 0;
   events::Subscription sub = events::subscribe<Event>(freeHandler);
   ASSERT_TRUE(sub.isConnected());

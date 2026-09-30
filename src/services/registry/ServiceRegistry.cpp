@@ -5,8 +5,9 @@
 namespace services {
 
 namespace {
-// Process-lifetime storage: free-function subscribe returns an RAII
-// Subscription that must be held for the subscription to remain active.
+// Storage only — not the lifecycle mechanism. registerAll() assigns a
+// free-function Subscription; unregisterAll() explicitly resets it before
+// QApplication destruction, independent of static destructor timing.
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 events::Subscription g_consoleLogSubscription;
 } // namespace
@@ -14,6 +15,10 @@ events::Subscription g_consoleLogSubscription;
 void registerAll() {
     g_consoleLogSubscription =
         events::subscribe<LogEvent>(ConsoleLogService::handle);
+}
+
+void unregisterAll() {
+    g_consoleLogSubscription.reset();
 }
 
 } // namespace services

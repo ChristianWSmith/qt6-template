@@ -27,9 +27,12 @@ void CounterModel::reset() {
 void CounterModel::loadState() {
   auto result = m_provider.loadState(m_key);
   if (result.hasError()) {
-    if (result.error() != PersistenceError::NotFound) {
-      qCWarning(appPersistence) << "Failed to load counter state:" << toString(result.error());
+    if (result.error() == PersistenceError::NotFound) {
+      return;
     }
+    qCDebug(appPersistence)
+        << "CounterModel skipped load due to persistence error:"
+        << toString(result.error());
     return;
   }
   const QJsonObject &obj = result.value();
@@ -38,11 +41,10 @@ void CounterModel::loadState() {
   }
 }
 
-void CounterModel::saveState() const {
+PersistenceResult<void> CounterModel::saveState() const {
   QJsonObject obj;
   obj.insert(KEY_VALUE, m_value);
-  auto result = m_provider.saveState(m_key, obj);
-  if (result.hasError()) {
-    qCWarning(appPersistence) << "Failed to save counter state:" << toString(result.error());
-  }
+  // Provider owns error logging; model forwards the result to the caller
+  // (composition root observes outcomes at closeEvent).
+  return m_provider.saveState(m_key, obj);
 }

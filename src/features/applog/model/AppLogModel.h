@@ -18,7 +18,8 @@ public:
   explicit AppLogModel(IPersistenceProvider &provider,
                        QObject *parent = nullptr);
 
-  void saveState() const override;
+  // IModel
+  PersistenceResult<void> saveState() const override;
   void loadState() override;
 
   void addLogMessage(const QString &message);

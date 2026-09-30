@@ -3,24 +3,25 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS *.cpp)
 
-add_executable(${UT_NAME}
+# Single test binary; name hardcoded (no UT_NAME indirection).
+add_executable(UnitTests
     ${TEST_SOURCES}
 )
 
 set_directory_properties(PROPERTIES QT_EXCLUDE_FROM_TRANSLATION ON)
 
-target_include_directories(${UT_NAME} PRIVATE
+target_include_directories(UnitTests PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
-apply_app_metadata(${UT_NAME})
+apply_app_metadata(UnitTests)
 
 # Custom tests/main.cpp provides main() (QApplication + gtest init).
 # Do not link gtest_main — that would hide the Qt application bootstrap.
-target_link_libraries(${UT_NAME} PRIVATE
+target_link_libraries(UnitTests PRIVATE
     GTest::gtest
     ${APP_NAME}_lib
     Qt6::Core
@@ -30,6 +31,6 @@ target_link_libraries(${UT_NAME} PRIVATE
 )
 
 include(GoogleTest)
-gtest_discover_tests(${UT_NAME}
+gtest_discover_tests(UnitTests
   DISCOVERY_TIMEOUT 30
 )

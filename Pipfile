@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pip_conf_index_global"
 
 [packages]
-aqtinstall = {git = "https://github.com/miurahr/aqtinstall.git", ref = "master"}
+aqtinstall = "==3.3.0"
 conan = "*"
 icnsutil = "*"
 clang-tools = "*"

@@ -81,8 +81,8 @@ check "Model.h stores provider by reference" \
 check "Model.cpp uses qCDebug category logging" \
   "${MODEL_CPP}" 'qCDebug\(appPersistence\)'
 
-check "Model.cpp uses toString for errors" \
-  "${MODEL_CPP}" 'toString\(result\.error\(\)\)'
+check "Model.cpp forwards PersistenceResult (provider owns error logging)" \
+  "${MODEL_CPP}" 'PersistenceResult'
 
 check "Model.cpp does not null-guard provider" \
   "${MODEL_CPP}" 'm_provider == nullptr' invert

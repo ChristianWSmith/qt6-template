@@ -1,5 +1,7 @@
 #include "AppMainWindow.h"
 
+#include "logging/logging.h"
+
 #include <QCloseEvent>
 #include <QMainWindow>
 #include <QSettings>
@@ -21,6 +23,11 @@ AppMainWindow::AppMainWindow(QWidget *parent)
           new AppLogPresenter(m_appLogModel, m_appLogWidget, this)) {
 
   ui->setupUi(this);
+
+  // F-09: polymorphic IModel registry for shutdown persistence.
+  // Individual pointers remain for wiring/feature access; this list drives
+  // closeEvent's save loop over every feature model.
+  m_models << m_counterModel << m_appLogModel;
 
   QSettings settings(ORGANIZATION_NAME, APP_NAME);
   restoreGeometry(settings.value("window/geometry").toByteArray());
@@ -52,8 +59,18 @@ void AppMainWindow::closeEvent(QCloseEvent *event) {
   settings.setValue("window/geometry", saveGeometry());
   settings.setValue("window/state", saveState());
 
-  m_counterModel->saveState();
-  m_appLogModel->saveState();
+  // F-01/F-09: observe save results polymorphically.
+  // Provider logging ownership stays with FilePersistenceProvider — do not
+  // duplicate qCWarning here for the same failure. Default shutdown policy
+  // remains log-and-continue: do not block close on persistence failure.
+  for (IModel *model : m_models) {
+    const auto result = model->saveState();
+    if (result.hasError()) {
+      qCDebug(appPersistence)
+          << "closeEvent: feature save reported failure (provider already logged):"
+          << toString(result.error());
+    }
+  }
 
   QMainWindow::closeEvent(event);
 }

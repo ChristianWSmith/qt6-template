@@ -43,8 +43,7 @@ class MyConanApp(ConanFile):
             "APP_VERSION": _env_required("APP_VERSION"),
             "ORGANIZATION_NAME": _env_required("ORGANIZATION_NAME"),
             "APP_ID": _env_required("APP_ID"),
-            "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),
-            "UT_NAME": os.environ.get("UT_NAME", "UnitTests"),
+            "BUILD_TESTING": os.environ.get("BUILD_TESTING", "ON"),
         })
         cmake.build()
         if os.getenv("UPDATE_TRANSLATIONS", "OFF") == "ON":
