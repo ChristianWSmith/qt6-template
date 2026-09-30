@@ -4,6 +4,11 @@ set -euo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${SCRIPT_DIR}/env.sh"
 
+# gtest_discover_tests POST_BUILD runs UnitTests; need Qt on PATH and a
+# headless platform plugin (same requirements as scripts/build.sh --test).
+export PATH="${QT_BIN}:${PATH}"
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
+
 NAME_TITLE="GenSmokeProbe"
 NAME_LOWER="$(echo "${NAME_TITLE}" | tr '[:upper:]' '[:lower:]')"
 FEATURE_DIR="${FEATURES_DIR}/${NAME_LOWER}"

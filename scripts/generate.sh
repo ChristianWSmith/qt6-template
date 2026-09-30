@@ -19,6 +19,14 @@ format() {
   fi
 }
 
+# Portable in-place edit: GNU sed -i and BSD/macOS sed -i '' are incompatible.
+sed_inplace() {
+  local expr="$1"
+  local file="$2"
+  sed "${expr}" "${file}" > "${file}.sedtmp"
+  mv "${file}.sedtmp" "${file}"
+}
+
 if [[ ! "${NAME_TITLE}" =~ ^[A-Z][A-Za-z0-9]*$ ]]; then 
   usage
 fi
@@ -137,13 +145,13 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.ui" <<EOF
 EOF
 
 if [[ "${TYPE}" == "widget" ]]; then
-  sed -i '/<GEN:COMMON_H>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
-  sed -i '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  sed_inplace '/<GEN:COMMON_H>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  sed_inplace '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   exit 0
 else
-  sed -i "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
-  sed -i "s|<GEN:FRIEND_TEST>|friend class ${NAME_TITLE}Test;|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  sed_inplace "s|<GEN:FRIEND_TEST>|friend class ${NAME_TITLE}Test;|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
 fi
 
