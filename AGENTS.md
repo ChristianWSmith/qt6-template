@@ -104,6 +104,7 @@ Auto-triggered by `build.sh` if Qt not found at expected path.
 - Low-level GUI event handling: QObject/QEvent/eventFilter.
 
 The EventSystem provides type-safe, decoupled publish/subscribe.
+The header `src/events/system/EventSystem.hpp` is the normative contract; this section summarizes it.
 
 #### Subscribing
 
@@ -122,14 +123,25 @@ auto sub = events::subscribe<LogEvent>(myHandler);
 events::publish(LogEvent{"message"});
 ```
 
+#### Behavioral contract
+
+| Topic | Guarantee |
+|---|---|
+| Delivery | Always queued (`Qt::QueuedConnection`). Publish does not invoke handlers on the publisher stack. |
+| Destruction | Events targeting destroyed subscribers are dropped. |
+| Ordering | Per-connection FIFO via Qt. Cross-subscriber order follows connection creation order. Mid-dispatch subscribe does not see the in-flight event. Publish-during-dispatch is deferred. |
+| Type safety | Events must be copy-constructible. Delivery checks meta-type in all builds; debug builds also assert. Mismatch logs `qCritical(appEvent)` and does not deliver. |
+| QObject lifetime | Dispatchers and free-function wrapper QObjects are parented to `QCoreApplication` when present (application-owned). |
+| Threading | Publish from the GUI thread only. Callbacks run on the receiver's thread via queued delivery. `BusRegistry` mutex protects dispatcher creation, not delivery. |
+
 #### Lifetime rules
 
 - QObject subscriptions auto-disconnect when the receiver is destroyed.
 - Free-function subscriptions require the caller to hold the `Subscription` object.
 - Free-function `subscribe` is `[[nodiscard]]`; retain the `Subscription` for as long as the handler must remain active.
-- Destroying a `Subscription` disconnects the handler.
-- Type mismatches are caught at runtime via Q_ASSERT.
-- Events are always delivered asynchronously (QueuedConnection).
+- Destroying a `Subscription` disconnects the handler (`reset()`); it does **not** depend on `deleteLater()`.
+- Application-owned wrappers/dispatchers are reclaimed with `QApplication`.
+- EventSystem use requires a running `QApplication` in this template.
 
 ### Ownership Rules
 

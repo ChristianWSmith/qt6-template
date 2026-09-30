@@ -385,5 +385,101 @@ TEST_F(EventTest, SubscriptionIsConnected) {
   ASSERT_FALSE(sub.isConnected());
 }
 
+TEST_F(EventTest, SubscriptionMoveAssignmentTransfersOwnership) {
+  g_freeValue = 0;
+  g_freeCallCount = 0;
+
+  events::Subscription sub1 = events::subscribe<Event>(freeHandler);
+  events::Subscription sub2 = events::subscribe<Event>(freeCountHandler);
+
+  sub2 = std::move(sub1);
+  ASSERT_FALSE(sub1.isConnected());
+  ASSERT_TRUE(sub2.isConnected());
+
+  events::publish(Event{5});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 5);
+  ASSERT_EQ(g_freeCallCount, 0);
+
+  sub2.reset();
+  ASSERT_FALSE(sub2.isConnected());
+}
+
+TEST_F(EventTest, RepeatedResetIsSafe) {
+  g_freeValue = 0;
+  events::Subscription sub = events::subscribe<Event>(freeHandler);
+
+  events::publish(Event{3});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 3);
+
+  sub.reset();
+  sub.reset();
+  sub.reset();
+  ASSERT_FALSE(sub.isConnected());
+
+  g_freeValue = 0;
+  events::publish(Event{4});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 0);
+}
+
+TEST_F(EventTest, DispatchersAreApplicationOwned) {
+  // First use creates the dispatcher; it must be parented to QApplication.
+  auto *dispatcher = &events::BusRegistry::dispatcher<Event>();
+  ASSERT_NE(dispatcher, nullptr);
+  EXPECT_EQ(dispatcher->parent(), QCoreApplication::instance());
+
+  events::publish(Event{1});
+  QTest::qWait(1);
+}
+
+TEST_F(EventTest, FreeFunctionWrapperIsApplicationOwned) {
+  // Subscription does not expose owner_; verify delivery still works after
+  // reset without requiring deleteLater (wrapper remains app-owned).
+  g_freeValue = 0;
+  events::Subscription sub = events::subscribe<Event>(freeHandler);
+  ASSERT_TRUE(sub.isConnected());
+
+  events::publish(Event{8});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 8);
+
+  // Reset must not crash and must stop delivery even if called repeatedly
+  // while the event loop is running (no deleteLater dependency).
+  sub.reset();
+  sub.reset();
+  g_freeValue = 0;
+  events::publish(Event{9});
+  QTest::qWait(1);
+  ASSERT_EQ(g_freeValue, 0);
+}
+
+TEST_F(EventTest, TypeMismatchDoesNotDeliverWrongData) {
+  // Public API is typed (publish<T>); mismatches are not reachable without
+  // internal QVariant abuse. Lock successful typed delivery and isolation
+  // between different event types.
+  int actual = 0;
+  IntReceiver r(&actual);
+  events::subscribe<Event>(&r, &IntReceiver::receive);
+  events::publish(Event{11});
+  QTest::qWait(1);
+  ASSERT_EQ(actual, 11);
+
+  int a = 0;
+  int b = 0;
+  MultiReceiver m(&a, &b);
+  events::subscribe<EventA>(&m, &MultiReceiver::recvA);
+
+  // Publishing Event must not deliver to EventA subscribers.
+  events::publish(Event{5});
+  QTest::qWait(1);
+  EXPECT_EQ(a, 0);
+
+  events::publish(EventA{99});
+  QTest::qWait(1);
+  EXPECT_EQ(a, 99);
+}
+
 #include "EventsTest.moc"
 // NOLINTEND
