@@ -39,6 +39,9 @@ All scripts use `pipenv run` under the hood. Pipenv auto-installs on first run.
 - No Vulkan or Qt Concurrent dependency
 - Compile definitions centralized via `apply_app_metadata()` CMake function
 - `app.env` is the single source of truth for app metadata
+- **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` in application code only if Qt-native CLI is a deliberate project choice; do not remove cxxopts solely because Qt has an equivalent.
+- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows ships `dark.qss`/`light.qss`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
+- **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ## Code Generation
 
@@ -144,6 +147,15 @@ events::publish(LogEvent{"message"});
 - Destroying a `Subscription` disconnects the handler (`reset()`); it does **not** depend on `deleteLater()`.
 - Application-owned wrappers/dispatchers are reclaimed with `QApplication`.
 - EventSystem use requires a running `QApplication` in this template.
+
+#### Production status of LogEvent / AppLog
+
+- The stock application does **not** publish `LogEvent` in production code.
+- `AppLogPresenter` and `ConsoleLogService` demonstrate EventSystem **subscription** wiring (QObject receiver + free-function service registration).
+- This is an **architectural demonstration**, not a live end-to-end event flow.
+- Diagnostic logging (`qC*` + message handler) never uses the EventSystem.
+- Applications that need cross-component events publish their own domain events from semantically honest sites (feature actions, lifecycle, etc.) — do not route diagnostic logs onto the bus.
+- `AppLogModel` persistence demonstrates **feature-state persistence** via `IPersistenceProvider`. It is **not** a recommendation that production diagnostic logs be persisted as application state.
 
 ### Ownership Rules
 

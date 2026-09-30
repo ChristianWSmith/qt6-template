@@ -2,6 +2,10 @@
 #include "ui_ReusableWidget.h"
 #include <QWidget>
 
+// Intentional teaching example of the standalone-widget convention
+// (see scripts/generate.sh widget mode and AGENTS.md). Not instantiated
+// by the sample application.
+
 QT_BEGIN_NAMESPACE
 namespace Ui {}
 QT_END_NAMESPACE

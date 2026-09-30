@@ -11,6 +11,10 @@ class AppLogModel : public QObject, public IModel {
   Q_OBJECT
 
 public:
+  // Persistence of log messages demonstrates feature-state persistence via
+  // IPPersistenceProvider. It is not a recommendation that production
+  // diagnostic logs be persisted as application state (see AGENTS.md).
+
   explicit AppLogModel(IPersistenceProvider &provider,
                        QObject *parent = nullptr);
 

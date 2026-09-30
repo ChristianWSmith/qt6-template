@@ -126,7 +126,7 @@ This project follows a **strictly modular feature-first architecture**. Each fea
 - `widget/`: The view/UI layer (e.g. `FooWidget`)
 - Tests are mirrored under `tests/features/` using the same hierarchy.
 
-Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher).
+Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher). `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
 
 See `AGENTS.md` for the full architectural contract.
 

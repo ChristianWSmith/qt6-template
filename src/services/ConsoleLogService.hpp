@@ -5,6 +5,10 @@
 #include <QDebug>
 #include <atomic>
 
+// Demonstrates free-function EventSystem subscription via services::registerAll().
+// Production apps do not publish LogEvent; this service is template scaffolding
+// for the registration pattern (see AGENTS.md EventSystem / Service Registration).
+
 namespace ConsoleLogService {
 
 // Test observability: incremented on every delivered LogEvent.
