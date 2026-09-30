@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d186efce37364ed02650d3e70a4b36be96dfb47ce635e9225ea6ec1b3562ceaa"
+            "sha256": "70d400f6609903372c6769548dde575b4d295de7bee2f7a9fe3332958ea880e1"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,13 +17,8 @@
     },
     "default": {
         "aqtinstall": {
-            "hashes": [
-                "sha256:9c7d85fbe7258be2d7d23fda33f8aff2e8b7536817255eaeaaf4226da8546a31",
-                "sha256:e88dbd87226f276fdd5d05347a44578d390d93a7f176e9476fbda0a7c9635f69"
-            ],
-            "index": "pip_conf_index_global",
-            "markers": "python_version >= '3.9'",
-            "version": "==3.3.0"
+            "git": "https://github.com/miurahr/aqtinstall.git",
+            "ref": "076e1659807d0b362a3ed684d54c2e9c775eb9c7"
         },
         "beautifulsoup4": {
             "hashes": [

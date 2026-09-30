@@ -69,6 +69,7 @@ src/
 - **Conan dependency layout:** `requires` = fmt + cxxopts; `build_requires` = ninja; `test_requires` = gtest.
 - **fmt lock example:** pin range in `conanfile.py` is `fmt/[>=12.0.0 <13]` (lock currently resolves 12.x). Use that range in docs/examples — do not cite older ranges.
 - **Dockerfile is toolchain-only** (compiler, cmake, pipenv, X11/build deps). It does **not** install a parallel system Qt; Qt still comes from the local `Qt/` tree via `scripts/install-qt.sh` (aqtinstall). Do not document a Docker Qt path.
+- **aqtinstall is pinned to a git commit** (`076e1659…` in `Pipfile`), not floating `master` and not PyPI `3.3.0`. PyPI 3.3.0 cannot install Qt 6.11+ on Windows (Qt uses arch-specific repo folders such as `qt6_6111/qt6_6111_msvc2022_64/`; aqt PR #1000 adds that support). Switch to a PyPI release when aqtinstall >= 3.4.0 exists.
 
 ## Code Generation
 
