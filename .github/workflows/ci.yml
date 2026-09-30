@@ -70,41 +70,41 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
 
+      # TEMPORARY: bundle+upload on PRs too, to verify macOS fix before merge.
+      # Restore main-push-only gating before merging.
       - name: Bundle Application Native (Linux)
-        if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: runner.os == 'Linux'
         shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
         run: ./.github/scripts/linux-bundle-native.sh
 
       - name: Bundle Application AppImage (Linux)
-        if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: runner.os == 'Linux'
         shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
         run: ./.github/scripts/linux-bundle-appimage.sh
 
       - name: Bundle Application (macOS)
-        if: runner.os == 'macOS' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: runner.os == 'macOS'
         shell: bash
         run: ./.github/scripts/mac-bundle-app.sh
 
       - name: Bundle Application Installer + Portable (Windows)
-        if: runner.os == 'Windows' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: runner.os == 'Windows'
         shell: bash
         env:
           QT_QPA_PLATFORM: offscreen
         run: ./.github/scripts/windows-bundle.sh ${{ env.BUILD_TYPE }} true
 
       - name: Move Artifact to Uploads
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: |
           source scripts/env.sh
           mv "${PROJECT_ROOT}/dist" "${{ env.UPLOAD_DIR }}"
 
       - name: Upload Executable
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
