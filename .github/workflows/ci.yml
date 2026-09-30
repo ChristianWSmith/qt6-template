@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  BUILD_TYPE: Release
+  UPLOAD_DIR: upload
+
 jobs:
   build:
     strategy:
@@ -17,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract Python version from Pipfile
         id: python_version
@@ -27,7 +31,7 @@ jobs:
           echo "python-version=${PYTHON_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ steps.python_version.outputs.python-version }}
 
@@ -44,11 +48,18 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0
+          sudo apt-get install -y \
+            libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0 \
+            fuse libfuse2 imagemagick patchelf
 
       - name: Set up MSVC (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install deployment tools (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install innosetup 7zip -y
 
       - name: Build and test
         shell: bash
@@ -58,3 +69,43 @@ jobs:
           pipenv run bash scripts/build.sh --test ON
         env:
           QT_QPA_PLATFORM: offscreen
+
+      - name: Bundle Application Native (Linux)
+        if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ./.github/scripts/linux-bundle-native.sh
+
+      - name: Bundle Application AppImage (Linux)
+        if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ./.github/scripts/linux-bundle-appimage.sh
+
+      - name: Bundle Application (macOS)
+        if: runner.os == 'macOS' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: ./.github/scripts/mac-bundle-app.sh
+
+      - name: Bundle Application Installer + Portable (Windows)
+        if: runner.os == 'Windows' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ./.github/scripts/windows-bundle.sh ${{ env.BUILD_TYPE }} true
+
+      - name: Move Artifact to Uploads
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          source scripts/env.sh
+          mv "${PROJECT_ROOT}/dist" "${{ env.UPLOAD_DIR }}"
+
+      - name: Upload Executable
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.os }}
+          path: ${{ env.UPLOAD_DIR }}

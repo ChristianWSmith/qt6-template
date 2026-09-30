@@ -1,4 +1,4 @@
-
+#!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -11,14 +11,25 @@ BUILD_TYPE="${1:-Release}"
 MAKE_INSTALLER="${2:-false}"
 
 export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
-export EXE_PATH=$(cygpath -w "${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe")
+
+# Single-config generators (Ninja) place the exe at the build root;
+# multi-config generators (Visual Studio) place it under ${BUILD_TYPE}/.
+EXE_DIR="${BUILD_DIR}/${BUILD_TYPE}"
+if [[ ! -f "${EXE_DIR}/${APP_NAME}.exe" ]]; then
+  EXE_DIR="${BUILD_DIR}"
+fi
+if [[ ! -f "${EXE_DIR}/${APP_NAME}.exe" ]]; then
+  echo "error: ${APP_NAME}.exe not found under ${BUILD_DIR} or ${BUILD_DIR}/${BUILD_TYPE}" >&2
+  exit 1
+fi
+export EXE_PATH=$(cygpath -w "${EXE_DIR}/${APP_NAME}.exe")
 
 cp "${EXE_PATH}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
 "${WINDEPLOYQT}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
 shopt -s nullglob
-cp "${BUILD_DIR}/${BUILD_TYPE}"/*.dll "${PORTABLE_APP_DIR}/" || true
+cp "${EXE_DIR}"/*.dll "${PORTABLE_APP_DIR}/" || true
 shopt -u nullglob
 
 "${PORTABLE_APP_DIR}/${APP_NAME}.exe" --smoke-test

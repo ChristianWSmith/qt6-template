@@ -14,7 +14,7 @@ export APP_BIN="${BIN_DIR}/${APP_NAME}"
 export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
 if [ ! -f "${PROJECT_ROOT}/appimagetool" ]; then
-    wget https://github.com/AppImage/AppImageKit/releases/latest/download/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
+    wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
     chmod +x "${PROJECT_ROOT}/appimagetool"
 fi
 
