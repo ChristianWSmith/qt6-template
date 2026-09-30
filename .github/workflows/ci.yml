@@ -56,10 +56,10 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install InnoSetup (Windows)
+      - name: Install deployment tools (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: choco install innosetup -y
+        run: choco install innosetup 7zip -y
 
       - name: Build and test
         shell: bash
