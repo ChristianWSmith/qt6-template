@@ -9,6 +9,7 @@
 
 AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::AppMainWindow),
+      // Provider first: models bind a non-owning IPersistenceProvider&.
       m_provider(new FilePersistenceProvider(this)),
       m_counterModel(new CounterModel(static_cast<IPersistenceProvider&>(*m_provider), this)),
       m_counterWidget(new CounterWidget(this)),

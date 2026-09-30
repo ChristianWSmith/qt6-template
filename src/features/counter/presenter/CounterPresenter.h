@@ -18,6 +18,9 @@ private slots:
 
 private:
   friend class CounterTest;
+  // Non-owning. Lifetime is structurally guaranteed by AppMainWindow:
+  // model and widget are constructed before the presenter and owned via
+  // Qt parent-child. The presenter does not outlive its dependencies.
   CounterModel *m_model;
   CounterWidget *m_view;
 };

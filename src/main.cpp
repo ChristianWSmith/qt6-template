@@ -35,12 +35,11 @@ parseCommandLine(int argc, char *argv[]) {
   return parsedArgs;
 }
 
-void setupLocalization() {
+void setupLocalization(QTranslator &translator) {
   QLocale locale = QLocale::system();
   QString langCode = locale.name();
   QString baseLang = langCode.section('_', 0, 0);
 
-  static QTranslator translator;
   if (translator.load(QString("%1_%2.qm").arg(APP_NAME).arg(baseLang),
                       ":/i18n")) {
     QCoreApplication::installTranslator(&translator);
@@ -96,7 +95,11 @@ int main(int argc, char *argv[]) {
     QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
     QGuiApplication::setDesktopFileName(APP_ID);
 
-    setupLocalization();
+    // Declared after QApplication so it is destroyed before the application
+    // on scope exit. Removed explicitly before return so QCoreApplication
+    // never observes a destroyed translator.
+    QTranslator translator;
+    setupLocalization(translator);
 
     AppMainWindow mainWindow;
 
@@ -105,12 +108,15 @@ int main(int argc, char *argv[]) {
     if (parsedArgs->contains("smoke-test")) {
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
+      app.removeTranslator(&translator);
       return 0;
     }
 
     mainWindow.show();
 
-    return QApplication::exec();
+    const int rc = QApplication::exec();
+    app.removeTranslator(&translator);
+    return rc;
   } catch (const std::exception &e) {
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;

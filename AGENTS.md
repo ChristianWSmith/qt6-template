@@ -152,6 +152,8 @@ events::publish(LogEvent{"message"});
 - Models take `IPersistenceProvider&` (required, non-owning reference)
 - Presenter holds non-owning raw pointers to model/widget; lifetime is structurally guaranteed by AppMainWindow (presenter does not outlive its dependencies)
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child
+- Member declaration order in AppMainWindow is construction order: provider before models; model and widget before presenter
+- Ownership mechanism follows object semantics: QObject feature objects use Qt parent-child; pure C++ services may use ordinary C++ lifetime where that improves clarity
 
 ### Persistence
 
