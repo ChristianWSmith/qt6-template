@@ -161,16 +161,16 @@ format "${TARGET_DIR}/${NAME_LOWER}common.h"
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/${NAME_TITLE}Model.h" <<EOF
 #pragma once
-#include "../${NAME_LOWER}common.h"
-#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IPersistenceProvider.h"
 #include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IModel.h"
+#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IPersistenceProvider.h"
+#include "../${NAME_LOWER}common.h"
 #include <QObject>
 
 class ${NAME_TITLE}Model : public QObject, public IModel {
   Q_OBJECT
 
 public:
-  explicit ${NAME_TITLE}Model(IPersistenceProvider *provider = nullptr,
+  explicit ${NAME_TITLE}Model(IPersistenceProvider &provider,
                               QObject *parent = nullptr);
 
   // IModel
@@ -185,7 +185,7 @@ signals:
 private:
   friend class ${NAME_TITLE}Test;
 
-  IPersistenceProvider *m_provider;
+  IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".${NAME_TITLE}State"};
 
   // Private data members holding the Model's state
@@ -197,39 +197,34 @@ format "${MODEL_DIR}/${NAME_TITLE}Model.h"
 # MODEL CPP
 cat > "${MODEL_DIR}/${NAME_TITLE}Model.cpp" <<EOF
 #include "${NAME_TITLE}Model.h"
-#include <QDebug>
+#include "logging/logging.h"
 #include <QJsonObject>
 
 namespace {
 // constexpr auto KEY_MY_VALUE = "myValue";
 } // namespace
 
-${NAME_TITLE}Model::${NAME_TITLE}Model(IPersistenceProvider *provider, QObject *parent)
+${NAME_TITLE}Model::${NAME_TITLE}Model(IPersistenceProvider &provider,
+                                       QObject *parent)
     : QObject(parent), m_provider(provider) {
-  qDebug() << "${NAME_TITLE}Model instantiated";
+  qCDebug(appPersistence) << "${NAME_TITLE}Model instantiated";
   ${NAME_TITLE}Model::loadState();
 }
 
 void ${NAME_TITLE}Model::saveState() const {
-  if (m_provider == nullptr) {
-    return;
-  }
   // QJsonObject obj;
   // obj[KEY_MY_VALUE] = m_myvalue;
-  // auto result = m_provider->saveState(m_key, obj);
+  // auto result = m_provider.saveState(m_key, obj);
   // if (result.hasError()) {
-  //   qWarning() << "Failed to save state:" << static_cast<int>(result.error());
+  //   qCWarning(appPersistence) << "Failed to save state:" << toString(result.error());
   // }
 }
 
 void ${NAME_TITLE}Model::loadState() {
-  if (m_provider == nullptr) {
-    return;
-  }
-  // auto result = m_provider->loadState(m_key);
+  // auto result = m_provider.loadState(m_key);
   // if (result.hasError()) {
   //   if (result.error() != PersistenceError::NotFound) {
-  //     qWarning() << "Failed to load state:" << static_cast<int>(result.error());
+  //     qCWarning(appPersistence) << "Failed to load state:" << toString(result.error());
   //   }
   //   return;
   // }
@@ -263,6 +258,9 @@ private slots:
 private:
   friend class ${NAME_TITLE}Test;
 
+  // AppMainWindow owns model, widget, and presenter; presenter does not
+  // outlive its dependencies. Raw pointers are non-owning; their lifetime is
+  // structurally guaranteed by the composition root.
   ${NAME_TITLE}Model *m_model;
   ${NAME_TITLE}Widget *m_view;
 };
@@ -273,29 +271,23 @@ format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h"
 # PRESENTER CPP
 cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp" <<EOF
 #include "${NAME_TITLE}Presenter.h"
+#include "../../../logging/logging.h"
 
 ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
                                                 ${NAME_TITLE}Widget *view,
                                                 QObject *parent)
     : QObject(parent), m_model(model), m_view(view) {
-
-  if (m_model == nullptr) {
-    qWarning() << "${NAME_TITLE}Presenter instantiated without model";
-  }
-  if (m_view == nullptr) {
-    qWarning() << "${NAME_TITLE}Presenter instantiated without view";
-  }
+  Q_ASSERT(m_model != nullptr);
+  Q_ASSERT(m_view != nullptr);
 
   // Connect ${NAME_TITLE}Model/${NAME_TITLE}Widget Signals to ${NAME_TITLE}Presenter Slots
   // Example:
-  // if (m_view != nullptr) {
-  //   connect(m_view, &${NAME_TITLE}Widget::someAction, this,
-  //           &${NAME_TITLE}Presenter::handleSomeAction);
-  // }
-  // if (m_model != nullptr) {
-  //   connect(m_model, &${NAME_TITLE}Model::someStateChanged, this,
-  //           &${NAME_TITLE}Presenter::handleSomeStateChanged);
-  // }
+  // connect(m_view, &${NAME_TITLE}Widget::someAction, this,
+  //         &${NAME_TITLE}Presenter::handleSomeAction);
+  // connect(m_model, &${NAME_TITLE}Model::someStateChanged, this,
+  //         &${NAME_TITLE}Presenter::handleSomeStateChanged);
+
+  qCDebug(appFeature) << "${NAME_TITLE}Presenter instantiated";
 }
 
 // Implements presenter slots
@@ -307,20 +299,23 @@ format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp"
 mkdir -p "${TESTS_FEATURES_DIR}"
 cat > "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp" <<EOF
 // NOLINTBEGIN
-#include "${TARGET_DIR_RELATIVE}/${NAME_LOWER}common.h"
-#include "${MODEL_DIR_RELATIVE}/${NAME_TITLE}Model.h"
-#include "${PRESENTER_DIR_RELATIVE}/${NAME_TITLE}Presenter.h"
-#include "${WIDGET_DIR_RELATIVE}/${NAME_TITLE}Widget.h"
+#include "MemoryPersistenceProvider.h"
+#include "features/${NAME_LOWER}/${NAME_LOWER}common.h"
+#include "features/${NAME_LOWER}/model/${NAME_TITLE}Model.h"
+#include "features/${NAME_LOWER}/presenter/${NAME_TITLE}Presenter.h"
+#include "features/${NAME_LOWER}/widget/${NAME_TITLE}Widget.h"
 
 #include <gtest/gtest.h>
 
 class ${NAME_TITLE}Test : public ::testing::Test {
 protected:
+  MemoryPersistenceProvider provider;
   ${NAME_TITLE}Model model;
   ${NAME_TITLE}Widget view;
   ${NAME_TITLE}Presenter presenter;
 
-  ${NAME_TITLE}Test() : model(nullptr, nullptr), view(nullptr), presenter(&model, &view) {}
+  ${NAME_TITLE}Test()
+      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
 TEST_F(${NAME_TITLE}Test, Placeholder) {

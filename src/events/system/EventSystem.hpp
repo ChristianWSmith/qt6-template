@@ -129,8 +129,10 @@ private:
   QObject *owner_ = nullptr;
 };
 
+/// Free-function subscription. The returned Subscription must be retained;
+/// discarding it disconnects the handler immediately.
 template <typename T>
-Subscription subscribe(void (*func)(const T &)) {
+[[nodiscard]] Subscription subscribe(void (*func)(const T &)) {
   auto *wrapper = new QObject();
   auto conn = QObject::connect(
       &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,

@@ -52,10 +52,11 @@ This will install the version of Qt specified in `app.env`.  It'll be installed 
 ./scripts/build.sh [--build-type Debug|Release] [--clean ON|OFF] [--test ON|OFF] [--update-translations ON|OFF]
 ```
 
-This script builds the application using Conan and CMake.
+This script builds the application using Conan and CMake. With `--test ON` (default), it configures and builds **and then executes the test suite via CTest**.
 
 - **Default build type**: `Release`
 - **Default options**: `--test ON`, `--update-translations ON`, `--clean OFF`
+- **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build
 - **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
 - **Qt installation**: Automatically installs Qt if it's not already available
 - **CMake re-glob workaround**: Touches `CMakeLists.txt` to ensure newly added source files are picked up
@@ -66,7 +67,7 @@ This script builds the application using Conan and CMake.
 ./scripts/build.sh --build-type Debug --clean ON
 ```
 
-This performs a clean debug build with tests and translations enabled.
+This performs a clean debug build. With the default `--test ON`, the suite is also built and executed via CTest.
 
 ### 4. Run the App
 
@@ -105,7 +106,7 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 ├── resources/
 ├──── resources.qrc       # Qt resources (for baked-in files)
 ├──── icons/              # Icons for the application
-├──── ts/                 # Qt translation files
+├──── i18n/               # Qt translation files
 ├── app.env               # App name, ID, version, Qt (used by all tools)
 ├── CMakeLists.txt        # CMake build script
 ├── conanfile.py          # Conan recipe
@@ -116,16 +117,16 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 
 ## Architecture & Feature Design
 
-🚨 **THIS IS COMPLETELY OPTIONAL AND CAN BE IGNORED/REMOVED PER DEVELOPER PREFERENCE** 🚨
+The feature-first MV* layout is the template's intentional architecture. Implementation rules live in `AGENTS.md` (authoritative). This README is a getting-started guide.
 
-This project follows a **strictly modular feature-first architecture**. Each feature exists as a self-contained unit under the `features/` directory, with a standard structure:
+This project follows a **strictly modular feature-first architecture**. Each feature exists as a self-contained unit under the `src/features/` directory, with a standard structure:
 
 - `model/`: The data/state layer (e.g. `FooModel`)
 - `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`)
 - `widget/`: The view/UI layer (e.g. `FooWidget`)
 - Tests are mirrored under `tests/features/` using the same hierarchy.
 
-Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system.
+Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher).
 
 See `AGENTS.md` for the full architectural contract.
 
@@ -161,6 +162,8 @@ Examples:
 
 Each invocation ensures the resulting module adheres to project architecture and coding conventions by default. Feature modules also include a `common.h` file for shared types and friend declarations, and a Google Test stub covering all layers.
 
+Generated code must follow the same conventions as the reference features (`CounterModel` / `AppLogModel`) — e.g. models take a required `IPersistenceProvider&`. `AGENTS.md` is the authoritative contract for these conventions.
+
 
 ## 🧪 Developer Workflows
 
@@ -171,7 +174,7 @@ Edit `conanfile.py`:
 ```python
 requires = [
     "fmt/[>=12.0.0 <13]",
-    "cxxopts/[>=3.3.1 <4>",
+    "cxxopts/[>=3.3.1 <4]",
 ]
 ```
 

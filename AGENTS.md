@@ -18,6 +18,7 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 ./scripts/build.sh                          # Release build (default)
 ./scripts/build.sh --build-type Debug       # Debug build
 ./scripts/build.sh --clean ON               # Clean before build
+./scripts/build.sh --test ON|OFF            # Configure → build → run CTest when ON (default ON)
 ./scripts/run.sh                            # Debug-run (builds if needed)
 ./scripts/run.sh --rebuild ON -- <args>     # Force rebuild, pass args to app
 ```
@@ -51,8 +52,9 @@ Name must be TitleCase and valid C++ identifier. Generates `.h`, `.cpp`, `.ui` f
 ## Testing
 
 - Google Test (`gtest`), linked via `tests/CMakeLists.txt`
-- Tests are discovered automatically via `gtest_discover_tests`
-- Run tests: `./scripts/build.sh --test ON` (default) then `ctest` in build dir, or use `run.sh --test ON`
+- Tests are discovered via `gtest_discover_tests`
+- Run tests: `./scripts/build.sh --test ON` (default) which builds **and executes** the suite via CTest
+- CI runs the same path on Linux/Windows/macOS
 - Generated test files include `.moc` include at bottom — required for Qt meta-object compilation in test files
 
 ## Dependencies
@@ -124,6 +126,7 @@ events::publish(LogEvent{"message"});
 
 - QObject subscriptions auto-disconnect when the receiver is destroyed.
 - Free-function subscriptions require the caller to hold the `Subscription` object.
+- Free-function `subscribe` is `[[nodiscard]]`; retain the `Subscription` for as long as the handler must remain active.
 - Destroying a `Subscription` disconnects the handler.
 - Type mismatches are caught at runtime via Q_ASSERT.
 - Events are always delivered asynchronously (QueuedConnection).
@@ -135,6 +138,7 @@ events::publish(LogEvent{"message"});
 - Raw pointer / reference → non-owning unless explicitly documented
 - Event subscription → lifetime managed by Qt connection mechanism (auto-disconnect on receiver destruction)
 - Models take `IPersistenceProvider&` (required, non-owning reference)
+- Presenter holds non-owning raw pointers to model/widget; lifetime is structurally guaranteed by AppMainWindow (presenter does not outlive its dependencies)
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child
 
 ### Persistence
@@ -175,13 +179,18 @@ src/features/myfeature/
 
 ### Adding a New Feature
 
-1. Create `src/features/myfeature/model/MyFeatureModel.h` / `.cpp`
-2. Create `src/features/myfeature/widget/MyFeatureWidget.h` / `.cpp` + `.ui`
-3. Create `src/features/myfeature/presenter/MyFeaturePresenter.h` / `.cpp`
-4. Wire in `AppMainWindow` constructor (instantiate presenter, which creates model and widget)
-5. Add to `CMakeLists.txt` (auto-discovered via GLOB — touching `CMakeLists.txt` triggers re-glob)
+1. Generate the feature: `./scripts/generate.sh feature MyThing`
+2. Inspect the generated files (model/presenter/widget + test stub)
+3. Wire the feature into `AppMainWindow` (construct model, widget, and presenter — the presenter does **not** create model/widget)
+4. Provide required dependencies (`IPersistenceProvider&` into the model)
+5. Connect presenter/widget/model signals and slots
+6. Add persistence behavior (load in model ctor; save in `AppMainWindow::closeEvent`)
+7. Register cross-component events only where justified (EventSystem)
+8. Add tests under `tests/features/`
+9. Verify shutdown persistence (closeEvent saves state)
+10. Build and run the complete test suite: `./scripts/build.sh --test ON`
 
-Or use the generator script: `./scripts/generate.sh feature MyFeature`
+`generate.sh` is the canonical starting point for new features. Generated output must match the reference implementation (`CounterModel` / `AppLogModel` conventions) — do not "correct" generated code into a different architecture.
 
 ### Service Registration
 
@@ -189,8 +198,22 @@ Services are registered explicitly in `services::registerAll()` in `src/services
 
 To add a new service:
 1. Create the service handler function (must match `void(const EventType&)`)
-2. Add `events::subscribe<EventType>(YourService::handle)` to `services::registerAll()`
+2. In `services::registerAll()`, **store** the `events::Subscription` returned by free-function subscribe (process lifetime is appropriate for services)
 3. Include the necessary headers
+
+Example:
+```cpp
+namespace {
+events::Subscription g_myServiceSubscription;
+}
+
+void registerAll() {
+    g_myServiceSubscription =
+        events::subscribe<MyEvent>(MyService::handle);
+}
+```
+
+The free-function `subscribe` overload is `[[nodiscard]]`. Discarding the Subscription disconnects immediately — that is a bug, not an optional style.
 
 There is no auto-registration macro. Registration is visible and explicit.
 

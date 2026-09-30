@@ -58,3 +58,11 @@ pipenv run conan build "${PROJECT_ROOT}" \
   -s build_type="${CMAKE_BUILD_TYPE}" \
   --build=missing \
   --lockfile="${CONAN_LOCK}"
+
+if [ "${BUILD_TESTING}" == "ON" ]; then
+  export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
+  echo "Running tests (ctest --test-dir \"${BUILD_DIR}\")..."
+  ctest --test-dir "${BUILD_DIR}" --output-on-failure
+else
+  echo "Tests skipped (--test OFF). Build completed without running ctest."
+fi

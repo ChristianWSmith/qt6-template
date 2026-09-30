@@ -15,7 +15,7 @@ target_include_directories(${UT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/MyApp_lib_autogen/include
+    ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
 apply_app_metadata(${UT_NAME})
