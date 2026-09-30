@@ -169,8 +169,8 @@ format "${TARGET_DIR}/${NAME_LOWER}common.h"
 mkdir -p "${MODEL_DIR}"
 cat > "${MODEL_DIR}/${NAME_TITLE}Model.h" <<EOF
 #pragma once
-#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IModel.h"
-#include "$(realpath --relative-to="${MODEL_DIR}" "${SRC_DIR}/core")/IPersistenceProvider.h"
+#include "../../../core/IModel.h"
+#include "../../../core/IPersistenceProvider.h"
 #include "../${NAME_LOWER}common.h"
 #include <QObject>
 
