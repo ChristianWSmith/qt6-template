@@ -48,8 +48,8 @@ fi
 
 installPipenv
 
-touch "${ROOT_CMAKE_LISTS}"
-touch "${TEST_CMAKE_LISTS}"
+# Source re-discovery relies on file(GLOB_RECURSE ... CONFIGURE_DEPENDS).
+# If a generator ever misses a new file, touch CMakeLists.txt manually.
 
 pipenv run conan build "${PROJECT_ROOT}" \
   --output-folder "${BUILD_DIR}" \

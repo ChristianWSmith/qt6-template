@@ -1,8 +1,6 @@
 find_package(GTest REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-enable_testing()
-
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS *.cpp)
 
 add_executable(${UT_NAME}
@@ -20,9 +18,10 @@ target_include_directories(${UT_NAME} PRIVATE
 
 apply_app_metadata(${UT_NAME})
 
+# Custom tests/main.cpp provides main() (QApplication + gtest init).
+# Do not link gtest_main — that would hide the Qt application bootstrap.
 target_link_libraries(${UT_NAME} PRIVATE
-    GTest::gtest_main
-    GTest::gmock
+    GTest::gtest
     ${APP_NAME}_lib
     Qt6::Core
     Qt6::Widgets

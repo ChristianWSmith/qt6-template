@@ -1,14 +1,23 @@
 from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMakeDeps, CMakeToolchain, CMake
-from conan.tools.microsoft import VCVars
 import os
-from pathlib import Path
 from conan.tools.files import copy
 
 
+def _env_required(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise ConanInvalidConfiguration(
+            f"{name} is not set. Configure the project through app.env/scripts "
+            "(source scripts/env.sh, then build via ./scripts/build.sh)."
+        )
+    return value
+
+
 class MyConanApp(ConanFile):
-    name = os.environ.get('APP_NAME', 'DEFAULT_APP_NAME')
-    version = os.environ.get('APP_VERSION', 'DEFAULT_APP_VERSION')
+    name = _env_required('APP_NAME')
+    version = _env_required('APP_VERSION')
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "CMakeToolchain"
     requires = [
@@ -29,12 +38,11 @@ class MyConanApp(ConanFile):
         cmake = CMake(self)
         cmake.configure(variables={
             "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
-            "APP_NAME": os.environ.get("APP_NAME", "MyConanApp"),
-            "APP_DESCRIPTION": os.environ.get("APP_DESCRIPTION", "My Conan App Description"),
-            "APP_VERSION": os.environ.get("APP_VERSION", "0.1.0"),
-            "ORGANIZATION_NAME": os.environ.get("ORGANIZATION_NAME", "MyConanOrganization"),
-            "APP_ID": os.environ.get("APP_ID", "com.example.MyConanApp"),
-            "QT_DEBUG_FIND_PACKAGE": "ON",
+            "APP_NAME": _env_required("APP_NAME"),
+            "APP_DESCRIPTION": _env_required("APP_DESCRIPTION"),
+            "APP_VERSION": _env_required("APP_VERSION"),
+            "ORGANIZATION_NAME": _env_required("ORGANIZATION_NAME"),
+            "APP_ID": _env_required("APP_ID"),
             "BUILD_TESTING": os.environ.get("BUILD_TESTING", "OFF"),
             "UT_NAME": os.environ.get("UT_NAME", "UnitTests"),
         })

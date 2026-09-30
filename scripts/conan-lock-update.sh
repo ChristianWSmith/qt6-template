@@ -9,7 +9,8 @@ installPipenv
 LOCKFILE_ARGS=""
 
 for PROFILE in $(find "${CONAN_PROFILES_DIR}" -type f); do
-  LOCK="$(mktemp --suffix=.lock)"
+  # Portable mktemp (no GNU --suffix); works on macOS/BSD and Linux.
+  LOCK="$(mktemp "${TMPDIR:-/tmp}/qt6-template-lock.XXXXXX")"
   LOCKFILE_ARGS="--lockfile=${LOCK} ${LOCKFILE_ARGS}"
   pipenv run conan lock create "${PROJECT_ROOT}" \
     --profile:build="${PROFILE}" \

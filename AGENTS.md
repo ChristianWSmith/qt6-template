@@ -66,11 +66,13 @@ Name must be TitleCase and valid C++ identifier. Generates `.h`, `.cpp`, `.ui` f
 
 ## Key Quirks
 
-- **CMake re-glob workaround**: build scripts `touch CMakeLists.txt` to force source file re-discovery. If new files aren't picked up, touch it manually.
+- **CMake re-glob**: source discovery uses `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`. If a generator ever misses a new file, touch `CMakeLists.txt` manually — this is a fallback, not the default path.
 - **clang-tidy warnings are errors**: `.clang-tidy` sets `WarningsAsErrors: '*'`. Fix all tidy warnings before committing.
 - **Qt AUTOUIC/AUTOMOC/AUTORCC**: CMake handles `.ui`, `.moc`, `.qrc` automatically — no manual wrapping needed.
 - **Lockfile merges**: Conan lockfile is merged across all 3 platforms. If a version range doesn't satisfy all platforms, you'll need to pin explicitly in `conanfile.py`.
 - **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages configured in `CMakeLists.txt` via `I18N_TRANSLATED_LANGUAGES`. Delete/rename `.ts` files after app name changes.
+- **Metadata SSOT**: `app.env` is required. CMake and Conan fail fast with a clear error if `APP_*` variables are missing — there are no silent fallback defaults.
+- **Conan compiler profiles**: `conan/profiles/{linux,windows,darwin}` pin compiler versions for dependency resolution. Keep them aligned with the CI runners' actual toolchains when those change.
 
 ## VSCode Setup
 
