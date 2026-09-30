@@ -50,7 +50,7 @@ void AppLogModel::loadState() {
     return;
   }
 
-  const auto obj = result.value();
+  const QJsonObject &obj = result.value();
   const QJsonArray messages = obj.value(KEY_LOG_MESSAGES).toArray();
 
   m_logMessages.clear();
@@ -70,7 +70,7 @@ void AppLogModel::saveState() const {
   }
 
   QJsonObject obj;
-  obj[KEY_LOG_MESSAGES] = messages;
+  obj.insert(KEY_LOG_MESSAGES, messages);
 
   auto result = m_provider.saveState(m_key, obj);
   if (result.hasError()) {

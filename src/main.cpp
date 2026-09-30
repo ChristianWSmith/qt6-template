@@ -16,7 +16,7 @@
 #include <fmt/format.h>
 #include <iostream>
 
-// NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays)
+// NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 std::optional<cxxopts::ParseResult>
 parseCommandLine(int argc, char *argv[]) {
   cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
@@ -34,6 +34,7 @@ parseCommandLine(int argc, char *argv[]) {
 
   return parsedArgs;
 }
+// NOLINTEND(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 void setupLocalization(QTranslator &translator) {
   QLocale locale = QLocale::system();
@@ -81,6 +82,7 @@ int main(int argc, char *argv[]) {
     }
 
     qInstallMessageHandler(messageHandler);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
     configureLogLevel(parsedArgs->operator[]("log").as<std::string>());
 
     qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
@@ -108,15 +110,15 @@ int main(int argc, char *argv[]) {
     if (parsedArgs->contains("smoke-test")) {
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
-      app.removeTranslator(&translator);
+      QCoreApplication::removeTranslator(&translator);
       return 0;
     }
 
     mainWindow.show();
 
-    const int rc = QApplication::exec();
-    app.removeTranslator(&translator);
-    return rc;
+    const int exitCode = QApplication::exec();
+    QCoreApplication::removeTranslator(&translator);
+    return exitCode;
   } catch (const std::exception &e) {
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;

@@ -55,8 +55,8 @@ bool checkedEventValue(const QVariant &var, T &out) {
   if (var.userType() != qMetaTypeId<T>()) {
     qCCritical(appEvent)
         << "EventSystem: type mismatch; event not delivered. expected"
-        << QMetaType::typeName(qMetaTypeId<T>()) << "got"
-        << QMetaType::typeName(var.userType());
+        << QMetaType(qMetaTypeId<T>()).name() << "got"
+        << QMetaType(var.userType()).name();
     return false;
   }
   Q_ASSERT(var.userType() == qMetaTypeId<T>());
@@ -102,6 +102,8 @@ public:
     // exists. Raw pointer avoids double-delete against Qt parent/child.
     EventDispatcherBase *&basePtr = instance().dispatchers_[type];
     if (!basePtr) {
+      // Parented to QCoreApplication when present (application-owned).
+      // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
       auto *typed = new EventDispatcher<T>(QCoreApplication::instance());
       basePtr = typed;
       qRegisterMetaType<T>();
@@ -143,7 +145,7 @@ void subscribe(Obj *receiver, void (Obj::*method)(const T &))
 
 class Subscription {
 public:
-  Subscription() = default;
+  Subscription() noexcept = default;
   ~Subscription() { reset(); }
 
   Subscription(const Subscription &) = delete;
@@ -188,6 +190,8 @@ private:
 /// discarding it disconnects the handler immediately.
 template <typename T>
 [[nodiscard]] Subscription subscribe(void (*func)(const T &)) {
+  // Parented to QCoreApplication when present (application-owned).
+  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   auto *wrapper = new QObject(QCoreApplication::instance());
   auto conn = QObject::connect(
       &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,

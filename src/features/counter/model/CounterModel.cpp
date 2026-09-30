@@ -32,15 +32,15 @@ void CounterModel::loadState() {
     }
     return;
   }
-  const auto obj = result.value();
-  if (obj.contains(KEY_VALUE) && obj[KEY_VALUE].isDouble()) {
-    m_value = obj[KEY_VALUE].toInt();
+  const QJsonObject &obj = result.value();
+  if (obj.contains(KEY_VALUE) && obj.value(KEY_VALUE).isDouble()) {
+    m_value = obj.value(KEY_VALUE).toInt();
   }
 }
 
 void CounterModel::saveState() const {
   QJsonObject obj;
-  obj[KEY_VALUE] = m_value;
+  obj.insert(KEY_VALUE, m_value);
   auto result = m_provider.saveState(m_key, obj);
   if (result.hasError()) {
     qCWarning(appPersistence) << "Failed to save counter state:" << toString(result.error());

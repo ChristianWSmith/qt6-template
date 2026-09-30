@@ -12,6 +12,7 @@
 namespace ConsoleLogService {
 
 // Test observability: incremented on every delivered LogEvent.
+// NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 inline std::atomic<int> receivedCount{0};
 
 inline void handle(const LogEvent &event) {

@@ -87,7 +87,7 @@ public:
 
   [[nodiscard]] PersistenceError error() const {
     assert(hasError() && "PersistenceResult::error() on success result");
-    if (!hasError()) {
+    if (!err_.has_value()) {
       std::abort();
     }
     return *err_;
