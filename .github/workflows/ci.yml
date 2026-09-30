@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract Python version from Pipfile
         id: python_version
@@ -31,7 +31,7 @@ jobs:
           echo "python-version=${PYTHON_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ steps.python_version.outputs.python-version }}
 
@@ -105,7 +105,7 @@ jobs:
 
       - name: Upload Executable
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}
           path: ${{ env.UPLOAD_DIR }}
