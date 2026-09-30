@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ui_AppLogWidget.h"
-#include <QTextEdit>
 
 #include "../applogcommon.h"
 #include <QString>

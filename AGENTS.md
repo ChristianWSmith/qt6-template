@@ -176,6 +176,38 @@ events::publish(LogEvent{"message"});
 - Logging is thread-safe (QMutex in message handler).
 - No API implies general thread safety merely because it contains a mutex.
 
+### Async Policy
+
+The template currently has **no background-worker architecture**. Persistence is intentionally synchronous on the GUI thread. Do not introduce `QThread`, `QtConcurrent`, or other asynchronous machinery merely to avoid synchronous work without first establishing the workload and ownership/threading requirements.
+
+If actual long-running work appears:
+
+1. Identify the operation boundary
+2. Define worker ownership
+3. Define result delivery
+4. Define cancellation
+5. Define shutdown behavior
+6. Then introduce the smallest appropriate Qt concurrency mechanism
+
+### String Boundary Policy
+
+- **Qt / UI / application-facing APIs:** `QString`
+- **Generic event payloads:** `std::string` unless Qt-specific semantics are required
+
+Example: `LogEvent.message` is `std::string` at the bus boundary; the AppLog presenter converts once with `QString::fromStdString` when feeding the Qt model layer. Do not convert a single field across the boundary without establishing a repository-wide policy.
+
+### Logging Categories
+
+| Category | Use |
+|---|---|
+| `appMain` | Bootstrap / main |
+| `appFeature` | Feature widgets and presenters |
+| `appPersistence` | Model persistence load/save |
+| `appEvent` | EventSystem delivery diagnostics (type mismatch, etc.) |
+| `appService` | Service handlers (e.g. ConsoleLogService) |
+
+Diagnostic logging uses `qC*` categories and the custom message handler — **not** the EventSystem.
+
 ### Feature Structure (MVP Convention)
 
 Each feature lives in `src/features/{name}/` with three components:

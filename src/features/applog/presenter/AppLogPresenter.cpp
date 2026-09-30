@@ -1,8 +1,6 @@
 #include "AppLogPresenter.h"
 #include "../../../events/system/EventSystem.hpp"
 #include "../../../logging/logging.h"
-#include <fmt/format.h>
-#include <qlogging.h>
 
 AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
                                  QObject *parent)

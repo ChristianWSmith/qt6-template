@@ -28,6 +28,8 @@ AppMainWindow::AppMainWindow(QWidget *parent)
 
   setWindowTitle(APP_NAME);
 
+  // Central layout is code-built (feature widgets are constructed in code).
+  // AppMainWindow.ui is intentionally minimal — geometry/windowTitle only.
   // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
   auto *containerWidget = new QWidget(this);
 
