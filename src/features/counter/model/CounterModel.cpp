@@ -32,7 +32,7 @@ void CounterModel::loadState() {
     }
     return;
   }
-  const auto obj = *result;
+  const auto obj = result.value();
   if (obj.contains(KEY_VALUE) && obj[KEY_VALUE].isDouble()) {
     m_value = obj[KEY_VALUE].toInt();
   }

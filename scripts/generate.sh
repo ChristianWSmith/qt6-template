@@ -228,7 +228,7 @@ void ${NAME_TITLE}Model::loadState() {
   //   }
   //   return;
   // }
-  // const auto obj = *result;
+  // const auto obj = result.value();
   // m_myvalue = obj[KEY_MY_VALUE].toInt();
 }
 

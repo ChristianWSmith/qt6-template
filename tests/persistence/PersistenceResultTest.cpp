@@ -27,8 +27,8 @@ TEST_F(PersistenceResultTest, JsonObjectSuccessReturnsValue) {
   auto result = PersistenceResult<QJsonObject>::success(obj);
   EXPECT_TRUE(result.hasValue());
   EXPECT_FALSE(result.hasError());
-  EXPECT_EQ((*result)["key"].toString(), "value");
-  EXPECT_EQ((*result)["num"].toInt(), 42);
+  EXPECT_EQ(result.value()["key"].toString(), "value");
+  EXPECT_EQ(result.value()["num"].toInt(), 42);
 }
 
 TEST_F(PersistenceResultTest, JsonObjectFailureHasError) {
@@ -50,6 +50,47 @@ TEST_F(PersistenceResultTest, JsonObjectFailureDurabilityFailure) {
       PersistenceError::DurabilityFailure);
   EXPECT_TRUE(result.hasError());
   EXPECT_EQ(result.error(), PersistenceError::DurabilityFailure);
+}
+
+TEST_F(PersistenceResultTest, SuccessResultDoesNotReportError) {
+  auto ok = PersistenceResult<int>::success(7);
+  ASSERT_TRUE(ok.hasValue());
+  EXPECT_FALSE(ok.hasError());
+  EXPECT_EQ(ok.value(), 7);
+}
+
+TEST_F(PersistenceResultTest, ErrorResultDoesNotReportValue) {
+  auto bad = PersistenceResult<int>::failure(PersistenceError::IoError);
+  ASSERT_TRUE(bad.hasError());
+  EXPECT_FALSE(bad.hasValue());
+  EXPECT_EQ(bad.error(), PersistenceError::IoError);
+}
+
+TEST_F(PersistenceResultTest, VoidSuccessDoesNotReportError) {
+  auto ok = PersistenceResult<void>::success();
+  ASSERT_TRUE(ok.hasValue());
+  EXPECT_FALSE(ok.hasError());
+}
+
+TEST_F(PersistenceResultTest, VoidErrorAccessorsAreConsistent) {
+  auto bad = PersistenceResult<void>::failure(PersistenceError::InvalidData);
+  ASSERT_TRUE(bad.hasError());
+  EXPECT_FALSE(bad.hasValue());
+  EXPECT_EQ(bad.error(), PersistenceError::InvalidData);
+}
+
+// Misuse contract: value()/error() on the wrong state is a programming error.
+// Debug builds assert; release builds abort. We do not execute those paths in
+// unit tests (they would kill the test process). These tests document the
+// checked-access pattern that correct callers must follow.
+TEST_F(PersistenceResultTest, CallersMustCheckBeforeExtracting) {
+  auto result = PersistenceResult<QJsonObject>::failure(PersistenceError::IoError);
+  ASSERT_TRUE(result.hasError());
+  // Correct usage: branch on hasError() before value().
+  if (result.hasValue()) {
+    FAIL() << "value() must not be reachable on an error result";
+  }
+  EXPECT_EQ(result.error(), PersistenceError::IoError);
 }
 
 #include "PersistenceResultTest.moc"

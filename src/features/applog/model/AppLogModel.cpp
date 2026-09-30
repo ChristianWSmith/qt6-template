@@ -50,7 +50,7 @@ void AppLogModel::loadState() {
     return;
   }
 
-  const auto obj = *result;
+  const auto obj = result.value();
   const QJsonArray messages = obj.value(KEY_LOG_MESSAGES).toArray();
 
   m_logMessages.clear();

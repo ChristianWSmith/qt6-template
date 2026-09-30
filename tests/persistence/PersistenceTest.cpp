@@ -16,18 +16,11 @@ protected:
     return QString("%1_%2").arg(prefix).arg(counter++);
   }
 
-  static void cleanupFile(const QString &key) {
-    QFile::remove(QStandardPaths::writableLocation(
-                      QStandardPaths::AppDataLocation) +
-                  "/" + key + ".json");
-  }
-
   void SetUp() override {
-    const QString probeKey = "__fsync_probe";
-    cleanupFile(probeKey);
+    // Probe durability in the test-mode AppDataLocation (see tests/main.cpp).
+    const QString probeKey = uniqueKey("fsync_probe");
     QJsonObject probeObj;
     auto result = provider.saveState(probeKey, probeObj);
-    cleanupFile(probeKey);
     if (result.hasError() &&
         result.error() == PersistenceError::DurabilityFailure) {
       GTEST_SKIP() << "fsync not supported in this environment";
@@ -48,12 +41,10 @@ TEST_F(PersistenceTest, RoundTrip) {
   auto loadResult = provider.loadState(key);
   ASSERT_TRUE(loadResult.hasValue()) << "Load failed";
 
-  const QJsonObject loaded = *loadResult;
+  const QJsonObject loaded = loadResult.value();
   EXPECT_EQ(loaded["name"].toString(), "test");
   EXPECT_EQ(loaded["count"].toInt(), 42);
   EXPECT_EQ(loaded["flag"].toBool(), true);
-
-  cleanupFile(key);
 }
 
 TEST_F(PersistenceTest, MultipleSavesLastOneWins) {
@@ -74,9 +65,7 @@ TEST_F(PersistenceTest, MultipleSavesLastOneWins) {
 
   auto loadResult = provider.loadState(key);
   ASSERT_TRUE(loadResult.hasValue());
-  EXPECT_EQ((*loadResult)["version"].toInt(), 3);
-
-  cleanupFile(key);
+  EXPECT_EQ(loadResult.value()["version"].toInt(), 3);
 }
 
 TEST_F(PersistenceTest, DifferentKeysAreIsolated) {
@@ -97,11 +86,8 @@ TEST_F(PersistenceTest, DifferentKeysAreIsolated) {
 
   ASSERT_TRUE(resultA.hasValue());
   ASSERT_TRUE(resultB.hasValue());
-  EXPECT_EQ((*resultA)["key"].toString(), "A");
-  EXPECT_EQ((*resultB)["key"].toString(), "B");
-
-  cleanupFile(keyA);
-  cleanupFile(keyB);
+  EXPECT_EQ(resultA.value()["key"].toString(), "A");
+  EXPECT_EQ(resultB.value()["key"].toString(), "B");
 }
 
 TEST_F(PersistenceTest, EmptyJsonObject) {
@@ -113,9 +99,7 @@ TEST_F(PersistenceTest, EmptyJsonObject) {
 
   auto loadResult = provider.loadState(key);
   ASSERT_TRUE(loadResult.hasValue());
-  EXPECT_TRUE((*loadResult).isEmpty());
-
-  cleanupFile(key);
+  EXPECT_TRUE(loadResult.value().isEmpty());
 }
 
 TEST_F(PersistenceTest, LargePayload) {
@@ -138,14 +122,12 @@ TEST_F(PersistenceTest, LargePayload) {
   auto loadResult = provider.loadState(key);
   ASSERT_TRUE(loadResult.hasValue());
 
-  const QJsonObject loaded = *loadResult;
+  const QJsonObject loaded = loadResult.value();
   EXPECT_EQ(loaded["total"].toInt(), 1000);
   EXPECT_EQ(loaded["items"].toArray().size(), 1000);
   EXPECT_EQ(loaded["items"].toArray()[0].toObject()["index"].toInt(), 0);
   EXPECT_EQ(loaded["items"].toArray()[999].toObject()["value"].toString(),
             "item_999");
-
-  cleanupFile(key);
 }
 
 class PersistenceLoadTest : public ::testing::Test {
@@ -154,10 +136,6 @@ protected:
 };
 
 TEST_F(PersistenceLoadTest, FirstRunReturnsNotFound) {
-  QJsonObject probeObj;
-  auto saveResult = provider.saveState("__notfound_probe", probeObj);
-  (void)saveResult;
-
   FilePersistenceProvider freshProvider;
   auto result = freshProvider.loadState("__nonexistent_key_abc123");
   ASSERT_TRUE(result.hasError());
