@@ -1,13 +1,19 @@
 #pragma once
+#include "IPersistenceProvider.h"
 
 /// Models own application state and feature behavior.
 ///
 /// Lifecycle:
 ///   - Constructors may call loadState() to restore persisted state.
 ///   - Missing state (NotFound) is a normal first-run condition.
-///   - Other persistence errors are logged but do not prevent operation.
+///   - Other persistence errors are logged by the persistence provider,
+///     not the model; they do not prevent operation.
 ///   - saveState() should be called when state needs to persist.
-///   - saveState() is synchronous and durable before returning.
+///   - saveState() returns the provider's PersistenceResult so callers
+///     (e.g. the composition root) can observe outcomes. Models forward
+///     the provider result and do not log errors at the model layer.
+///   - saveState() is synchronous. FilePersistenceProvider commits via
+///     QSaveFile atomic replace (not a power-loss durability guarantee).
 ///   - All methods execute on the GUI thread.
 class IModel {
 public:
@@ -20,5 +26,5 @@ public:
   IModel &operator=(IModel &&) = delete;
 
   virtual void loadState() = 0;
-  virtual void saveState() const = 0;
+  virtual PersistenceResult<void> saveState() const = 0;
 };

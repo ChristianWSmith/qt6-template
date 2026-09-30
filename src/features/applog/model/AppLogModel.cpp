@@ -44,9 +44,12 @@ const QVector<QString> &AppLogModel::getLogMessages() const {
 void AppLogModel::loadState() {
   auto result = m_provider.loadState(m_key);
   if (result.hasError()) {
-    if (result.error() != PersistenceError::NotFound) {
-      qCWarning(appPersistence) << "Failed to load applog state:" << toString(result.error());
+    if (result.error() == PersistenceError::NotFound) {
+      return;
     }
+    qCDebug(appPersistence)
+        << "AppLogModel skipped load due to persistence error:"
+        << toString(result.error());
     return;
   }
 
@@ -60,10 +63,17 @@ void AppLogModel::loadState() {
     }
   }
 
+  // F-13: re-apply the retention cap after load so persisted state never
+  // exceeds MAX_LOG_SIZE even if the file was written by a prior version
+  // or an external writer.
+  while (m_logMessages.size() > MAX_LOG_SIZE) {
+    m_logMessages.removeFirst();
+  }
+
   qCInfo(appPersistence) << "Loaded" << m_logMessages.size() << "log messages";
 }
 
-void AppLogModel::saveState() const {
+PersistenceResult<void> AppLogModel::saveState() const {
   QJsonArray messages;
   for (const QString &msg : m_logMessages) {
     messages.append(msg);
@@ -72,10 +82,7 @@ void AppLogModel::saveState() const {
   QJsonObject obj;
   obj.insert(KEY_LOG_MESSAGES, messages);
 
-  auto result = m_provider.saveState(m_key, obj);
-  if (result.hasError()) {
-    qCWarning(appPersistence) << "Failed to save applog state:" << toString(result.error());
-  } else {
-    qCInfo(appPersistence) << "Saved" << m_logMessages.size() << "log messages";
-  }
+  // Provider owns error logging; model forwards the result to the caller
+  // (composition root observes outcomes at closeEvent).
+  return m_provider.saveState(m_key, obj);
 }

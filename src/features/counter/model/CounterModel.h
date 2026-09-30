@@ -11,7 +11,8 @@ public:
   explicit CounterModel(IPersistenceProvider &provider,
                         QObject *parent = nullptr);
 
-  void saveState() const override;
+  // IModel
+  PersistenceResult<void> saveState() const override;
   void loadState() override;
 
   [[nodiscard]] int value() const;

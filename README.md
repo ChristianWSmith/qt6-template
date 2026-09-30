@@ -56,10 +56,11 @@ This script builds the application using Conan and CMake. With `--test ON` (defa
 
 - **Default build type**: `Release`
 - **Default options**: `--test ON`, `--update-translations ON`, `--clean OFF`
-- **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build
+- **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv)
+- **Test binary**: single hardcoded target `UnitTests` (no `UT_NAME` indirection); tests link `Qt6::Test`
 - **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
 - **Qt installation**: Automatically installs Qt if it's not already available
-- **CMake re-glob workaround**: Touches `CMakeLists.txt` to ensure newly added source files are picked up
+- **Source discovery**: `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`; touch `CMakeLists.txt` manually only if a generator ever misses a new file (fallback, not the default path)
 
 #### Example
 
@@ -72,7 +73,7 @@ This performs a clean debug build. With the default `--test ON`, the suite is al
 ### 4. Run the App
 
 ```bash
-./run.sh [--build-type Debug|Release] [--clean ON|OFF] [--rebuild ON|OFF] [--test ON|OFF] [--update-translations ON|OFF] [-- <app args>]
+./scripts/run.sh [--build-type Debug|Release] [--clean ON|OFF] [--rebuild ON|OFF] [--test ON|OFF] [--update-translations ON|OFF] [-- <app args>]
 ```
 
 This will optionally build and then run the application.
@@ -82,7 +83,7 @@ This will optionally build and then run the application.
 - **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
 - **Qt installation**: Automatically installs Qt if not found
 - **Platform-aware**: Handles `.exe` on Windows and `.app` bundles on macOS
-- **CMake re-glob workaround**: Touches `CMakeLists.txt` during build phase
+- **Source discovery**: Same `CONFIGURE_DEPENDS` glob as `build.sh`
 
 #### Example
 
@@ -96,23 +97,40 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 
 ```
 .
-├── scripts/
-├──── build.sh            # Builds the project (calls Conan & CMake)
-├──── run.sh              # Launches built binary
-├──── env.sh              # Sourced environment (loads app.env)
-├──── clean.sh            # Used to clean build/Qt dir(s)  
+├── scripts/                  # Developer façade (always prefer these over raw conan/cmake)
+├──── build.sh                # Conan build + optional ctest (default --test ON)
+├──── run.sh                  # Debug-run (builds if needed)
+├──── env.sh                  # Sourced environment (loads app.env)
+├──── clean.sh                # Used to clean build/Qt dir(s)
+├──── generate.sh             # Feature/widget scaffolding
+├──── install-qt.sh           # aqtinstall → local Qt/ (gitignored)
 ├── src/
-├──── *.cpp / *.h / *.ui  # Your application code
+├──── main.cpp                # Bootstrap; compiled into the APP_NAME executable (not _lib)
+├──── appmainwindow/          # Composition root (AppMainWindow)
+├──── core/                   # IModel, IPersistenceProvider (+ PersistenceResult)
+├──── events/                 # EventSystem + domain event types
+├──── features/<name>/        # {model,presenter,widget}/ per feature
+├──── logging/                # qC* categories + message handler
+├──── platform/               # {core/,theme/} FilePersistenceProvider, theme.hpp
+├──── services/               # ConsoleLogService + ServiceRegistry
+├──── widgets/<name>/         # Standalone widgets (e.g. ReusableWidget)
+├── tests/
+├──── features/               # Flat test files (e.g. CounterTest.cpp), not per-feature dirs
+├──── MemoryPersistenceProvider.h
+├──── main.cpp                # Custom gtest main (QApplication bootstrap)
 ├── resources/
-├──── resources.qrc       # Qt resources (for baked-in files)
-├──── icons/              # Icons for the application
-├──── i18n/               # Qt translation files
-├── app.env               # App name, ID, version, Qt (used by all tools)
-├── CMakeLists.txt        # CMake build script
-├── conanfile.py          # Conan recipe
-├── Pipfile               # Used to manage conan / aqt
-├── conan/                # Conan profiles
-└── .github/              # GitHub Actions workflows
+├──── resources.qrc           # Qt resources (for baked-in files)
+├──── icons/                  # Icons for the application
+├──── i18n/                   # Qt translation files
+├── .github/
+├──── workflows/ci.yml        # Cross-platform build/test + bundle
+├──── scripts/                # Platform packaging (AppImage, installers, .app)
+├── app.env                   # App name, ID, version, Qt (used by all tools)
+├── CMakeLists.txt            # CMake build script
+├── conanfile.py              # Conan recipe (requires fmt/cxxopts; build_requires ninja; test_requires gtest)
+├── conan/                    # Conan profiles
+├── Pipfile                   # Used to manage conan / aqt
+└── Dockerfile                # Toolchain-only container (Qt still via aqtinstall → Qt/)
 ```
 
 ## Architecture & Feature Design
@@ -121,12 +139,18 @@ The feature-first MV* layout is the template's intentional architecture. Impleme
 
 This project follows a **strictly modular feature-first architecture**. Each feature exists as a self-contained unit under the `src/features/` directory, with a standard structure:
 
-- `model/`: The data/state layer (e.g. `FooModel`)
+- `model/`: The data/state layer (e.g. `FooModel`). Implements `IModel`; `saveState()` returns `PersistenceResult<void>`.
 - `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`)
-- `widget/`: The view/UI layer (e.g. `FooWidget`)
-- Tests are mirrored under `tests/features/` using the same hierarchy.
+- `widget/`: The view/UI layer (e.g. `FooWidget`). UI slots follow Qt auto-connect naming (`on_<uiObjectName>_clicked` etc.); the slot name must match the `.ui` object name.
+- Tests are flat files under `tests/features/` (e.g. `tests/features/CounterTest.cpp`), not per-feature directories.
 
-Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Diagnostic logging uses `qDebug`/`qInfo` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher). `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
+Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem), `services/` (registry + ConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets).
+
+**Configuration channels:** `app.env` = build-time metadata SSOT; `QSettings(ORGANIZATION_NAME, APP_NAME)` = window/UI chrome (geometry/state); `IPersistenceProvider` = feature state (FilePersistenceProvider JSON via QSaveFile; MemoryPersistenceProvider test double). Persistence keys embed the `APP_ID` compile definition (e.g. `APP_ID ".CounterState"`).
+
+**Shutdown persistence:** `AppMainWindow` keeps a `QList<IModel*>`; `closeEvent` loops every model's `saveState()`, observes results, and logs-and-continues (never blocks close on persistence failure). Atomic replace via `QSaveFile` is not a power-loss durability guarantee.
+
+Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Public EventSystem API is `events::publish` / `events::subscribe` only. Diagnostic logging uses `qC*` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher). `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
 
 See `AGENTS.md` for the full architectural contract.
 
@@ -192,7 +216,7 @@ Then re-run:
 ./scripts/build.sh
 ```
 
-The project uses flexible version constraints (e.g., `fmt/[>=11.2.0 <12]`) to always resolve the latest compatible version across platforms. During the lockfile generation process, Conan creates a separate lockfile per platform and attempts to merge them. If this merge fails, it indicates that no single version satisfies all platforms in the given version range. In such cases, you’ll need to determine a version that works universally and explicitly pin it in your `conanfile.py`. This is unlikely, however.
+The project uses flexible version constraints (e.g., `fmt/[>=12.0.0 <13]`) to always resolve the latest compatible version across platforms. During the lockfile generation process, Conan creates a separate lockfile per platform and attempts to merge them. If this merge fails, it indicates that no single version satisfies all platforms in the given version range. In such cases, you’ll need to determine a version that works universally and explicitly pin it in your `conanfile.py`. This is unlikely, however.
 
 ### Change App Name / ID / Version
 
@@ -220,7 +244,7 @@ These values will flow automatically into:
 
 - **Branches `main/develop` →** Release builds
 
-Each PR or push triggers a cross-platform build.  For Windows, the artifact will be an application installer as well as a portable version.  For Linux, you'll get an AppImage and a tarball.  For macOS, you'll get a .app folder.
+Each PR or push triggers a cross-platform build via `./scripts/build.sh --test ON`. CI also runs the architecture-boundary check (Linux) and the generator smoke test (`scripts/test-generator.sh`). For Windows, the artifact will be an application installer as well as a portable version. For Linux, you'll get an AppImage and a tarball. For macOS, you'll get a .app folder. Platform packaging lives in `.github/scripts/` (`linux-bundle-*.sh`, `mac-bundle-app.sh`, `windows-bundle.sh`); `CMakeLists.txt` `install()` covers only the executable target.
 
 ## ✨ UI Development
 
@@ -231,6 +255,8 @@ Each PR or push triggers a cross-platform build.  For Windows, the artifact will
 ## 🐳 Dev Container
 
 This project includes a robust and opinionated **dev container** setup designed for maximum parity between local development and CI/CD.
+
+The Dockerfile is **toolchain-only** (compiler, cmake, pipenv, X11/build deps). It does not ship a parallel system Qt — Qt still comes from the local `Qt/` tree via `./scripts/install-qt.sh` (aqtinstall).
 
 Highlights:
 
@@ -270,7 +296,7 @@ Resulting icons are placed in `resources/icons/` and are automatically picked up
 
 ## 💡 Tips
 
-- Use `pipenv run` for consistent tool execution.  All included helper scripts do this automatically as needed.
+- Use `pipenv run` for consistent tool execution. Most included helper scripts do this automatically as needed. Exception: `build.sh --test ON` runs `ctest` directly after the Conan build.
 - The `env.sh` and `app.env` combo ensures your config stays centralized and clean.
 - Want to rename the app? Just update `app.env`. No renaming needed elsewhere.
 - `app_icon.ico` is used for Windows, `app_icon.png` is used for Linux, `app_icon.icns` is for macOS, and `app_icon.svg` is not used, but is included for posterity.

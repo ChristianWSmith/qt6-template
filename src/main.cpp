@@ -81,10 +81,13 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
+    // F-11: custom handler retained (pedagogy + fatal/sink behavior);
+    // see logging.cpp. qSetMessagePattern is the formatting-only alternative.
     qInstallMessageHandler(messageHandler);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
     configureLogLevel(parsedArgs->operator[]("log").as<std::string>());
 
+    // fmt demo (Keep list): Hello message uses fmt; logging.cpp uses fmt too.
     qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
                            .c_str();
 
@@ -110,6 +113,7 @@ int main(int argc, char *argv[]) {
     if (parsedArgs->contains("smoke-test")) {
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
+      services::unregisterAll();
       QCoreApplication::removeTranslator(&translator);
       return 0;
     }
@@ -117,6 +121,7 @@ int main(int argc, char *argv[]) {
     mainWindow.show();
 
     const int exitCode = QApplication::exec();
+    services::unregisterAll();
     QCoreApplication::removeTranslator(&translator);
     return exitCode;
   } catch (const std::exception &e) {

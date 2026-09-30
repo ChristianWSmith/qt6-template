@@ -7,6 +7,8 @@
 #include "features/applog/presenter/AppLogPresenter.h"
 #include "features/applog/widget/AppLogWidget.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QListWidget>
 #include <QPushButton>
 #include <QSignalSpy>
@@ -112,12 +114,38 @@ TEST_F(AppLogTest, TrimmingPersistsOnlyRetainedState) {
     localModel.addLogMessage(QString("persist_%1").arg(i));
   }
   ASSERT_EQ(localModel.getLogMessages().size(), kMaxLogSize);
-  localModel.saveState();
+  const auto saveResult = localModel.saveState();
+  ASSERT_TRUE(saveResult.hasValue());
 
   AppLogModel reloaded(localProvider, nullptr);
   ASSERT_EQ(reloaded.getLogMessages().size(), kMaxLogSize);
   EXPECT_TRUE(reloaded.getLogMessages().first().contains("persist_5"));
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("persist_104"));
+}
+
+// F-13: loadState must re-apply MAX_LOG_SIZE even when persisted state
+// exceeds the cap (e.g. written by a prior version or external writer).
+TEST_F(AppLogTest, LoadDoesNotExceedMaxLogSize) {
+  constexpr int kMaxLogSize = 100;
+  constexpr int kOverCap = 10;
+
+  MemoryPersistenceProvider localProvider;
+
+  // Write oversized state directly through the provider, bypassing runtime
+  // trimming, to prove loadState re-applies the cap.
+  QJsonArray oversized;
+  for (int i = 0; i < kMaxLogSize + kOverCap; ++i) {
+    oversized.append(QString("exceed_%1").arg(i));
+  }
+  QJsonObject obj;
+  obj.insert("logMessages", oversized);
+  const auto forced = localProvider.saveState(APP_ID ".AppLogState", obj);
+  ASSERT_TRUE(forced.hasValue());
+
+  AppLogModel reloaded(localProvider, nullptr);
+  ASSERT_EQ(reloaded.getLogMessages().size(), kMaxLogSize);
+  EXPECT_TRUE(reloaded.getLogMessages().first().contains("exceed_10"));
+  EXPECT_TRUE(reloaded.getLogMessages().last().contains("exceed_109"));
 }
 
 #include "AppLogTest.moc"

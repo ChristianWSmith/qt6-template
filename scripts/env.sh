@@ -23,7 +23,6 @@ export PROJECT_ROOT="$(realpath "${SCRIPT_DIR}/..")"
 
 # --- APP/QT ---
 source "${PROJECT_ROOT}/app.env"
-export UT_NAME="UnitTests"
 
 # --- LLDB ---
 export LLDB_PORT="${LLDB_PORT:-12345}"

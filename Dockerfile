@@ -19,10 +19,6 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
-    qt6-base-dev \
-    qt6-tools-dev \
-    qt6-tools-dev-tools \
-    qt6-l10n-tools \
     make \
     libssl-dev \
     zlib1g-dev \
@@ -84,10 +80,6 @@ RUN apt-get update && apt-get install -y \
     libxtst-dev \
     libxv-dev \
     libxxf86vm-dev \
-    libvulkan1 \
-    vulkan-tools \
-    vulkan-validationlayers \
-    libvulkan-dev \
     lldb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

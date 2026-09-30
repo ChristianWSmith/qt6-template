@@ -29,6 +29,7 @@ qt_standard_project_setup(
 )
 
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.hpp src/*.ui)
+list(REMOVE_ITEM LIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 
 file(GLOB_RECURSE RESOURCES CONFIGURE_DEPENDS resources/*.qrc)
 
@@ -69,14 +70,27 @@ endif()
 
 qt_add_executable(${APP_NAME}
     MANUAL_FINALIZATION
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${RESOURCES}
 )
+
+apply_app_metadata(${APP_NAME})
 
 qt_add_translations(${APP_NAME}
     TS_FILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n"
 )
 
-target_link_libraries(${APP_NAME} PRIVATE ${APP_NAME}_lib)
+target_include_directories(${APP_NAME} PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
+)
+
+target_link_libraries(${APP_NAME} PRIVATE
+    ${APP_NAME}_lib
+    Qt6::Widgets
+    fmt::fmt
+    cxxopts::cxxopts
+)
 
 if(APPLE)
     set_target_properties(${APP_NAME} PROPERTIES

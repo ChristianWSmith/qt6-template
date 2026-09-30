@@ -8,6 +8,35 @@ Q_LOGGING_CATEGORY(appPersistence, "app.persistence")
 Q_LOGGING_CATEGORY(appEvent, "app.event")
 Q_LOGGING_CATEGORY(appService, "app.service")
 
+// F-11: messageHandler is RETAINED deliberately.
+//
+// Why not replace with qSetMessagePattern + default Qt handler:
+// - Pedagogical demonstration of qInstallMessageHandler + fmt in a second,
+//   realistic call site (main.cpp keeps the Hello-message fmt demo).
+// - Explicit stdout/stderr routing (debug/info -> stdout; warning+ -> stderr).
+//   Qt's default handler writes all levels to stderr; pattern formatting does
+//   not restore this split.
+// - Explicit fatal contract: QtFatalMsg -> abort() is visible in template code,
+//   not implicit behind Qt internals.
+// - Deterministic console sinks via std::cout/std::cerr when a console is
+//   attached (debug/diagnostic runs; secondary rationale only).
+//
+// What qSetMessagePattern CAN produce if the template later prefers the
+// canonical formatting path (categories + configureLogLevel stay either way):
+//   qSetMessagePattern(
+//       "[%{time datetime yyyy-MM-dd hh:mm:ss.zzz}][%{type}] %{message}"
+//       " (%{file}:%{line}:%{function})");
+// Differences vs this handler: lowercase %{type} names, all output on stderr,
+// no fatal abort visible in application code, no category in the line
+// (current handler also omits category; filtering is via configureLogLevel).
+//
+// Category note: this handler does not print QMessageLogContext::category.
+// Category *filtering* is the canonical, kept mechanism (configureLogLevel /
+// QLoggingCategory::setFilterRules). Add %{category} via pattern, or extend
+// this handler, only if line-level category display becomes a requirement.
+//
+// fmt note: fmt is a documented Conan demonstration (AGENTS.md Keep list).
+// Losing this site would leave only main.cpp's Hello message as the demo.
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg) {
   static QMutex mutex;

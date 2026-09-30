@@ -1,7 +1,9 @@
 #pragma once
 
+#include "../core/IModel.h"
 #include "../platform/core/FilePersistenceProvider.h"
 #include "ui_AppMainWindow.h"
+#include <QList>
 #include <QMainWindow>
 
 #include "../features/counter/model/CounterModel.h"
@@ -26,13 +28,16 @@ QT_END_NAMESPACE
 ///   - Models hold non-owning IPersistenceProvider& to the provider.
 ///
 /// Lifetime invariants:
-///   - Member declaration order is construction order.
+///   - Member declaration order is CONSTRUCTION order (not a Qt destruction-order
+///     guarantee). Qt does not guarantee arbitrary QObject destruction order.
 ///   - m_provider is constructed before every model that references it.
-///   - For each feature, model and widget are constructed before the
-///     presenter; the presenter does not outlive its dependencies.
-///   - Destruction of QObject children is handled by Qt parent-child after
-///     this destructor body; model/presenter destructors must not rely on
-///     outliving each other beyond the construction order above.
+///   - For each feature, model and widget are constructed before the presenter.
+///   - Ownership is Qt parent-child: QObject children of this window die with it.
+///   - Presenter pointers are non-owning. Presenter destructors must NOT
+///     dereference m_model or m_view. Signal/slot connections auto-disconnect
+///     when either QObject is destroyed.
+///   - Any teardown logic that needs model/widget state must run before
+///     destruction (e.g. closeEvent), not in presenter destructors.
 class AppMainWindow : public QMainWindow {
   Q_OBJECT
 
@@ -50,10 +55,11 @@ public:
 private:
   Ui::AppMainWindow *ui;
 
-  // Construction order encodes lifetime dependency: provider before models.
+  // Construction order: provider before models. Not a destruction-order guarantee.
   FilePersistenceProvider *m_provider;
 
-  // Per feature: model and widget before presenter (non-owning presenter refs).
+  // Per feature: model and widget constructed before the presenter (non-owning refs).
+  // Presenter destructors must not dereference these members.
   CounterModel *m_counterModel;
   CounterWidget *m_counterWidget;
   CounterPresenter *m_counterPresenter;
@@ -61,4 +67,9 @@ private:
   AppLogModel *m_appLogModel;
   AppLogWidget *m_appLogWidget;
   AppLogPresenter *m_appLogPresenter;
+
+  // Non-owning registry of feature models for polymorphic shutdown persistence
+  // (F-09). Populated after feature construction in the ctor body. Qt parent-
+  // child ownership remains with this window; these pointers do not own.
+  QList<IModel *> m_models;
 };

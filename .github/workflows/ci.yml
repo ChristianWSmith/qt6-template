@@ -23,6 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Architecture boundary checks
+        if: runner.os == 'Linux'
+        shell: bash
+        run: ./scripts/check-architecture-boundaries.sh
+
       - name: Extract Python version from Pipfile
         id: python_version
         shell: bash

@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QObject>
 #include <QVariant>
+#include <concepts>
 #include <mutex>
 #include <type_traits>
 #include <typeindex>
@@ -22,36 +23,68 @@ namespace events {
 ///
 /// Ordering
 ///   - Per-connection FIFO via Qt queued connections.
-///   - Cross-subscriber order follows connection creation order (Qt).
+///   - Cross-subscriber order follows Qt connection creation order. This is
+///     an implementation/Qt-derived property, not a strong application
+///     guarantee unless explicitly tested.
 ///   - Mid-dispatch subscribe does not receive the in-flight event.
 ///   - Publish-during-dispatch is deferred to later event-loop iterations.
+///   - Recursive publication is queued rather than immediate.
 ///
 /// Lifetime
 ///   - QObject-receiver subscribe: connection lifetime follows the receiver.
-///   - Free-function subscribe: caller must retain the Subscription ([[nodiscard]]).
+///   - Free-function subscribe: caller must retain the Subscription
+///   ([[nodiscard]]).
 ///   - Discarding a Subscription disconnects the handler immediately.
 ///   - Subscription::reset() disconnects logical delivery; it does not depend
-///     on deleteLater() to unsubscribe.
+///     on deleteLater() to unsubscribe and does not require a running event
+///     loop.
+///   - Free-function subscriptions belong to application lifetime (connection
+///     context = QCoreApplication). The static Subscription in ServiceRegistry
+///     is storage only; services::unregisterAll() is the explicit lifecycle
+///     mechanism.
 ///
 /// Ownership
-///   - Dispatchers and free-function wrapper QObjects are parented to
-///     QCoreApplication when available (application-owned lifetime).
+///   - Dispatchers are parented to QCoreApplication when available
+///     (application-owned lifetime).
+///   - Free-function subscriptions use QCoreApplication::instance() as the
+///     connection context; no wrapper QObject is allocated per subscription.
 ///   - Publish/subscribe require a running QApplication in this template.
 ///
 /// Threading
 ///   - Publish from the GUI thread only (template policy; no worker threads).
 ///   - Callbacks execute on the receiver QObject's thread via queued delivery.
+///     Free-function handlers execute on the application thread under the
+///     GUI-thread policy.
 ///   - BusRegistry mutex protects dispatcher creation, not event delivery.
 ///
+/// Service registration lifecycle
+///   - QApplication exists → services::registerAll() → application runs →
+///     services::unregisterAll() → QApplication destruction.
+///   - unregisterAll() resets retained subscriptions explicitly; it is
+///     idempotent and independent of static destructor timing.
+///
+/// API boundary
+///   - Public API is events::publish / events::subscribe only.
+///   - BusRegistry::dispatcher<T>() is an internal implementation detail
+///     (private). Do not rely on direct dispatcher access.
+///   - Runtime QVariant type check remains as defense-in-depth against
+///     QVariant corruption; the primary protection is the typed public API
+///     plus the private dispatcher boundary.
+///
 /// Type safety
-///   - Event types must be copy-constructible (compile-time).
+///   - Event types must be default-constructible, copy-constructible, and
+///     copy-assignable (compile-time; EventType concept).
 ///   - Delivery checks QVariant meta-type in all builds; debug builds also
 ///     assert. Mismatch logs qCritical(appEvent) and does not deliver.
 
+template <typename T>
+concept EventType =
+    std::default_initializable<T> && std::copy_constructible<T> &&
+    std::assignable_from<T &, const T &>;
+
 namespace detail {
 
-template <typename T>
-bool checkedEventValue(const QVariant &var, T &out) {
+template <typename T> bool checkedEventValue(const QVariant &var, T &out) {
   if (var.userType() != qMetaTypeId<T>()) {
     qCCritical(appEvent)
         << "EventSystem: type mismatch; event not delivered. expected"
@@ -90,11 +123,105 @@ public:
   }
 };
 
+/// RAII free-function subscription handle. The returned Subscription must be
+/// retained; discarding it disconnects the handler immediately.
+class Subscription {
+public:
+  Subscription() noexcept = default;
+  ~Subscription() { reset(); }
+
+  Subscription(const Subscription &) = delete;
+  Subscription &operator=(const Subscription &) = delete;
+
+  Subscription(Subscription &&other) noexcept
+      : connection_(std::exchange(other.connection_, {})) {}
+
+  Subscription &operator=(Subscription &&other) noexcept {
+    if (this != &other) {
+      reset();
+      connection_ = std::exchange(other.connection_, {});
+    }
+    return *this;
+  }
+
+  [[nodiscard]] bool isConnected() const {
+    return static_cast<bool>(connection_);
+  }
+
+  /// Logical unsubscription: disconnect only. The connection context is
+  /// application-owned (QCoreApplication). reset() does not call
+  /// deleteLater() and does not require a running event loop.
+  void reset() {
+    if (static_cast<bool>(connection_)) {
+      QObject::disconnect(connection_);
+      connection_ = {};
+    }
+  }
+
+  explicit Subscription(QMetaObject::Connection conn)
+      : connection_(std::move(conn)) {}
+
+private:
+  QMetaObject::Connection connection_;
+};
+
+/// Internal event bus. Public API is events::publish / events::subscribe
+/// (thin wrappers over the static methods below). dispatcher<T>() is a
+/// private implementation detail — not a public mutable-ref escape hatch.
 class BusRegistry {
 public:
-  template <typename T> static EventDispatcher<T> &dispatcher() {
-    static_assert(std::is_copy_constructible_v<T>, "Events must be copyable");
+  template <EventType T> static void publish(T event) {
+    dispatcher<T>().publish(event);
+  }
 
+  /// QObject-receiver subscribe. Connection lifetime follows the receiver.
+  template <EventType T, typename Obj>
+  static void subscribe(Obj *receiver, void (Obj::*method)(const T &))
+    requires(std::is_base_of_v<QObject, Obj>)
+  {
+    QObject::connect(
+        &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
+        [receiver, method](const QVariant &var) {
+          T event{};
+          if (!detail::checkedEventValue(var, event)) {
+            return;
+          }
+          (receiver->*method)(event);
+        },
+        Qt::QueuedConnection);
+  }
+
+  /// Free-function subscribe. Uses QCoreApplication::instance() as the
+  /// connection context — no wrapper QObject is allocated. Free-function
+  /// handlers execute on the application thread under the GUI-thread policy.
+  /// Subscriptions belong to application lifetime; services::unregisterAll()
+  /// is the explicit teardown mechanism for retained service subscriptions.
+  template <EventType T>
+  [[nodiscard]] static Subscription subscribe(void (*func)(const T &)) {
+    QObject *context = QCoreApplication::instance();
+    if (!context) {
+      qCCritical(appEvent)
+          << "EventSystem: free-function subscribe requires a running"
+          << "QCoreApplication";
+      return Subscription{};
+    }
+    auto conn = QObject::connect(
+        &dispatcher<T>(), &EventDispatcherBase::eventPublished, context,
+        [func](const QVariant &var) {
+          T event{};
+          if (!detail::checkedEventValue(var, event)) {
+            return;
+          }
+          func(event);
+        },
+        Qt::QueuedConnection);
+    return Subscription(std::move(conn));
+  }
+
+private:
+  /// Internal implementation detail. Do not expose; public API is
+  /// events::publish / events::subscribe.
+  template <EventType T> static EventDispatcher<T> &dispatcher() {
     const std::type_index type = typeid(T);
     std::unique_lock lock(instance().mutex_);
 
@@ -112,11 +239,6 @@ public:
     return *static_cast<EventDispatcher<T> *>(basePtr);
   }
 
-  template <typename T> static void publish(T event) {
-    dispatcher<T>().publish(event);
-  }
-
-private:
   static BusRegistry &instance() {
     static BusRegistry busRegistry;
     return busRegistry;
@@ -126,88 +248,31 @@ private:
   std::mutex mutex_;
 };
 
-template <typename T, typename Obj>
+/// QObject-receiver subscription. Thin wrapper over BusRegistry::subscribe.
+template <EventType T, typename Obj>
 void subscribe(Obj *receiver, void (Obj::*method)(const T &))
   requires(std::is_base_of_v<QObject, Obj>)
 {
-  QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      receiver,
-      [receiver, method](const QVariant &var) {
-        T event{};
-        if (!detail::checkedEventValue(var, event)) {
-          return;
-        }
-        (receiver->*method)(event);
-      },
-      Qt::QueuedConnection);
+  BusRegistry::subscribe<T, Obj>(receiver, method);
 }
-
-class Subscription {
-public:
-  Subscription() noexcept = default;
-  ~Subscription() { reset(); }
-
-  Subscription(const Subscription &) = delete;
-  Subscription &operator=(const Subscription &) = delete;
-
-  Subscription(Subscription &&other) noexcept
-      : connection_(std::exchange(other.connection_, {}))
-      , owner_(std::exchange(other.owner_, nullptr)) {}
-
-  Subscription &operator=(Subscription &&other) noexcept {
-    if (this != &other) {
-      reset();
-      connection_ = std::exchange(other.connection_, {});
-      owner_ = std::exchange(other.owner_, nullptr);
-    }
-    return *this;
-  }
-
-  [[nodiscard]] bool isConnected() const { return static_cast<bool>(connection_); }
-
-  /// Logical unsubscription: disconnect only.
-  /// The wrapper QObject is application-owned (parented to QCoreApplication
-  /// when present) and is reclaimed with the application. reset() does not
-  /// call deleteLater() and does not require a running event loop.
-  void reset() {
-    if (static_cast<bool>(connection_)) {
-      QObject::disconnect(connection_);
-      connection_ = {};
-    }
-    owner_ = nullptr;
-  }
-
-  Subscription(QMetaObject::Connection conn, QObject *owner)
-      : connection_(std::move(conn)), owner_(owner) {}
-
-private:
-  QMetaObject::Connection connection_;
-  QObject *owner_ = nullptr;
-};
 
 /// Free-function subscription. The returned Subscription must be retained;
 /// discarding it disconnects the handler immediately.
-template <typename T>
+///
+/// Uses QCoreApplication::instance() as the connection context — no wrapper
+/// QObject is allocated. Free-function handlers execute on the application
+/// thread under the GUI-thread policy. Subscriptions belong to application
+/// lifetime; services::unregisterAll() is the explicit teardown mechanism for
+/// retained service subscriptions.
+///
+/// Thin wrapper over BusRegistry::subscribe.
+template <EventType T>
 [[nodiscard]] Subscription subscribe(void (*func)(const T &)) {
-  // Parented to QCoreApplication when present (application-owned).
-  // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-  auto *wrapper = new QObject(QCoreApplication::instance());
-  auto conn = QObject::connect(
-      &BusRegistry::dispatcher<T>(), &EventDispatcherBase::eventPublished,
-      wrapper,
-      [func](const QVariant &var) {
-        T event{};
-        if (!detail::checkedEventValue(var, event)) {
-          return;
-        }
-        func(event);
-      },
-      Qt::QueuedConnection);
-  return Subscription(std::move(conn), wrapper);
+  return BusRegistry::subscribe<T>(func);
 }
 
-template <typename T> void publish(T event) {
+/// Thin wrapper over BusRegistry::publish.
+template <EventType T> void publish(T event) {
   BusRegistry::publish<T>(std::move(event));
 }
 

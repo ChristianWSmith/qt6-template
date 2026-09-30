@@ -182,7 +182,10 @@ public:
                               QObject *parent = nullptr);
 
   // IModel
-  void saveState() const override;
+  // saveState() forwards the provider's PersistenceResult to the caller
+  // (composition root). The provider owns error logging; the model does
+  // not log save errors at the model layer.
+  PersistenceResult<void> saveState() const override;
   void loadState() override;
 
   // Methods to be called by ${NAME_TITLE}Presenter
@@ -219,21 +222,20 @@ ${NAME_TITLE}Model::${NAME_TITLE}Model(IPersistenceProvider &provider,
   ${NAME_TITLE}Model::loadState();
 }
 
-void ${NAME_TITLE}Model::saveState() const {
+PersistenceResult<void> ${NAME_TITLE}Model::saveState() const {
   // QJsonObject obj;
   // obj[KEY_MY_VALUE] = m_myvalue;
-  // auto result = m_provider.saveState(m_key, obj);
-  // if (result.hasError()) {
-  //   qCWarning(appPersistence) << "Failed to save state:" << toString(result.error());
-  // }
+  // Provider owns error logging; forward the result to the caller
+  // (composition root observes outcomes at closeEvent).
+  // return m_provider.saveState(m_key, obj);
+  return PersistenceResult<void>::success();
 }
 
 void ${NAME_TITLE}Model::loadState() {
   // auto result = m_provider.loadState(m_key);
   // if (result.hasError()) {
-  //   if (result.error() != PersistenceError::NotFound) {
-  //     qCWarning(appPersistence) << "Failed to load state:" << toString(result.error());
-  //   }
+  //   // NotFound is a normal first-run condition.
+  //   // Operational errors are logged by the provider (toString in logging).
   //   return;
   // }
   // const auto obj = result.value();
@@ -266,9 +268,9 @@ private slots:
 private:
   friend class ${NAME_TITLE}Test;
 
-  // AppMainWindow owns model, widget, and presenter; presenter does not
-  // outlive its dependencies. Raw pointers are non-owning; their lifetime is
-  // structurally guaranteed by the composition root.
+  // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
+  // Presenter destructors must not dereference these pointers.
+  // Connections auto-disconnect when either QObject is destroyed.
   ${NAME_TITLE}Model *m_model;
   ${NAME_TITLE}Widget *m_view;
 };
