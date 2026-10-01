@@ -175,7 +175,7 @@ auto sub = events::subscribe<LogEvent>(myHandler);
 events::publish(LogEvent{"message"});
 ```
 
-- Publishing is a GUI-thread operation under the current architecture.
+- Publishing is a GUI-thread operation under the current architecture. Debug builds assert the calling thread is the application thread.
 - Recursive publication is queued rather than immediate.
 
 #### Behavioral contract
@@ -188,7 +188,7 @@ events::publish(LogEvent{"message"});
 | Type safety | Event types must be default-constructible, copy-constructible, and copy-assignable (EventType concept). Delivery checks meta-type in all builds; debug builds also assert. Mismatch logs `qCritical(appEvent)` and does not deliver. |
 | Free-function subscribe | No per-subscription wrapper QObject is allocated. Connection context is `QCoreApplication`. `Subscription` holds `QMetaObject::Connection` only. Subscriptions belong to application lifetime; free-function handlers execute on the application thread under the GUI-thread policy. |
 | QObject lifetime | Dispatchers are parented to `QCoreApplication` when present (application-owned). Free-function connection context is also `QCoreApplication`. |
-| Threading | Publish from the GUI thread only (template policy; no worker threads). Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. |
+| Threading | Publish/subscribe are GUI-thread-only (template policy; no worker threads). The policy is enforced with `Q_ASSERT` in debug builds at publish and both subscribe paths. Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. The bus is not a general cross-thread synchronization mechanism. |
 
 #### Lifetime rules
 
@@ -199,6 +199,7 @@ events::publish(LogEvent{"message"});
 - Destroying a `Subscription` disconnects the handler (`reset()`); it does **not** depend on `deleteLater()`.
 - `Subscription` owns its connection lifetime (RAII) and holds only the `QMetaObject::Connection`.
 - Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present).
+- The `BusRegistry` dispatcher map is cleared on `QCoreApplication::aboutToQuit`, before Qt-owned dispatcher objects are destroyed. The registry never deletes dispatchers.
 - EventSystem use requires a running `QApplication` in this template.
 
 #### Production status of LogEvent / AppLog
@@ -218,7 +219,7 @@ events::publish(LogEvent{"message"});
 - Raw pointer / reference → non-owning unless explicitly documented
 - Event subscription → lifetime managed by Qt connection mechanism (auto-disconnect on receiver destruction)
 - `Subscription` owns its connection lifetime (RAII); free-function subscribe requires retaining the returned handle
-- EventSystem wrappers/dispatchers are application-owned, parented to `QCoreApplication` when present
+- Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present); the registry map is cleared on `aboutToQuit` before those objects are destroyed
 - Models take `IPersistenceProvider&` (required, non-owning reference)
 - Presenter holds non-owning raw pointers to model/widget; presenter destructors must not dereference them
 - Member declaration order in AppMainWindow is construction order only — not a Qt destruction-order guarantee
@@ -265,7 +266,9 @@ Persistence keys use the `APP_ID` compile definition from `app.env` (e.g. `APP_I
 - Do not access or mutate them from worker threads.
 - Models execute on the GUI thread. Persistence operations are synchronous.
 - EventSystem delivery is always queued (Qt::QueuedConnection).
+- EventSystem publish/subscribe are GUI-thread-only; debug builds assert the calling thread is the application thread.
 - The EventSystem's BusRegistry mutex protects dispatcher creation, not event delivery.
+- The EventSystem is not a general cross-thread synchronization mechanism.
 - Logging is thread-safe (QMutex in message handler).
 - No API implies general thread safety merely because it contains a mutex.
 

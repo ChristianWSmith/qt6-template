@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QObject>
+#include <QThread>
 #include <QVariant>
 #include <concepts>
 #include <mutex>
@@ -49,13 +50,20 @@ namespace events {
 ///   - Free-function subscriptions use QCoreApplication::instance() as the
 ///     connection context; no wrapper QObject is allocated per subscription.
 ///   - Publish/subscribe require a running QApplication in this template.
+///   - BusRegistry clears its non-owning dispatcher map on
+///     QCoreApplication::aboutToQuit — before Qt-owned dispatcher QObjects
+///     are destroyed. The registry never deletes dispatchers.
 ///
 /// Threading
 ///   - Publish from the GUI thread only (template policy; no worker threads).
+///   - The GUI-thread policy is enforced with Q_ASSERT in debug builds at
+///     publish and both subscribe paths. Release builds keep the runtime
+///     QCoreApplication::instance() checks only.
 ///   - Callbacks execute on the receiver QObject's thread via queued delivery.
 ///     Free-function handlers execute on the application thread under the
 ///     GUI-thread policy.
 ///   - BusRegistry mutex protects dispatcher creation, not event delivery.
+///   - The bus is not a general cross-thread synchronization mechanism.
 ///
 /// Service registration lifecycle
 ///   - QApplication exists → services::registerAll() → application runs →
@@ -127,6 +135,8 @@ public:
           << "EventSystem: publish requires a running QCoreApplication";
       return;
     }
+    Q_ASSERT(QThread::currentThread() ==
+             QCoreApplication::instance()->thread());
     emit eventPublished(QVariant::fromValue(event));
   }
 };
@@ -179,6 +189,16 @@ private:
 class BusRegistry {
 public:
   template <EventType T> static void publish(T event) {
+    // Pre-check before touching the dispatcher map: after application
+    // teardown the map is cleared on aboutToQuit, and a late publish must
+    // not construct an unparented dispatcher or bind a stale reference.
+    if (!QCoreApplication::instance()) {
+      qCCritical(appEvent)
+          << "EventSystem: publish requires a running QCoreApplication";
+      return;
+    }
+    Q_ASSERT(QThread::currentThread() ==
+             QCoreApplication::instance()->thread());
     dispatcher<T>().publish(event);
   }
 
@@ -193,6 +213,8 @@ public:
           << "QCoreApplication";
       return;
     }
+    Q_ASSERT(QThread::currentThread() ==
+             QCoreApplication::instance()->thread());
     QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
@@ -219,6 +241,7 @@ public:
           << "QCoreApplication";
       return Subscription{};
     }
+    Q_ASSERT(QThread::currentThread() == context->thread());
     auto conn = QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, context,
         [func](const QVariant &var) {
@@ -237,18 +260,31 @@ private:
   /// events::publish / events::subscribe facade.
   template <EventType T> static EventDispatcher<T> &dispatcher() {
     const std::type_index type = typeid(T);
-    std::unique_lock lock(instance().mutex_);
+    BusRegistry &reg = instance();
+    std::unique_lock lock(reg.mutex_);
 
-    // Non-owning: QObject parent (QApplication) owns the dispatcher when one
-    // exists. Raw pointer avoids double-delete against Qt parent/child.
-    //
-    // LIFETIME INVARIANT (do not "fix"):
-    //   After QCoreApplication destruction, entries in dispatchers_ dangle.
-    //   The map destructor must NEVER delete or dereference these pointers.
-    //   QObject parent/child already reclaimed the dispatcher objects.
-    //   Adding a BusRegistry destructor that iterates+deletes would
-    //   double-delete against Qt ownership.
-    EventDispatcherBase *&basePtr = instance().dispatchers_[type];
+    // Structural lifetime guarantee (AUD-001):
+    //   On first dispatcher creation, connect QCoreApplication::aboutToQuit
+    //   to clear the non-owning map while QObject children (dispatchers)
+    //   still exist. Qt then destroys the dispatcher objects with the
+    //   application. The map never deletes or dereferences entries after
+    //   that clear; adding a BusRegistry destructor that iterates+deletes
+    //   would double-delete against Qt ownership.
+    if (!reg.quitHookInstalled_) {
+      if (auto *app = QCoreApplication::instance()) {
+        QObject::connect(
+            app, &QCoreApplication::aboutToQuit, app, []() {
+              BusRegistry &r = instance();
+              std::unique_lock clearLock(r.mutex_);
+              r.dispatchers_.clear();
+            });
+        reg.quitHookInstalled_ = true;
+      }
+    }
+
+    // Non-owning: QObject parent (QCoreApplication) owns the dispatcher when
+    // one exists. Raw pointer avoids double-delete against Qt parent/child.
+    EventDispatcherBase *&basePtr = reg.dispatchers_[type];
     if (!basePtr) {
       // Parented to QCoreApplication when present (application-owned).
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
@@ -267,6 +303,7 @@ private:
 
   std::unordered_map<std::type_index, EventDispatcherBase *> dispatchers_;
   std::mutex mutex_;
+  bool quitHookInstalled_ = false;
 };
 
 /// QObject-receiver subscription. Thin wrapper over BusRegistry::subscribe.
