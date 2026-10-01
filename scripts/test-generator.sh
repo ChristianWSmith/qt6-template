@@ -81,14 +81,17 @@ check "Model.h stores provider by reference" \
 check "Model.cpp uses qCDebug category logging" \
   "${MODEL_CPP}" 'qCDebug\(appPersistence\)'
 
-check "Model.cpp forwards PersistenceResult (provider owns error logging)" \
-  "${MODEL_CPP}" 'PersistenceResult'
+check "Model.cpp saveState forwards to provider (not unconditional success)" \
+  "${MODEL_CPP}" 'return m_provider\.saveState\(m_key, obj\)'
+
+check "Model.cpp does not return bare PersistenceResult success in saveState" \
+  "${MODEL_CPP}" 'return PersistenceResult<void>::success\(\);' invert
 
 check "Model.cpp does not null-guard provider" \
   "${MODEL_CPP}" 'm_provider == nullptr' invert
 
-check "Model.cpp commented bodies use dot provider access" \
-  "${MODEL_CPP}" 'm_provider\.(loadState|saveState)'
+check "Model.cpp loadState scaffold mentions provider loadState" \
+  "${MODEL_CPP}" 'm_provider\.loadState'
 
 check "Presenter.cpp uses Q_ASSERT for model" \
   "${PRESENTER_CPP}" 'Q_ASSERT\(m_model != nullptr\)'

@@ -111,3 +111,8 @@ inno.iss
 
 # dist
 dist/
+
+# audit / remediation working documents (untracked by project policy)
+AUDIT.md
+AUDIT-REPORT.md
+ARCHITECTURE.md

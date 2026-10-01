@@ -125,9 +125,12 @@ int main(int argc, char *argv[]) {
     QCoreApplication::removeTranslator(&translator);
     return exitCode;
   } catch (const std::exception &e) {
+    // Lifecycle contract: every path after registerAll() must unregister.
+    services::unregisterAll();
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;
   } catch (...) {
+    services::unregisterAll();
     std::cerr << "UNKNOWN EXCEPTION\n";
     return 1;
   }

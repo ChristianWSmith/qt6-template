@@ -6,7 +6,7 @@ source ${SCRIPT_DIR}/env.sh
 
 CMAKE_BUILD_TYPE="Release"
 BUILD_TESTING="ON"
-UPDATE_TRANSLATIONS="ON"
+UPDATE_TRANSLATIONS="OFF"
 CLEAN="OFF"
 
 while [[ $# -gt 0 ]]; do

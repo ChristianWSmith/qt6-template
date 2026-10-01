@@ -19,12 +19,15 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 ./scripts/build.sh --build-type Debug       # Debug build
 ./scripts/build.sh --clean ON               # Clean before build
 ./scripts/build.sh --test ON|OFF            # Configure → build → run CTest when ON (default ON)
+./scripts/build.sh --update-translations ON|OFF  # lupdate .ts files (default OFF)
 ./scripts/run.sh                            # Debug-run (builds if needed)
 ./scripts/run.sh --rebuild ON -- <args>     # Force rebuild, pass args to app
 ```
 
 Most scripts use `pipenv run` under the hood (auto-installs pipenv on first run).
 **Exception:** `build.sh --test ON` runs `ctest` directly after the Conan build (not via `pipenv run`); `run.sh` default `--test` is OFF. Other tool invocations (conan, aqt, clang-format paths) go through pipenv.
+
+**Translations default OFF:** `build.sh` defaults `UPDATE_TRANSLATIONS` to `OFF` so normal builds do not mutate tracked `resources/i18n/*.ts`. Opt in with `--update-translations ON` when you intentionally refresh translation sources.
 
 ## Architecture
 
@@ -43,7 +46,7 @@ src/
 └── widgets/<name>/     # standalone widgets (ReusableWidget teaching artifact)
 ```
 
-- Test mirror: `tests/features/<Name>Test.cpp` (flat files, not per-feature directories)
+- Test tree: feature tests are flat files under `tests/features/<Name>Test.cpp` (not per-feature directories). Additional suites live under `tests/{events,lifecycle,persistence,services}/`, plus `tests/MemoryPersistenceProvider.h` and `tests/sanity_test.cpp`.
 
 ## Build
 
@@ -52,7 +55,7 @@ src/
 - Compile definitions centralized via `apply_app_metadata()` CMake function (applied to `${APP_NAME}_lib`, `${APP_NAME}`, and `UnitTests`)
 - `app.env` is the single source of truth for app metadata
 - **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` in application code only if Qt-native CLI is a deliberate project choice; do not remove cxxopts solely because Qt has an equivalent.
-- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows ships `dark.qss`/`light.qss`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
+- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
 - **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)
@@ -62,11 +65,11 @@ src/
 - **Test binary name is hardcoded** as `UnitTests` in `tests/CMakeLists.txt`. There is no `UT_NAME` CMake variable or indirection.
 - **`BUILD_TESTING`:** `scripts/build.sh` defaults it to `ON`; `conanfile.py` CMake configure also defaults `BUILD_TESTING` to `ON` if unset. `run.sh` defaults `--test OFF`.
 - **`gtest_discover_tests(UnitTests)`** runs in default **POST_BUILD** discovery mode (plus explicit `DISCOVERY_TIMEOUT 30`). Tests are discovered after the test binary is built.
-- **Tests link `Qt6::Test`** (plus Core/Widgets). Custom `tests/main.cpp` provides `main()` (QApplication + gtest init) — do not link `gtest_main`.
+- **Tests link `Qt6::Test`** (plus Core/Widgets from the root-scope `find_package`; `tests/CMakeLists.txt` requests `Qt6::Test` only). Custom `tests/main.cpp` provides `main()` (QApplication + gtest init) — do not link `gtest_main`.
 - **`ctest` runs directly** from `build.sh` (`ctest --test-dir "${BUILD_DIR}" --output-on-failure`) with `QT_QPA_PLATFORM` defaulting to `offscreen` when tests are ON.
 - **`install()` covers the executable target only** (BUNDLE/LIBRARY/RUNTIME destinations). There is no `export()` / package-config install. Platform packaging (AppImage, installers, `.app`) is done by `.github/scripts/{linux-bundle-*.sh,mac-bundle-app.sh,windows-bundle.sh}` in CI.
 - **CI runs the generator smoke test** via `scripts/test-generator.sh` (generates `GenSmokeProbe`, checks conventions, builds with `--test ON`, cleans up). See `.github/workflows/ci.yml`.
-- **Conan dependency layout:** `requires` = fmt + cxxopts; `build_requires` = ninja; `test_requires` = gtest.
+- **Conan dependency layout:** `requires` = fmt + cxxopts; `build_requires` = ninja; `test_requires` = gtest. `conan.lock` may also record profile-driven or transitive entries (e.g. Linux `xorg/system`, pkgconf/meson/cmake) beyond the declared recipe layout — that superset is expected Conan lock behavior, not a defect.
 - **fmt lock example:** pin range in `conanfile.py` is `fmt/[>=12.0.0 <13]` (lock currently resolves 12.x). Use that range in docs/examples — do not cite older ranges.
 - **Dockerfile is toolchain-only** (compiler, cmake, pipenv, X11/build deps). It does **not** install a parallel system Qt; Qt still comes from the local `Qt/` tree via `scripts/install-qt.sh` (aqtinstall). Do not document a Docker Qt path.
 - **aqtinstall is pinned to a git commit** (`076e1659…` in `Pipfile`), not floating `master` and not PyPI `3.3.0`. PyPI 3.3.0 cannot install Qt 6.11+ on Windows (Qt uses arch-specific repo folders such as `qt6_6111/qt6_6111_msvc2022_64/`; aqt PR #1000 adds that support). Switch to a PyPI release when aqtinstall >= 3.4.0 exists.
@@ -78,12 +81,12 @@ src/
 ./scripts/generate.sh widget SimplePreview  # Widget only
 ```
 
-Name must be TitleCase and valid C++ identifier. Generates `.h`, `.cpp`, `.ui` files plus test stub for features. Runs `clang-format` on output if available.
+Name must start with an uppercase letter and be a valid C++ identifier (regex `^[A-Z][A-Za-z0-9]*$`; strict PascalCase is not enforced). Generates `.h`, `.cpp`, `.ui` files plus test stub for features. Runs `clang-format` on output if available.
 
 ## Testing
 
 - Google Test (`gtest`), linked via `tests/CMakeLists.txt` into a single binary target **`UnitTests`** (hardcoded name; no `UT_NAME`)
-- `tests/CMakeLists.txt` requires `Qt6::Test` (and Core/Widgets); custom `tests/main.cpp` supplies `main()` — do not link `gtest_main`
+- `tests/CMakeLists.txt` requests `Qt6::Test` (Core/Widgets targets come from the root-scope `find_package`); custom `tests/main.cpp` supplies `main()` — do not link `gtest_main`
 - Tests are discovered via `gtest_discover_tests` (POST_BUILD default mode)
 - Run tests: `./scripts/build.sh --test ON` (default) which builds **and executes** the suite via CTest (ctest runs outside pipenv; `QT_QPA_PLATFORM` defaults to `offscreen` when tests are ON)
 - CI runs the same path on Linux/Windows/macOS, plus `scripts/test-generator.sh`
@@ -95,14 +98,15 @@ Name must be TitleCase and valid C++ identifier. Generates `.h`, `.cpp`, `.ui` f
 - Python tooling via Pipenv (`Pipfile`): conan, aqtinstall, icnsutil, clang-tools
 - Lock update: `./scripts/conan-lock-update.sh` (creates per-platform locks then merges)
 - Conan profiles: `conan/profiles/{linux,windows,darwin}`
+- `conan.lock` is a resolved superset of the recipe: it can include profile package-manager entries and transitive build tools. Prefer regenerating via the lock-update script over hand-editing.
 
 ## Key Quirks
 
 - **CMake re-glob**: source discovery uses `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`. If a generator ever misses a new file, touch `CMakeLists.txt` manually — this is a fallback, not the default path.
 - **clang-tidy (editor-side)**: `.clang-tidy` sets `WarningsAsErrors: '*'` for editor/clangd use via `./scripts/configure-vscode.sh`. CI does not currently run clang-tidy as a build step. Keep generated code free of new tidy findings; preserve intentional NOLINT annotations.
 - **Qt AUTOUIC/AUTOMOC/AUTORCC**: CMake handles `.ui`, `.moc`, `.qrc` automatically — no manual wrapping needed.
-- **Lockfile merges**: Conan lockfile is merged across all 3 platforms. If a version range doesn't satisfy all platforms, you'll need to pin explicitly in `conanfile.py`.
-- **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages configured in `CMakeLists.txt` via `I18N_TRANSLATED_LANGUAGES`. Delete/rename `.ts` files after app name changes.
+- **Lockfile merges**: Conan lockfile is merged across all 3 platforms. If a version range doesn't satisfy all platforms, you'll need to pin explicitly in `conanfile.py`. The merged lock may contain additional profile/transitive packages; do not "clean" the lock without re-running `./scripts/conan-lock-update.sh` and re-validating CI.
+- **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages configured in `CMakeLists.txt` via `I18N_TRANSLATED_LANGUAGES`. Default builds do **not** update `.ts` files (`UPDATE_TRANSLATIONS=OFF`); opt in via `./scripts/build.sh --update-translations ON`. Delete/rename `.ts` files after app name changes.
 - **Metadata SSOT**: `app.env` is required. CMake and Conan fail fast with a clear error if `APP_*` variables are missing — there are no silent fallback defaults.
 - **Conan compiler profiles**: `conan/profiles/{linux,windows,darwin}` pin compiler versions for dependency resolution. Keep them aligned with the CI runners' actual toolchains when those change.
 
@@ -144,8 +148,8 @@ The header `src/events/system/EventSystem.hpp` is the normative contract; this s
 
 #### Public API boundary
 
-- Application code uses only `events::publish` and `events::subscribe` (free-function and QObject overloads).
-- `BusRegistry::dispatcher<T>()` is a **private** implementation detail. Do not call it or treat it as public API.
+- Application code should use `events::publish` and `events::subscribe` (free-function and QObject overloads). These are the supported public-facing entry points.
+- `BusRegistry` also exposes equivalent static `publish`/`subscribe` operations; consumers should use the free-function facade. `BusRegistry::dispatcher<T>()` is a **private** implementation detail — do not call it or treat it as public API.
 - Free-function `subscribe` is `[[nodiscard]]`; discarding the returned `Subscription` disconnects immediately.
 
 #### Subscribing
@@ -197,8 +201,9 @@ events::publish(LogEvent{"message"});
 #### Production status of LogEvent / AppLog
 
 - The stock application does **not** publish `LogEvent` in production code. Absence of production LogEvent publishers is intentional pedagogy, not an unfinished feature.
-- `AppLogPresenter` and `ConsoleLogService` demonstrate EventSystem **subscription** wiring (QObject receiver + free-function service registration).
-- This is an **architectural demonstration**, not a live end-to-end event flow.
+- Production **subscription** wiring exists: `AppLogPresenter` (QObject receiver, constructed by `AppMainWindow`) and `ConsoleLogService` (free-function, registered in `services::registerAll()`).
+- AppLog's real feature data path is model signals (`logChanged` / `logCleared`); the LogEvent bus path is demonstration wiring without a production feed.
+- This is an **architectural demonstration** of EventSystem subscription, not a live end-to-end event flow.
 - Diagnostic logging (`qC*` + message handler) never uses the EventSystem.
 - Applications that need cross-component events publish their own domain events from semantically honest sites (feature actions, lifecycle, etc.) — do not route diagnostic logs onto the bus.
 - `AppLogModel` persistence demonstrates **feature-state persistence** via `IPersistenceProvider`. It is **not** a recommendation that production diagnostic logs be persisted as application state.
@@ -222,15 +227,24 @@ events::publish(LogEvent{"message"});
 
 ### Persistence
 
+Persistence failures have three distinct layers — do not conflate them:
+
+| Layer | What it is | Who owns it |
+|---|---|---|
+| **Typed error representation** | `PersistenceResult<T>` / `PersistenceError` returned from `loadState`/`saveState` | Models forward results; composition root observes them |
+| **Diagnostic logging** | `qCWarning`/`qCDebug` on operational failures | **`FilePersistenceProvider` only** — models do not duplicate persistence diagnostics |
+| **Application-level handling** | What the app does with a failed save/load | Template default is log-and-continue at shutdown; applications may surface failures to users if their requirements demand it — the template adds no UI error path |
+
 - Models own application state.
 - Persistence providers own storage mechanics.
 - Persistence failures are explicit via `PersistenceResult<T>`.
 - Models take `IPersistenceProvider&` (required, not optional).
-- **`IModel::saveState()` returns `PersistenceResult<void>`.** Models forward the provider result; they do not flatten it. Load failures other than `NotFound` are logged by the provider; models branch on `NotFound` (first-run) vs operational errors without duplicate warnings.
+- **`IModel::saveState()` returns `PersistenceResult<void>`.** Models forward the provider result; they do not flatten it. `NotFound` is first-run state (silent). Operational load/save failures are logged by the provider; models branch on the result without emitting duplicate persistence diagnostics.
 - **`AppMainWindow` holds `QList<IModel*>` and loops every model in `closeEvent`.** The composition root observes results; the default shutdown policy is **log-and-continue** (never blocks close on persistence failure).
 - `FilePersistenceProvider` commits via `QSaveFile` atomic replace (not power-loss durability). Persistence-failure logging is owned by the provider; models forward results without logging save errors.
 - Use `toString(error)` for symbolic error logging.
 - Persistence keys embed the `APP_ID` compile definition from `app.env` (e.g. `APP_ID ".CounterState"`, `APP_ID ".AppLogState"`). Keys are strings passed to the provider; do not invent a separate key registry.
+- Storage path is `QStandardPaths::AppDataLocation + "/" + key + ".json"`. On Windows, `AppDataLocation` is the **Roaming** path (`AppLocalDataLocation` would be Local).
 
 #### Configuration channels
 
@@ -323,7 +337,7 @@ The slot name must match the `.ui` object name or the slot will never fire.
 10. Verify shutdown persistence (closeEvent loop covers the new model via `m_models`)
 11. Build and run the complete test suite: `./scripts/build.sh --test ON`
 
-`generate.sh` is the canonical starting point for new features. Generated output must match the reference implementation (`CounterModel` / `AppLogModel` conventions) — do not "correct" generated code into a different architecture.
+`generate.sh` is the canonical starting point for new features. Generated output matches the reference conventions (`CounterModel` / `AppLogModel`): provider-by-reference, `PersistenceResult` forwarding in `saveState()`, and `NotFound` as first-run in `loadState()`. Generated `saveState()` **calls the provider** (it does not silently return success). `loadState()` body remains feature-specific/TODO — fill it in. Do not "correct" generated code into a different architecture.
 
 The central layout is code-built in `AppMainWindow`; add feature widgets with `mainLayout->addWidget(...)`. Do not add feature widgets to `AppMainWindow.ui`.
 
@@ -340,13 +354,13 @@ services::registerAll()
     ↓
 application runs
     ↓
-services::unregisterAll()   // called from main() before QApplication destruction
+services::unregisterAll()   // called from main() on every path after registration
     ↓
 QApplication destruction
 ```
 
 - `registerAll()` is process-level from `main()` after QApplication construction; there is no AppMainWindow wiring.
-- `unregisterAll()` resets retained subscriptions; it is idempotent.
+- `unregisterAll()` resets retained subscriptions; it is idempotent. `main()` calls it on the normal path, the smoke-test path, **and** the exception catch paths — every path after `registerAll()` unregisters before returning.
 - Static file-scope `Subscription` storage remains the storage pattern for free-function handlers, but static storage is **not** the lifecycle mechanism — explicit `unregisterAll()` is.
 
 To add a new service:
@@ -380,7 +394,7 @@ There is no auto-registration macro. Registration is visible and explicit.
 - AppMainWindow is the composition root.
 - Shutdown is synchronous and deterministic.
 - `closeEvent` saves QSettings chrome + iterates `QList<IModel*>` calling `saveState()`; results are observed (logged via `qCDebug(appPersistence)` when error) but never block shutdown — no `processEvents()` pumping.
-- Service teardown is explicit: `services::unregisterAll()` runs from `main()` before QApplication destruction.
+- Service teardown is explicit: `services::unregisterAll()` runs from `main()` on every path after `registerAll()` (normal, smoke-test, and exception catch paths) before returning — and thus before `QApplication` destruction on those paths.
 - QObject destruction follows the ownership tree.
 
 ### Non-Goals

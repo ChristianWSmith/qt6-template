@@ -64,7 +64,10 @@ namespace events {
 ///     idempotent and independent of static destructor timing.
 ///
 /// API boundary
-///   - Public API is events::publish / events::subscribe only.
+///   - events::publish and events::subscribe (free functions) are the
+///     supported public-facing entry points. BusRegistry also exposes
+///     equivalent static operations; consumers should use the free-function
+///     facade.
 ///   - BusRegistry::dispatcher<T>() is an internal implementation detail
 ///     (private). Do not rely on direct dispatcher access.
 ///   - Runtime QVariant type check remains as defense-in-depth against
@@ -219,8 +222,8 @@ public:
   }
 
 private:
-  /// Internal implementation detail. Do not expose; public API is
-  /// events::publish / events::subscribe.
+  /// Internal implementation detail. Do not expose; use the free-function
+  /// events::publish / events::subscribe facade.
   template <EventType T> static EventDispatcher<T> &dispatcher() {
     const std::type_index type = typeid(T);
     std::unique_lock lock(instance().mutex_);
