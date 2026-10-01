@@ -64,7 +64,10 @@ namespace events {
 ///     idempotent and independent of static destructor timing.
 ///
 /// API boundary
-///   - Public API is events::publish / events::subscribe only.
+///   - events::publish and events::subscribe (free functions) are the
+///     supported public-facing entry points. BusRegistry also exposes
+///     equivalent static operations; consumers should use the free-function
+///     facade.
 ///   - BusRegistry::dispatcher<T>() is an internal implementation detail
 ///     (private). Do not rely on direct dispatcher access.
 ///   - Runtime QVariant type check remains as defense-in-depth against
@@ -119,6 +122,11 @@ public:
   using EventDispatcherBase::EventDispatcherBase;
 
   void publish(const T &event) {
+    if (!QCoreApplication::instance()) {
+      qCCritical(appEvent)
+          << "EventSystem: publish requires a running QCoreApplication";
+      return;
+    }
     emit eventPublished(QVariant::fromValue(event));
   }
 };
@@ -179,6 +187,12 @@ public:
   static void subscribe(Obj *receiver, void (Obj::*method)(const T &))
     requires(std::is_base_of_v<QObject, Obj>)
   {
+    if (!QCoreApplication::instance()) {
+      qCCritical(appEvent)
+          << "EventSystem: QObject subscribe requires a running"
+          << "QCoreApplication";
+      return;
+    }
     QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
@@ -219,14 +233,21 @@ public:
   }
 
 private:
-  /// Internal implementation detail. Do not expose; public API is
-  /// events::publish / events::subscribe.
+  /// Internal implementation detail. Do not expose; use the free-function
+  /// events::publish / events::subscribe facade.
   template <EventType T> static EventDispatcher<T> &dispatcher() {
     const std::type_index type = typeid(T);
     std::unique_lock lock(instance().mutex_);
 
     // Non-owning: QObject parent (QApplication) owns the dispatcher when one
     // exists. Raw pointer avoids double-delete against Qt parent/child.
+    //
+    // LIFETIME INVARIANT (do not "fix"):
+    //   After QCoreApplication destruction, entries in dispatchers_ dangle.
+    //   The map destructor must NEVER delete or dereference these pointers.
+    //   QObject parent/child already reclaimed the dispatcher objects.
+    //   Adding a BusRegistry destructor that iterates+deletes would
+    //   double-delete against Qt ownership.
     EventDispatcherBase *&basePtr = instance().dispatchers_[type];
     if (!basePtr) {
       // Parented to QCoreApplication when present (application-owned).

@@ -47,9 +47,7 @@ void AppLogModel::loadState() {
     if (result.error() == PersistenceError::NotFound) {
       return;
     }
-    qCDebug(appPersistence)
-        << "AppLogModel skipped load due to persistence error:"
-        << toString(result.error());
+    // Operational errors are logged by the provider; model only branches.
     return;
   }
 

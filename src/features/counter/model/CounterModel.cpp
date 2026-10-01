@@ -30,9 +30,7 @@ void CounterModel::loadState() {
     if (result.error() == PersistenceError::NotFound) {
       return;
     }
-    qCDebug(appPersistence)
-        << "CounterModel skipped load due to persistence error:"
-        << toString(result.error());
+    // Operational errors are logged by the provider; model only branches.
     return;
   }
   const QJsonObject &obj = result.value();

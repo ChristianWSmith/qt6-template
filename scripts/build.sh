@@ -6,7 +6,7 @@ source ${SCRIPT_DIR}/env.sh
 
 CMAKE_BUILD_TYPE="Release"
 BUILD_TESTING="ON"
-UPDATE_TRANSLATIONS="ON"
+UPDATE_TRANSLATIONS="OFF"
 CLEAN="OFF"
 
 while [[ $# -gt 0 ]]; do
@@ -47,6 +47,9 @@ if [ "${CLEAN}" == "ON" ]; then
 fi
 
 installPipenv
+
+# Architecture boundary checks are part of the local build loop (not CI-only).
+"${SCRIPT_DIR}/check-architecture-boundaries.sh"
 
 # Source re-discovery relies on file(GLOB_RECURSE ... CONFIGURE_DEPENDS).
 # If a generator ever misses a new file, touch CMakeLists.txt manually.

@@ -55,8 +55,9 @@ This will install the version of Qt specified in `app.env`.  It'll be installed 
 This script builds the application using Conan and CMake. With `--test ON` (default), it configures and builds **and then executes the test suite via CTest**.
 
 - **Default build type**: `Release`
-- **Default options**: `--test ON`, `--update-translations ON`, `--clean OFF`
+- **Default options**: `--test ON`, `--update-translations OFF`, `--clean OFF`
 - **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv)
+- **`--update-translations OFF`**: Default builds do not mutate tracked `resources/i18n/*.ts`; opt in with `ON` to refresh translation sources
 - **Test binary**: single hardcoded target `UnitTests` (no `UT_NAME` indirection); tests link `Qt6::Test`
 - **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
 - **Qt installation**: Automatically installs Qt if it's not already available
@@ -142,7 +143,7 @@ This project follows a **strictly modular feature-first architecture**. Each fea
 - `model/`: The data/state layer (e.g. `FooModel`). Implements `IModel`; `saveState()` returns `PersistenceResult<void>`.
 - `presenter/`: The logic and orchestration layer (e.g. `FooPresenter`)
 - `widget/`: The view/UI layer (e.g. `FooWidget`). UI slots follow Qt auto-connect naming (`on_<uiObjectName>_clicked` etc.); the slot name must match the `.ui` object name.
-- Tests are flat files under `tests/features/` (e.g. `tests/features/CounterTest.cpp`), not per-feature directories.
+- Feature tests are flat files under `tests/features/` (e.g. `tests/features/CounterTest.cpp`), not per-feature directories. Additional suites: `tests/{events,lifecycle,persistence,services}/`, `tests/MemoryPersistenceProvider.h`, `tests/sanity_test.cpp`.
 
 Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem), `services/` (registry + ConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets).
 
@@ -150,7 +151,7 @@ Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSy
 
 **Shutdown persistence:** `AppMainWindow` keeps a `QList<IModel*>`; `closeEvent` loops every model's `saveState()`, observes results, and logs-and-continues (never blocks close on persistence failure). Atomic replace via `QSaveFile` is not a power-loss durability guarantee.
 
-Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Public EventSystem API is `events::publish` / `events::subscribe` only. Diagnostic logging uses `qC*` — never the event system. The `AppLog` feature demonstrates EventSystem subscription as an architectural demonstration (no production publisher). `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
+Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Supported public-facing EventSystem API is `events::publish` / `events::subscribe` (free functions); `BusRegistry` exposes equivalent statics — use the free-function facade. Diagnostic logging uses `qC*` — never the event system. The `AppLog` feature demonstrates EventSystem **subscription** wiring (live subscribers, no production publisher); AppLog's real data path is model signals. `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
 
 See `AGENTS.md` for the full architectural contract.
 
@@ -165,7 +166,7 @@ This script bootstraps all required source and test files for a new module. It s
 
 It performs the following:
 
-- Validates the name format (must be TitleCase and a valid C++ identifier)
+- Validates the name format (leading uppercase + valid C++ identifier, regex `^[A-Z][A-Za-z0-9]*$`; strict PascalCase is not enforced)
 - Creates the appropriate directory structure
 - Generates `.h`, `.cpp`, and `.ui` files with placeholder logic
 - Substitutes or removes generation markers to tailor files per type

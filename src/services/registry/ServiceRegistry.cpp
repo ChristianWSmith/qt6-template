@@ -1,6 +1,7 @@
 #include "ServiceRegistry.hpp"
 #include "../ConsoleLogService.hpp"
 #include "../../events/LogEvent.h"
+#include "../../events/system/EventSystem.hpp"
 
 namespace services {
 

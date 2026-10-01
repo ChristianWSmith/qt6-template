@@ -6,8 +6,9 @@
 /// Lifecycle:
 ///   - Constructors may call loadState() to restore persisted state.
 ///   - Missing state (NotFound) is a normal first-run condition.
-///   - Other persistence errors are logged by the persistence provider,
-///     not the model; they do not prevent operation.
+///   - The persistence provider logs operational persistence failures.
+///     Models treat NotFound as first-run state and otherwise branch on the
+///     result without emitting duplicate persistence diagnostics.
 ///   - saveState() should be called when state needs to persist.
 ///   - saveState() returns the provider's PersistenceResult so callers
 ///     (e.g. the composition root) can observe outcomes. Models forward

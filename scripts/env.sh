@@ -75,8 +75,11 @@ export TESTS_DIR="${PROJECT_ROOT}/tests"
 export FEATURES_DIR="${SRC_DIR}/features"
 export WIDGETS_DIR="${SRC_DIR}/widgets"
 export TESTS_FEATURES_DIR="${TESTS_DIR}/features"
-export TESTS_WIDGETS_DIR="${TESTS_DIR}/widgets"
 export QT_QPA_PLATFORM_PLUGIN_PATH="${QT_PLATFORMS_DIR}"
+# Dev/CI parity: Qt tools and runtime DLLs/plugins must be on PATH for
+# ctest, the app binary, and scripts (CI already exported QT_BIN; this
+# makes local script runs match).
+export PATH="${QT_BIN}:${PATH}"
 export ROOT_CMAKE_LISTS="${PROJECT_ROOT}/CMakeLists.txt"
 export TEST_CMAKE_LISTS="${TESTS_DIR}/CMakeLists.txt"
 export RESOURCES_DIR="${PROJECT_ROOT}/resources"

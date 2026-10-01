@@ -6,6 +6,8 @@
 #   1. Feature widgets must not include model headers.
 #   2. Production logging must not reference EventSystem / LogEvent / publish.
 #   3. Feature models must not include widget headers.
+#   4. Feature models must not include EventSystem headers (bus use is
+#      presenter/service/composition-root territory in this template).
 #
 # Presenters and the composition root may include both model and widget —
 # they are wiring layers, not checked here.
@@ -56,6 +58,10 @@ fi
 
 # --- Rule 3: models must not include widget headers -------------------------
 check_layer_includes '*/model/*' 'widget/' 'model includes widget'
+
+# --- Rule 4: models must not include EventSystem headers --------------------
+check_layer_includes '*/model/*' 'EventSystem' 'model includes EventSystem'
+check_layer_includes '*/model/*' 'events/' 'model includes events/'
 
 # --- Result -----------------------------------------------------------------
 if [ "${fail}" -ne 0 ]; then

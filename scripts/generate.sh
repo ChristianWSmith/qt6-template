@@ -225,10 +225,11 @@ ${NAME_TITLE}Model::${NAME_TITLE}Model(IPersistenceProvider &provider,
 PersistenceResult<void> ${NAME_TITLE}Model::saveState() const {
   // QJsonObject obj;
   // obj[KEY_MY_VALUE] = m_myvalue;
-  // Provider owns error logging; forward the result to the caller
-  // (composition root observes outcomes at closeEvent).
-  // return m_provider.saveState(m_key, obj);
-  return PersistenceResult<void>::success();
+  // Generated saveState must not claim success without attempting
+  // persistence. Fill in the object schema, then forward the provider
+  // result (provider owns error logging; composition root observes it).
+  QJsonObject obj;
+  return m_provider.saveState(m_key, obj);
 }
 
 void ${NAME_TITLE}Model::loadState() {

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../../events/system/EventSystem.hpp"
-
 namespace services {
 
 /// Explicit service registration lifecycle:

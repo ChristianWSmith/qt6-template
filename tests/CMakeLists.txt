@@ -11,7 +11,6 @@ add_executable(UnitTests
 set_directory_properties(PROPERTIES QT_EXCLUDE_FROM_TRANSLATION ON)
 
 target_include_directories(UnitTests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include

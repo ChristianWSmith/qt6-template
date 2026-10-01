@@ -86,3 +86,32 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
     abort();
   }
 }
+
+void configureLogLevel(const std::string &levelStr) {
+  if (levelStr.empty()) {
+    return;
+  }
+
+  QStringList rules;
+  if (levelStr == "debug") {
+    rules << "*.debug=true" << "*.info=true" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "info") {
+    rules << "*.debug=false" << "*.info=true" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "warn" || levelStr == "warning") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=true"
+          << "*.critical=true";
+  } else if (levelStr == "error") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
+          << "*.critical=true";
+  } else if (levelStr == "none") {
+    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
+          << "*.critical=false";
+  } else {
+    qCWarning(appMain) << "Unknown log level; leaving Qt logging rules"
+                       << "unchanged:" << levelStr.c_str();
+    return;
+  }
+  QLoggingCategory::setFilterRules(rules.join('\n'));
+}

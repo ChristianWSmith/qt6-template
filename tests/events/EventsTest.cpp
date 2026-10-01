@@ -1,8 +1,10 @@
 // NOLINTBEGIN
 #include "events/system/EventSystem.hpp"
+#include <QCoreApplication>
 #include <QObject>
 #include <QPointer>
 #include <QTest>
+#include <QVariant>
 #include <gtest/gtest.h>
 
 struct Event {
@@ -486,6 +488,55 @@ TEST_F(EventTest, TypeMismatchDoesNotDeliverWrongData) {
   events::publish(EventA{99});
   QTest::qWait(1);
   EXPECT_EQ(a, 99);
+}
+
+// Wave 3: same-type recursive publish is queued, not stack-recursive.
+class RecursiveSameTypePublisher : public QObject {
+  Q_OBJECT
+public:
+  int *count;
+  explicit RecursiveSameTypePublisher(int *c) : count(c) {}
+
+public slots:
+  void onEvent(const Event &e) {
+    ++(*count);
+    if (*count == 1) {
+      events::publish(Event{e.value + 1});
+    }
+  }
+};
+
+TEST_F(EventTest, SameTypeRecursivePublishIsQueuedNotStackRecursive) {
+  int count = 0;
+  RecursiveSameTypePublisher receiver(&count);
+  events::subscribe<Event>(&receiver, &RecursiveSameTypePublisher::onEvent);
+
+  events::publish(Event{1});
+  // Two event-loop iterations: original + recursive publish.
+  QTest::qWait(50);
+
+  EXPECT_EQ(count, 2)
+      << "Same-type recursive publish should deliver exactly once more";
+}
+
+// Wave 3: type-mismatch branch via direct signal abuse (findChildren path).
+// Typed public API cannot produce a mismatch; this locks defense-in-depth.
+TEST_F(EventTest, TypeMismatchViaDirectSignalIsNotDelivered) {
+  int received = 0;
+  IntReceiver receiver(&received);
+  events::subscribe<Event>(&receiver, &IntReceiver::receive);
+
+  auto dispatchers =
+      QCoreApplication::instance()->findChildren<events::EventDispatcherBase *>();
+  ASSERT_FALSE(dispatchers.empty());
+
+  const QVariant wrong = QVariant::fromValue(Event2{QStringLiteral("mismatch")});
+  QMetaObject::invokeMethod(dispatchers.first(), "eventPublished",
+                            Qt::DirectConnection, Q_ARG(QVariant, wrong));
+
+  QTest::qWait(20);
+  EXPECT_EQ(received, 0)
+      << "Mismatched QVariant must not deliver to typed Event subscribers";
 }
 
 #include "EventsTest.moc"
