@@ -9,10 +9,14 @@
 #include <QHBoxLayout>
 #include <QWidget>
 
-AppMainWindow::AppMainWindow(QWidget *parent)
+AppMainWindow::AppMainWindow(IPersistenceProvider *provider, QWidget *parent)
     : QMainWindow(parent), ui(std::make_unique<Ui::AppMainWindow>()),
       // Provider first: models bind a non-owning IPersistenceProvider&.
-      m_provider(new FilePersistenceProvider(this)),
+      // External providers are non-owning (caller-owned, must outlive this
+      // window); nullptr constructs a FilePersistenceProvider child of this
+      // window (default path). Do not reparent an injected provider.
+      m_provider(provider != nullptr ? provider
+                                    : new FilePersistenceProvider(this)),
       m_counterModel(new CounterModel(*m_provider, this)),
       m_counterWidget(new CounterWidget(this)),
       m_counterPresenter(

@@ -29,6 +29,22 @@ target_link_libraries(UnitTests PRIVATE
     fmt::fmt
 )
 
+# Embed style resources into UnitTests so theme tests can access :/styles/
+# QSS files used by platform/theme/theme.hpp. qt_standard_project_setup does
+# not enable AUTORCC (only AUTOMOC/AUTOUIC), so a bare .qrc source is a no-op.
+# Explicit qt_add_resources embeds only the style files — not exe packaging
+# extras (icons, .rc) — via rcc into this target.
+qt_add_resources(UnitTests "unit_test_theme_resources"
+    PREFIX "/"
+    BASE "${CMAKE_SOURCE_DIR}/resources"
+    FILES
+        "${CMAKE_SOURCE_DIR}/resources/styles/custom.qss"
+        "${CMAKE_SOURCE_DIR}/resources/styles/linux/base.qss"
+        "${CMAKE_SOURCE_DIR}/resources/styles/macos/base.qss"
+        "${CMAKE_SOURCE_DIR}/resources/styles/windows/dark.qss"
+        "${CMAKE_SOURCE_DIR}/resources/styles/windows/light.qss"
+)
+
 include(GoogleTest)
 gtest_discover_tests(UnitTests
   DISCOVERY_TIMEOUT 30

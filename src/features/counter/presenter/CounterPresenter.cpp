@@ -20,13 +20,19 @@ CounterPresenter::CounterPresenter(CounterModel *model, CounterWidget *view,
 }
 
 void CounterPresenter::handleIncrementRequest() {
+  if (!m_model)
+    return;
   m_model->increment();
 }
 
 void CounterPresenter::handleResetRequest() {
+  if (!m_model)
+    return;
   m_model->reset();
 }
 
 void CounterPresenter::handleCounterValueChanged(int newValue) {
+  if (!m_view)
+    return;
   m_view->displayCounter(newValue);
 }

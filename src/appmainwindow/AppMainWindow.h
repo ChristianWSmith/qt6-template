@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../core/IPersistenceProvider.h"
 #include "../core/IModel.h"
 #include "../platform/core/FilePersistenceProvider.h"
 #include "ui_AppMainWindow.h"
@@ -22,16 +23,22 @@ QT_END_NAMESPACE
 /// Composition root. Owns feature objects via Qt parent-child ownership.
 ///
 /// Ownership model:
-///   - QObject feature objects (provider, models, widgets, presenters):
-///     Qt parent-child (parent = this). Widgets may be reparented into the
-///     layout container; they remain owned by this window's QObject tree.
+///   - QObject feature objects (models, widgets, presenters): Qt parent-child
+///     (parent = this). Widgets may be reparented into the layout container;
+///     they remain owned by this window's QObject tree.
+///   - Persistence provider: when the ctor's @p provider argument is nullptr,
+///     a FilePersistenceProvider is constructed as a child of this window
+///     (default path, owned via Qt parent-child). When a non-null provider is
+///     injected, it is non-owning — the caller owns lifetime and it MUST
+///     outlive this window. An injected provider is NOT reparented unless it
+///     already has a suitable parent.
 ///   - Presenters hold non-owning raw pointers to model and widget.
 ///   - Models hold non-owning IPersistenceProvider& to the provider.
 ///
 /// Lifetime invariants:
 ///   - Member declaration order is CONSTRUCTION order (not a Qt destruction-order
 ///     guarantee). Qt does not guarantee arbitrary QObject destruction order.
-///   - m_provider is constructed before every model that references it.
+///   - m_provider is bound before every model that references it.
 ///   - For each feature, model and widget are constructed before the presenter.
 ///   - Ownership is Qt parent-child: QObject children of this window die with it.
 ///   - Presenter pointers are non-owning. Presenter destructors must NOT
@@ -43,7 +50,13 @@ class AppMainWindow : public QMainWindow {
   Q_OBJECT
 
 public:
-  explicit AppMainWindow(QWidget *parent = nullptr);
+  /// @param provider Optional external persistence provider. When non-null the
+  ///   caller owns it and it must outlive this window; AppMainWindow does not
+  ///   reparent it. When nullptr (default), a FilePersistenceProvider is
+  ///   constructed as a child of this window.
+  /// @param parent Optional Qt parent widget.
+  explicit AppMainWindow(IPersistenceProvider *provider = nullptr,
+                         QWidget *parent = nullptr);
   ~AppMainWindow();
 
   AppMainWindow(const AppMainWindow &) = delete;
@@ -56,8 +69,9 @@ public:
 private:
   std::unique_ptr<Ui::AppMainWindow> ui;
 
-  // Construction order: provider before models. Not a destruction-order guarantee.
-  FilePersistenceProvider *m_provider;
+  // Bound before models (construction order). Non-owning: either the
+  // caller-injected provider or the internally constructed child.
+  IPersistenceProvider *m_provider;
 
   // Per feature: model and widget constructed before the presenter (non-owning refs).
   // Presenter destructors must not dereference these members.

@@ -9,6 +9,8 @@
 #include "features/counter/presenter/CounterPresenter.h"
 #include "features/counter/widget/CounterWidget.h"
 
+#include "MemoryPersistenceProvider.h"
+
 #include <QApplication>
 #include <QCloseEvent>
 #include <QFile>
@@ -119,6 +121,33 @@ TEST_F(LifecycleTest, CloseSavesFeatureStateEndToEnd) {
   ASSERT_TRUE(loadResult.hasValue())
       << "counter state missing after closeEvent";
   EXPECT_EQ(loadResult.value().value("value").toInt(), 1);
+}
+
+// AUD-014: external persistence provider injection seam. When the ctor is
+// given a non-null provider it must be used (non-owning; no internal
+// FilePersistenceProvider is constructed). A failing save at closeEvent must
+// be observed by the composition root and must NOT abort close — the
+// log-and-continue policy is unchanged.
+TEST_F(LifecycleTest, CloseContinuesWhenInjectedProviderSaveFails) {
+  MemoryPersistenceProvider provider;
+  provider.failNextSave(PersistenceError::CommitError);
+
+  // Provider declared before the window so it outlives it (destruction order
+  // is reverse of declaration; the injected provider is caller-owned).
+  AppMainWindow window(&provider);
+  window.show();
+  QApplication::processEvents();
+
+  // Injected provider path: no internal FilePersistenceProvider child.
+  EXPECT_EQ(window.findChildren<FilePersistenceProvider *>().size(), 0);
+
+  QCloseEvent closeEvent;
+  QApplication::sendEvent(&window, &closeEvent);
+
+  // Contract: save failure → result observed → diagnostic → close continues.
+  // Close must be accepted (not rejected/aborted) and the window hidden.
+  EXPECT_TRUE(closeEvent.isAccepted());
+  EXPECT_TRUE(window.isHidden());
 }
 
 #include "LifecycleTest.moc"

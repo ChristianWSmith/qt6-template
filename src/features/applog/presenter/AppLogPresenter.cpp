@@ -25,17 +25,25 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
 }
 
 void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
+  if (!m_model)
+    return;
   m_model->addLogMessage(QString::fromStdString(event.message));
 }
 
 void AppLogPresenter::handleLogChanged(const LogDelta &logDelta) {
+  if (!m_view)
+    return;
   m_view->handleLogChanged(logDelta);
 }
 
 void AppLogPresenter::handleLogCleared() {
+  if (!m_view)
+    return;
   m_view->clear();
 }
 
 void AppLogPresenter::handleClearRequested() {
+  if (!m_model)
+    return;
   m_model->clear();
 }

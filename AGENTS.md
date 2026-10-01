@@ -229,7 +229,7 @@ events::publish(LogEvent{"message"});
 - `Subscription` owns its connection lifetime (RAII); free-function subscribe requires retaining the returned handle
 - Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present); the registry map is cleared on `aboutToQuit` before those objects are destroyed
 - Models take `IPersistenceProvider&` (required, non-owning reference)
-- Presenter holds non-owning raw pointers to model/widget; presenter destructors must not dereference them
+- Presenters hold non-owning `QPointer` refs to model/widget; presenter slots null-guard before calling into them; presenter destructors must not dereference them
 - Member declaration order in AppMainWindow is construction order only — not a Qt destruction-order guarantee
 - Qt signals/slots auto-disconnect when either QObject (sender or receiver) is destroyed
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child

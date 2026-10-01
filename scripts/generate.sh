@@ -262,6 +262,7 @@ cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h" <<EOF
 #include "../model/${NAME_TITLE}Model.h"
 #include "../widget/${NAME_TITLE}Widget.h"
 #include <QObject>
+#include <QPointer>
 
 class ${NAME_TITLE}Presenter : public QObject {
   Q_OBJECT
@@ -277,11 +278,13 @@ private slots:
 private:
   friend class ${NAME_TITLE}Test;
 
-  // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
+  // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
+  // Slots null-guard before calling into model/widget (dependencies may be
+  // destroyed mid-session; QPointer observes destruction and reports null).
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.
-  ${NAME_TITLE}Model *m_model;
-  ${NAME_TITLE}Widget *m_view;
+  QPointer<${NAME_TITLE}Model> m_model;
+  QPointer<${NAME_TITLE}Widget> m_view;
 };
 
 EOF
@@ -309,7 +312,21 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   qCDebug(appFeature) << "${NAME_TITLE}Presenter instantiated";
 }
 
-// Implements presenter slots
+// Implements presenter slots.
+// Null-guard before calling into model/widget — dependencies may be
+// destroyed mid-session while the presenter remains alive; QPointer
+// observes destruction and reports null.
+// Example:
+// void ${NAME_TITLE}Presenter::handleSomeAction() {
+//   if (!m_model)
+//     return;
+//   m_model->doSomething();
+// }
+// void ${NAME_TITLE}Presenter::handleSomeStateChanged(...) {
+//   if (!m_view)
+//     return;
+//   m_view->refresh(...);
+// }
 
 EOF
 format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp"

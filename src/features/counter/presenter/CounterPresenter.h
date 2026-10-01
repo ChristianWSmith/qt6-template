@@ -3,6 +3,7 @@
 #include "../model/CounterModel.h"
 #include "../widget/CounterWidget.h"
 #include <QObject>
+#include <QPointer>
 
 class CounterPresenter : public QObject {
   Q_OBJECT
@@ -17,9 +18,11 @@ private slots:
   void handleCounterValueChanged(int newValue);
 
 private:
-  // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
+  // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
+  // Slots null-guard before calling into model/widget (dependencies may be
+  // destroyed mid-session; QPointer observes destruction and reports null).
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.
-  CounterModel *m_model;
-  CounterWidget *m_view;
+  QPointer<CounterModel> m_model;
+  QPointer<CounterWidget> m_view;
 };
