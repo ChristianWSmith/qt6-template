@@ -137,10 +137,10 @@ TEST_F(CounterTest, OperationalLoadErrorLeavesDefaultState) {
 }
 
 TEST_F(CounterTest, SaveFailureIsForwardedToCaller) {
-  provider.failNextSave(PersistenceError::DurabilityFailure);
+  provider.failNextSave(PersistenceError::CommitError);
   const auto result = model.saveState();
   ASSERT_TRUE(result.hasError());
-  EXPECT_EQ(result.error(), PersistenceError::DurabilityFailure);
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
 }
 
 #include "CounterTest.moc"

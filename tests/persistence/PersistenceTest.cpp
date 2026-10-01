@@ -17,13 +17,16 @@ protected:
   }
 
   void SetUp() override {
-    // Probe durability in the test-mode AppDataLocation (see tests/main.cpp).
-    const QString probeKey = uniqueKey("fsync_probe");
+    // Probe that atomic replace (QSaveFile::commit) works in the test-mode
+    // AppDataLocation (see tests/main.cpp). CommitError means commit/replace
+    // failed — not an fsync/durability observation (Qt does not surface those).
+    const QString probeKey = uniqueKey("commit_probe");
     QJsonObject probeObj;
     auto result = provider.saveState(probeKey, probeObj);
     if (result.hasError() &&
-        result.error() == PersistenceError::DurabilityFailure) {
-      GTEST_SKIP() << "fsync not supported in this environment";
+        result.error() == PersistenceError::CommitError) {
+      GTEST_SKIP() << "QSaveFile commit/replace not supported in this"
+                    << " environment";
     }
   }
 };

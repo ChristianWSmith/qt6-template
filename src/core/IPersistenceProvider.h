@@ -12,7 +12,10 @@ enum class PersistenceError : std::uint8_t {
   NotFound,
   IoError,
   InvalidData,
-  DurabilityFailure,
+  /// QSaveFile::commit() failed (atomic replace did not complete).
+  /// Not a power-loss durability guarantee — Qt does not surface fsync
+  /// errors from commit(); see FilePersistenceProvider.
+  CommitError,
 };
 
 constexpr std::string_view toString(PersistenceError error) {
@@ -20,7 +23,7 @@ constexpr std::string_view toString(PersistenceError error) {
   case PersistenceError::NotFound: return "NotFound";
   case PersistenceError::IoError: return "IoError";
   case PersistenceError::InvalidData: return "InvalidData";
-  case PersistenceError::DurabilityFailure: return "DurabilityFailure";
+  case PersistenceError::CommitError: return "CommitError";
   }
   return "Unknown";
 }

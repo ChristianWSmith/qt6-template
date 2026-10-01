@@ -45,11 +45,11 @@ TEST_F(PersistenceResultTest, VoidFailureIoError) {
   EXPECT_EQ(result.error(), PersistenceError::IoError);
 }
 
-TEST_F(PersistenceResultTest, JsonObjectFailureDurabilityFailure) {
+TEST_F(PersistenceResultTest, JsonObjectFailureCommitError) {
   auto result = PersistenceResult<QJsonObject>::failure(
-      PersistenceError::DurabilityFailure);
+      PersistenceError::CommitError);
   EXPECT_TRUE(result.hasError());
-  EXPECT_EQ(result.error(), PersistenceError::DurabilityFailure);
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
 }
 
 TEST_F(PersistenceResultTest, SuccessResultDoesNotReportError) {

@@ -90,9 +90,9 @@ FilePersistenceProvider::saveState(const QString &key,
   if (!file.commit()) {
     qCWarning(appPersistence)
         << "Persistence save failed for key:" << key << "-"
-        << toString(PersistenceError::DurabilityFailure)
-        << "- QSaveFile commit failed";
-    return PersistenceResult<void>::failure(PersistenceError::DurabilityFailure);
+        << toString(PersistenceError::CommitError)
+        << "- QSaveFile commit failed (atomic replace did not complete)";
+    return PersistenceResult<void>::failure(PersistenceError::CommitError);
   }
 
   return PersistenceResult<void>::success();
