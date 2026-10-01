@@ -10,7 +10,7 @@
 #include <QWidget>
 
 AppMainWindow::AppMainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::AppMainWindow),
+    : QMainWindow(parent), ui(std::make_unique<Ui::AppMainWindow>()),
       // Provider first: models bind a non-owning IPersistenceProvider&.
       m_provider(new FilePersistenceProvider(this)),
       m_counterModel(new CounterModel(*m_provider, this)),
@@ -50,7 +50,7 @@ AppMainWindow::AppMainWindow(QWidget *parent)
   setCentralWidget(containerWidget);
 }
 
-AppMainWindow::~AppMainWindow() { delete ui; }
+AppMainWindow::~AppMainWindow() = default;
 
 void AppMainWindow::closeEvent(QCloseEvent *event) {
   this->hide();

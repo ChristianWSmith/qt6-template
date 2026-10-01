@@ -1,8 +1,8 @@
 #include "ReusableWidget.h"
 
 ReusableWidget::ReusableWidget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::ReusableWidget) {
+    : QWidget(parent), ui(std::make_unique<Ui::ReusableWidget>()) {
   ui->setupUi(this);
 }
 
-ReusableWidget::~ReusableWidget() { delete ui; }
+ReusableWidget::~ReusableWidget() = default;

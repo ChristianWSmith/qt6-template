@@ -31,8 +31,6 @@ signals:
   void logCleared();
 
 private:
-  friend class AppLogTest;
-
   IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".AppLogState"};
 

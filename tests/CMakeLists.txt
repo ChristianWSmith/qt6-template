@@ -10,10 +10,10 @@ add_executable(UnitTests
 
 set_directory_properties(PROPERTIES QT_EXCLUDE_FROM_TRANSLATION ON)
 
+# Autogen include dir comes from ${APP_NAME}_lib INTERFACE usage requirements.
 target_include_directories(UnitTests PRIVATE
     ${CMAKE_SOURCE_DIR}/tests
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
 apply_app_metadata(UnitTests)

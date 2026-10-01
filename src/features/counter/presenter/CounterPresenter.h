@@ -17,7 +17,6 @@ private slots:
   void handleCounterValueChanged(int newValue);
 
 private:
-  friend class CounterTest;
   // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.

@@ -75,6 +75,7 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
 #pragma once
 <GEN:COMMON_H>
 #include "ui_${NAME_TITLE}Widget.h"
+#include <memory>
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -102,7 +103,7 @@ private slots:
 
 private:
   <GEN:FRIEND_TEST>
-  Ui::${NAME_TITLE}Widget *ui;
+  std::unique_ptr<Ui::${NAME_TITLE}Widget> ui;
 };
 
 EOF
@@ -112,11 +113,11 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp" <<EOF
 #include "${NAME_TITLE}Widget.h"
 
 ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::${NAME_TITLE}Widget) {
+    : QWidget(parent), ui(std::make_unique<Ui::${NAME_TITLE}Widget>()) {
   ui->setupUi(this);
 }
 
-${NAME_TITLE}Widget::~${NAME_TITLE}Widget() { delete ui; }
+${NAME_TITLE}Widget::~${NAME_TITLE}Widget() = default;
 
 // Implements UI slots, typically emitting signals to the Presenter.
 // Slot names must follow Qt auto-connect convention: on_<uiObjectName>_clicked

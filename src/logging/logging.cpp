@@ -1,4 +1,9 @@
 #include "logging.h"
+#include <QDateTime>
+#include <QDebug>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QStringList>
 #include <fmt/format.h>
 #include <iostream>
 

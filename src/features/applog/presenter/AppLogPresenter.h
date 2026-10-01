@@ -24,7 +24,6 @@ private slots:
   void handleClearRequested();
 
 private:
-  friend class AppLogTest;
   // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.

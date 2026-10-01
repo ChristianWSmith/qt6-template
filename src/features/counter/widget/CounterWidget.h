@@ -1,6 +1,7 @@
 #pragma once
 #include "../countercommon.h"
 #include "ui_CounterWidget.h"
+#include <memory>
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -30,6 +31,5 @@ private slots:
   void on_resetButton_clicked();
 
 private:
-  friend class CounterTest;
-  Ui::CounterWidget *ui;
+  std::unique_ptr<Ui::CounterWidget> ui;
 };

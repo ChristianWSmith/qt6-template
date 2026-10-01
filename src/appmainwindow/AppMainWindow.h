@@ -5,6 +5,7 @@
 #include "ui_AppMainWindow.h"
 #include <QList>
 #include <QMainWindow>
+#include <memory>
 
 #include "../features/counter/model/CounterModel.h"
 #include "../features/counter/presenter/CounterPresenter.h"
@@ -53,7 +54,7 @@ public:
   void closeEvent(QCloseEvent *event) override;
 
 private:
-  Ui::AppMainWindow *ui;
+  std::unique_ptr<Ui::AppMainWindow> ui;
 
   // Construction order: provider before models. Not a destruction-order guarantee.
   FilePersistenceProvider *m_provider;

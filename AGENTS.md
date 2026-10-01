@@ -65,7 +65,7 @@ src/
   4. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
   5. `src/core` must not include `widgets/`, `events/`, or `features/`.
   Presenters, `src/appmainwindow/`, `src/main.cpp`, and `tests/` are exempt (wiring/bootstrap/tests). `src/events` → `src/logging` is an **allowed** direction.
-- **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
+- **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `std::unique_ptr<Ui::ReusableWidget>`, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)
 

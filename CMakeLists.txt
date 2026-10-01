@@ -13,10 +13,6 @@ endforeach()
 project(${APP_NAME} VERSION ${APP_VERSION} LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -38,7 +34,9 @@ add_library(${APP_NAME}_lib STATIC
 )
 
 function(apply_app_metadata target)
-    target_compile_definitions(${target} PRIVATE
+    # PUBLIC so consumers of ${APP_NAME}_lib (exe, tests) inherit definitions
+    # required by PUBLIC headers (e.g. APP_ID in model headers).
+    target_compile_definitions(${target} PUBLIC
         APP_NAME="${APP_NAME}"
         APP_DESCRIPTION="${APP_DESCRIPTION}"
         APP_VERSION="${APP_VERSION}"
@@ -53,9 +51,16 @@ target_link_libraries(${APP_NAME}_lib PRIVATE
 )
 
 # Consumers (exe, tests) inherit src/ via the library. Do not re-state it.
+# AUTOUIC generates ui_*.h under ${CMAKE_CURRENT_BINARY_DIR}/${target}_autogen/include
+# (CMake AUTOUIC layout). Expose that dir once as INTERFACE on the lib so
+# consumers inherit it by linking — not via duplicated per-consumer paths.
+# Note: $<TARGET_PROPERTY:tgt,AUTOGEN_BUILD_DIR> on the same target evaluates
+# empty at generate time; use the documented default path instead.
 target_include_directories(${APP_NAME}_lib
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+    INTERFACE
+        ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
 if(APPLE)
@@ -79,10 +84,6 @@ apply_app_metadata(${APP_NAME})
 
 qt_add_translations(${APP_NAME}
     TS_FILE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/i18n"
-)
-
-target_include_directories(${APP_NAME} PRIVATE
-    ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
 # cxxopts is an application-CLI dependency (main.cpp only), not a lib dependency.

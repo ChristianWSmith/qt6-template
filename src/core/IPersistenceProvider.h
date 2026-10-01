@@ -1,6 +1,6 @@
 #pragma once
 #include <QJsonObject>
-#include <QObject>
+#include <QString>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>

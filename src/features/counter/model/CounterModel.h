@@ -23,8 +23,6 @@ signals:
   void valueChanged(int _t1);
 
 private:
-  friend class CounterTest;
-
   IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".CounterState"};
 

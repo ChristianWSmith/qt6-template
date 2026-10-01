@@ -3,6 +3,7 @@
 #include "ui_AppLogWidget.h"
 
 #include "../applogcommon.h"
+#include <memory>
 #include <QString>
 #include <QWidget>
 
@@ -33,6 +34,5 @@ private slots:
   void on_clearButton_clicked();
 
 private:
-  friend class AppLogTest;
-  Ui::AppLogWidget *ui;
+  std::unique_ptr<Ui::AppLogWidget> ui;
 };

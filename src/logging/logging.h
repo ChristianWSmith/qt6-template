@@ -1,12 +1,7 @@
 #pragma once
 
-#include <QCoreApplication>
-#include <QDateTime>
-#include <QDebug>
 #include <QLoggingCategory>
-#include <QMutex>
-#include <QMutexLocker>
-#include <QStringList>
+#include <QString>
 
 #include <string>
 
