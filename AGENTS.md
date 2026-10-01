@@ -24,7 +24,7 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 ./scripts/run.sh --rebuild ON -- <args>     # Force rebuild, pass args to app
 ```
 
-Most scripts use `pipenv run` under the hood (auto-installs pipenv on first run).
+Most scripts use `pipenv run` under the hood. The scripts do **not** install the pipenv tool itself: `scripts/env.sh`'s `installPipenv` runs `pipenv install --dev` (installs the Pipfile packages into the project `.venv`; it requires the pipenv tool to already be available). CI installs the tool via `pip install pipenv` before invoking `pipenv install --dev --deploy`.
 **Exception:** `build.sh --test ON` runs `ctest` directly after the Conan build (not via `pipenv run`); `run.sh` default `--test` is OFF. Other tool invocations (conan, aqt, clang-format paths) go through pipenv.
 
 **Translations default OFF:** `build.sh` defaults `UPDATE_TRANSLATIONS` to `OFF` so normal builds do not mutate tracked `resources/i18n/*.ts`. Opt in with `--update-translations ON` when you intentionally refresh translation sources.
@@ -99,7 +99,9 @@ Name must start with an uppercase letter and be a valid C++ identifier (regex `^
 - Tests are discovered via `gtest_discover_tests` (POST_BUILD default mode)
 - Run tests: `./scripts/build.sh --test ON` (default) which builds **and executes** the suite via CTest (ctest runs outside pipenv; `QT_QPA_PLATFORM` defaults to `offscreen` when tests are ON, applied before the build so test discovery is headless too)
 - CI runs the same path on Linux/Windows/macOS, plus `scripts/test-generator.sh`
-- Generated test files include `.moc` include at bottom — required for Qt meta-object compilation in test files
+- Generated test files include a `.moc` include at the bottom. It is **required** when the test `.cpp` defines `Q_OBJECT` (e.g. `tests/events/EventsTest.cpp`); feature fixtures without `Q_OBJECT` compile an empty moc — the include is harmless convention there, not a hard requirement for every test file.
+
+**Test-mode isolation contract:** `tests/main.cpp` enables Qt test mode (`QStandardPaths::setTestModeEnabled(true)`) and redirects QSettings UserScope paths to a temp dir **before** any test constructs persistence providers or windows. New test targets must preserve this contract — tests never write real `AppDataLocation` data or the developer's organization/application settings.
 
 ## Dependencies
 
@@ -255,6 +257,14 @@ Persistence failures have three distinct layers — do not conflate them:
 - Use `toString(error)` for symbolic error logging.
 - Persistence keys embed the `APP_ID` compile definition from `app.env` (e.g. `APP_ID ".CounterState"`, `APP_ID ".AppLogState"`). Keys are strings passed to the provider; do not invent a separate key registry.
 - Storage path is `QStandardPaths::AppDataLocation + "/" + key + ".json"`. On Windows, `AppDataLocation` is the **Roaming** path (`AppLocalDataLocation` would be Local).
+
+#### Consumer-facing consequences
+
+- `closeEvent` never blocks shutdown on save failure (log-and-continue; see the composition-root bullet above). QSettings chrome (geometry/state) save is a separate channel from feature-state persistence, and failures there are also non-blocking at shutdown.
+- `QSaveFile` atomic replace is not power-loss durability: `PersistenceError::CommitError` means `QSaveFile::commit()` failed (the atomic replace did not complete); Qt does not surface fsync errors from `commit()`.
+- Corruption may present as first-run (`NotFound`) on load — an unreadable or damaged key is indistinguishable from never-saved state at the load boundary.
+- The `PersistenceError` taxonomy distinctions are load-bearing: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
+- AppDataLocation precondition: feature-state storage paths use `QStandardPaths::AppDataLocation`. Tests enable Qt test mode (`QStandardPaths::setTestModeEnabled(true)` in `tests/main.cpp`) so test runs never write the developer's real application data — new test targets inherit this contract.
 
 #### Configuration channels
 

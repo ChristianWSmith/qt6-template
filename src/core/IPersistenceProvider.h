@@ -108,6 +108,13 @@ private:
   std::optional<PersistenceError> err_;
 };
 
+/// Storage-mechanics boundary for feature-state persistence.
+///
+/// Threading/lifetime contract:
+///   - Persistence operations are synchronous and execute on the GUI thread.
+///   - Models hold `IPersistenceProvider&` (required, non-owning reference);
+///     the provider must outlive every model that references it.
+///   - This interface does not own models; models do not own providers.
 class IPersistenceProvider {
 public:
   IPersistenceProvider() = default;

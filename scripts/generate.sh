@@ -97,7 +97,8 @@ signals:
   // Signals emitted by this Widget to be connected to ${PRESENTER_STRING} Slots
 
 private slots:
-  // Slots for UI events (auto-connected by Qt Designer)
+  // Slots for UI events. Name them on_<uiObjectName>_... (Qt auto-connect);
+  // the name must match the .ui object name or the slot will never fire.
 
 private:
   <GEN:FRIEND_TEST>
@@ -117,7 +118,9 @@ ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
 
 ${NAME_TITLE}Widget::~${NAME_TITLE}Widget() { delete ui; }
 
-// Implements UI slots, typically emitting signals to the Presenter
+// Implements UI slots, typically emitting signals to the Presenter.
+// Slot names must follow Qt auto-connect convention: on_<uiObjectName>_clicked
+// (must match the .ui object name or the slot will never fire).
 
 EOF
 format "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp"
@@ -148,6 +151,10 @@ if [[ "${TYPE}" == "widget" ]]; then
   sed_inplace '/<GEN:COMMON_H>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   sed_inplace '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  echo "Generated ${NAME_TITLE}Widget."
+  echo ""
+  echo "Remaining composition-root wiring:"
+  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout."
   exit 0
 else
   sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
@@ -339,3 +346,11 @@ TEST_F(${NAME_TITLE}Test, Placeholder) {
 
 EOF
 format "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
+
+echo "Generated ${NAME_TITLE}."
+echo ""
+echo "Remaining composition-root wiring:"
+echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow's initializer list."
+echo "  2. Append ${NAME_TITLE}Model to m_models."
+echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
+echo "  4. Implement ${NAME_TITLE}Model::loadState()."

@@ -8,6 +8,8 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 
+  // Demonstration only — stock app never publishes LogEvent in production
+  // (see AGENTS.md Production status of LogEvent / AppLog).
   events::subscribe<LogEvent>(this, &AppLogPresenter::onLogEventReceived);
 
   connect(m_view, &AppLogWidget::clearRequested, this,

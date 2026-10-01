@@ -59,7 +59,7 @@ This script builds the application using Conan and CMake. With `--test ON` (defa
 - **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv)
 - **`--update-translations OFF`**: Default builds do not mutate tracked `resources/i18n/*.ts`; opt in with `ON` to refresh translation sources
 - **Test binary**: single hardcoded target `UnitTests` (no `UT_NAME` indirection); tests link `Qt6::Test`
-- **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
+- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; `${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe` on Windows (e.g. `build/Release/MyApp.exe`)
 - **Qt installation**: Automatically installs Qt if it's not already available
 - **Source discovery**: `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`; touch `CMakeLists.txt` manually only if a generator ever misses a new file (fallback, not the default path)
 
@@ -81,7 +81,7 @@ This will optionally build and then run the application.
 
 - **Default build type**: `Debug`
 - **Default options**: `--clean OFF`, `--rebuild OFF`, `--test OFF`, `--update-translations OFF`
-- **App output**: `${BUILD_DIR}/${APP_NAME}` (e.g. `build/MyApp`)
+- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; `${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe` on Windows (e.g. `build/Release/MyApp.exe`)
 - **Qt installation**: Automatically installs Qt if not found
 - **Platform-aware**: Handles `.exe` on Windows and `.app` bundles on macOS
 - **Source discovery**: Same `CONFIGURE_DEPENDS` glob as `build.sh`
@@ -89,22 +89,28 @@ This will optionally build and then run the application.
 #### Example
 
 ```bash
-./run.sh --build-type Release --rebuild ON --windowed --lang en
+./scripts/run.sh --build-type Release --rebuild ON
 ```
 
-This performs a Release build if needed and passes `--windowed --lang en` as arguments to the running app (not implemented here).
+This performs a Release build if needed and then runs the app. Arguments after `--` are forwarded to the running application (e.g. `-- --log debug`; the sample app accepts `--log`, `--smoke-test`, and `--help`).
 
 ## 📁 Project Structure
 
 ```
 .
 ├── scripts/                  # Developer façade (always prefer these over raw conan/cmake)
+├──── app-icon.sh             # Generate .ico/.icns/.png/.svg from a source icon
 ├──── build.sh                # Conan build + optional ctest (default --test ON)
-├──── run.sh                  # Debug-run (builds if needed)
+├──── check-architecture-boundaries.sh  # Heuristic source-pattern boundary check (also run by build.sh)
+├──── clean.sh                # Clean build dir and/or Qt install (build|qt|all)
+├──── conan-lock-update.sh    # Per-platform Conan locks, then merge
+├──── configure-vscode.sh     # Generate .vscode defaults (rerun after APP_NAME change)
+├──── dev-container.sh        # Launch the dev container
 ├──── env.sh                  # Sourced environment (loads app.env)
-├──── clean.sh                # Used to clean build/Qt dir(s)
 ├──── generate.sh             # Feature/widget scaffolding
 ├──── install-qt.sh           # aqtinstall → local Qt/ (gitignored)
+├──── run.sh                  # Debug-run (builds if needed)
+├──── test-generator.sh       # Generator smoke test (CI)
 ├── src/
 ├──── main.cpp                # Bootstrap; compiled into the APP_NAME executable (not _lib)
 ├──── appmainwindow/          # Composition root (AppMainWindow)
@@ -113,7 +119,7 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 ├──── features/<name>/        # {model,presenter,widget}/ per feature
 ├──── logging/                # qC* categories + message handler
 ├──── platform/               # {core/,theme/} FilePersistenceProvider, theme.hpp
-├──── services/               # ConsoleLogService + ServiceRegistry
+├──── services/               # ConsoleLogService + registry/
 ├──── widgets/<name>/         # Standalone widgets (e.g. ReusableWidget)
 ├── tests/
 ├──── features/               # Flat test files (e.g. CounterTest.cpp), not per-feature dirs
@@ -123,13 +129,15 @@ This performs a Release build if needed and passes `--windowed --lang en` as arg
 ├──── resources.qrc           # Qt resources (for baked-in files)
 ├──── icons/                  # Icons for the application
 ├──── i18n/                   # Qt translation files
+├──── styles/                 # Platform QSS under styles/{windows,linux,macos}/ + custom.qss override
 ├── .github/
 ├──── workflows/ci.yml        # Cross-platform build/test + bundle
 ├──── scripts/                # Platform packaging (AppImage, installers, .app)
 ├── app.env                   # App name, ID, version, Qt (used by all tools)
 ├── CMakeLists.txt            # CMake build script
 ├── conanfile.py              # Conan recipe (requires fmt/cxxopts; build_requires ninja; test_requires gtest)
-├── conan/                    # Conan profiles
+├── conan/                    # Conan profiles (conan/profiles/{linux,windows,darwin})
+├── conan.lock                # Merged multi-platform Conan lockfile
 ├── Pipfile                   # Used to manage conan / aqt
 └── Dockerfile                # Toolchain-only container (Qt still via aqtinstall → Qt/)
 ```
@@ -149,7 +157,7 @@ Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSy
 
 **Configuration channels:** `app.env` = build-time metadata SSOT; `QSettings(ORGANIZATION_NAME, APP_NAME)` = window/UI chrome (geometry/state); `IPersistenceProvider` = feature state (FilePersistenceProvider JSON via QSaveFile; MemoryPersistenceProvider test double). Persistence keys embed the `APP_ID` compile definition (e.g. `APP_ID ".CounterState"`).
 
-**Shutdown persistence:** `AppMainWindow` keeps a `QList<IModel*>`; `closeEvent` loops every model's `saveState()`, observes results, and logs-and-continues (never blocks close on persistence failure). Atomic replace via `QSaveFile` is not a power-loss durability guarantee.
+**Shutdown persistence:** `AppMainWindow` keeps a `QList<IModel*>`; `closeEvent` loops every model's `saveState()`, observes results, and logs-and-continues (never blocks close on persistence failure). Atomic replace via `QSaveFile` is not a power-loss durability guarantee — `PersistenceError::CommitError` means `QSaveFile::commit()` failed (the atomic replace did not complete).
 
 Intra-feature communication uses **Qt signals/slots**. Cross-component domain events use the centralized **EventSystem** (`src/events/`). Supported public-facing EventSystem API is `events::publish` / `events::subscribe` (free functions); `BusRegistry` exposes equivalent statics — use the free-function facade. Diagnostic logging uses `qC*` — never the event system. The `AppLog` feature demonstrates EventSystem **subscription** wiring (live subscribers, no production publisher); AppLog's real data path is model signals. `AppLog` persistence demonstrates feature-state persistence, not a recommendation to persist production diagnostic logs.
 
@@ -228,7 +236,7 @@ APP_NAME=MyApp
 APP_ID=com.example.MyApp
 APP_VERSION=0.1.0
 APP_DESCRIPTION="My App Description"
-APP_ORGANIZATION=MyOrganization
+ORGANIZATION_NAME=MyOrganization
 ```
 
 These values will flow automatically into:
@@ -243,14 +251,14 @@ These values will flow automatically into:
 
 ### Build Matrix
 
-- **Branches `main/develop` →** Release builds
+- **Branch `main` (push and PR) →** Release builds
 
-Each PR or push triggers a cross-platform build via `./scripts/build.sh --test ON`. CI also runs the architecture-boundary check (Linux) and the generator smoke test (`scripts/test-generator.sh`). For Windows, the artifact will be an application installer as well as a portable version. For Linux, you'll get an AppImage and a tarball. For macOS, you'll get a .app folder. Platform packaging lives in `.github/scripts/` (`linux-bundle-*.sh`, `mac-bundle-app.sh`, `windows-bundle.sh`); `CMakeLists.txt` `install()` covers only the executable target.
+Each PR or push to `main` triggers a cross-platform build via `./scripts/build.sh --test ON`. CI also runs the architecture-boundary check (Linux) and the generator smoke test (`scripts/test-generator.sh`). For Windows, the artifact will be an application installer as well as a portable version. For Linux, you'll get an AppImage and a tarball. For macOS, you'll get a .app folder. Platform packaging lives in `.github/scripts/` (`linux-bundle-*.sh`, `mac-bundle-app.sh`, `windows-bundle.sh`); `CMakeLists.txt` `install()` covers only the executable target.
 
 ## ✨ UI Development
 
 - Edit `.ui` files using **Qt Designer**
-- Edit `.ts` files in **Qt Linguist**.  You can always update these using `lupdate`/`lrelease`, or you can just have the included `scripts/build.sh` handle it automatically.
+- Edit `.ts` files in **Qt Linguist**. You can always update these using `lupdate`/`lrelease`, or opt in with `./scripts/build.sh --update-translations ON` (default builds do **not** update `.ts` files).
 - Add images or resources to `resources.qrc`
 
 ## 🐳 Dev Container
@@ -268,9 +276,9 @@ Highlights:
 
 To try it:
 
-'''bash
+```bash
 ./scripts/dev-container.sh
-'''
+```
 
 ## 🖼 Icon Generator
 
@@ -289,9 +297,9 @@ This ensures:
 
 Usage:
 
-'''bash
+```bash
 ./scripts/app-icon.sh path/to/source_icon.svg
-'''
+```
 
 Resulting icons are placed in `resources/icons/` and are automatically picked up by the build system.
 

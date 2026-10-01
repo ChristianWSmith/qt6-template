@@ -348,6 +348,9 @@ TEST_F(EventTest, SubscriptionMoveTransfersOwnership) {
   ASSERT_EQ(g_freeValue, 0);
 }
 
+// Note: after QCoreApplication teardown Qt invalidates connection handles;
+// Subscription reset()/~Subscription() are safe no-ops (inert) on such
+// handles — they do not depend on deleteLater().
 TEST_F(EventTest, SubscriptionResetStopsDelivery) {
   g_freeValue = 0;
 
@@ -427,10 +430,11 @@ TEST_F(EventTest, RepeatedResetIsSafe) {
 }
 
 TEST_F(EventTest, DispatchersAreApplicationOwned) {
-  // First use creates the dispatcher via the public publish API.
-  // BusRegistry::dispatcher<T>() is private (F-10); ownership is observable
-  // through the QObject parent tree — dispatchers are parented to
-  // QCoreApplication.
+  // White-box test: inspects internal dispatcher QObject parenting via
+  // findChildren — not public API usage. First use creates the dispatcher
+  // via the public publish API. BusRegistry::dispatcher<T>() is private
+  // (F-10); ownership is observable through the QObject parent tree —
+  // dispatchers are parented to QCoreApplication.
   events::publish(Event{1});
   QTest::qWait(1);
 
@@ -520,7 +524,9 @@ TEST_F(EventTest, SameTypeRecursivePublishIsQueuedNotStackRecursive) {
 }
 
 // Wave 3: type-mismatch branch via direct signal abuse (findChildren path).
-// Typed public API cannot produce a mismatch; this locks defense-in-depth.
+// White-box test: invokeMethod on the internal dispatcher QObject — not
+// public API usage. Typed public API cannot produce a mismatch; this locks
+// defense-in-depth.
 TEST_F(EventTest, TypeMismatchViaDirectSignalIsNotDelivered) {
   int received = 0;
   IntReceiver receiver(&received);
