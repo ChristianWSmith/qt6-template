@@ -126,6 +126,23 @@ TEST(CounterTeardownTest, PresenterSurvivesDependencyDestruction) {
   SUCCEED();
 }
 
+// F-13 — Failure injection through the model layer.
+TEST_F(CounterTest, OperationalLoadErrorLeavesDefaultState) {
+  model.increment();
+  ASSERT_TRUE(model.saveState().hasValue());
+
+  provider.failNextLoad(PersistenceError::IoError);
+  CounterModel reloaded(provider, nullptr);
+  EXPECT_EQ(reloaded.value(), 0);
+}
+
+TEST_F(CounterTest, SaveFailureIsForwardedToCaller) {
+  provider.failNextSave(PersistenceError::DurabilityFailure);
+  const auto result = model.saveState();
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::DurabilityFailure);
+}
+
 #include "CounterTest.moc"
 
 // NOLINTEND

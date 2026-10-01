@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../../logging/logging.h"
+
 #include <QApplication>
-#include <QDebug>
 #include <QFile>
 #include <QStyle>
 #include <QStyleFactory>
@@ -10,6 +11,7 @@
 // App-global bootstrap theming. Call once after window construction.
 // Empty platform QSS files mean Qt default styling; custom.qss is the
 // primary application override extension point (see AGENTS.md Build notes).
+// Windows also forces the Fusion style before applying platform QSS.
 
 inline bool isDarkMode() {
     return QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
@@ -18,7 +20,7 @@ inline bool isDarkMode() {
 inline QString loadQSS(const QString &path) {
   QFile file(path);
   if (!file.open(QFile::ReadOnly | QFile::Text)) {
-    qWarning("Could not open QSS file: %s", qUtf8Printable(path));
+    qCWarning(appFeature) << "Could not open QSS file:" << path;
     return "";
   }
   return QString::fromUtf8(file.readAll()).trimmed();

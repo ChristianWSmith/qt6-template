@@ -50,13 +50,12 @@ endfunction()
 target_link_libraries(${APP_NAME}_lib PRIVATE
     Qt6::Widgets
     fmt::fmt
-    cxxopts::cxxopts
 )
 
-apply_app_metadata(${APP_NAME}_lib)
-
-target_include_directories(${APP_NAME}_lib PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
+# Consumers (exe, tests) inherit src/ via the library. Do not re-state it.
+target_include_directories(${APP_NAME}_lib
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
 )
 
 if(APPLE)
@@ -67,6 +66,8 @@ if(APPLE)
 elseif(WIN32)
     list(APPEND RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/win_resources.rc)
 endif()
+
+apply_app_metadata(${APP_NAME}_lib)
 
 qt_add_executable(${APP_NAME}
     MANUAL_FINALIZATION
@@ -81,10 +82,10 @@ qt_add_translations(${APP_NAME}
 )
 
 target_include_directories(${APP_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_BINARY_DIR}/${APP_NAME}_lib_autogen/include
 )
 
+# cxxopts is an application-CLI dependency (main.cpp only), not a lib dependency.
 target_link_libraries(${APP_NAME} PRIVATE
     ${APP_NAME}_lib
     Qt6::Widgets

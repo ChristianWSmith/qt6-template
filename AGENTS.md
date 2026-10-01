@@ -56,6 +56,9 @@ src/
 - `app.env` is the single source of truth for app metadata
 - **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` in application code only if Qt-native CLI is a deliberate project choice; do not remove cxxopts solely because Qt has an equivalent.
 - **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
+- **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
+- **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`).
+- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). Rules include: widgets↛models, models↛widgets, models↛EventSystem, logging↛EventSystem.
 - **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)

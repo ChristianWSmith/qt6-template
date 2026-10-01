@@ -122,6 +122,11 @@ public:
   using EventDispatcherBase::EventDispatcherBase;
 
   void publish(const T &event) {
+    if (!QCoreApplication::instance()) {
+      qCCritical(appEvent)
+          << "EventSystem: publish requires a running QCoreApplication";
+      return;
+    }
     emit eventPublished(QVariant::fromValue(event));
   }
 };
@@ -182,6 +187,12 @@ public:
   static void subscribe(Obj *receiver, void (Obj::*method)(const T &))
     requires(std::is_base_of_v<QObject, Obj>)
   {
+    if (!QCoreApplication::instance()) {
+      qCCritical(appEvent)
+          << "EventSystem: QObject subscribe requires a running"
+          << "QCoreApplication";
+      return;
+    }
     QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
@@ -230,6 +241,13 @@ private:
 
     // Non-owning: QObject parent (QApplication) owns the dispatcher when one
     // exists. Raw pointer avoids double-delete against Qt parent/child.
+    //
+    // LIFETIME INVARIANT (do not "fix"):
+    //   After QCoreApplication destruction, entries in dispatchers_ dangle.
+    //   The map destructor must NEVER delete or dereference these pointers.
+    //   QObject parent/child already reclaimed the dispatcher objects.
+    //   Adding a BusRegistry destructor that iterates+deletes would
+    //   double-delete against Qt ownership.
     EventDispatcherBase *&basePtr = instance().dispatchers_[type];
     if (!basePtr) {
       // Parented to QCoreApplication when present (application-owned).

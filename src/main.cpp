@@ -16,26 +16,6 @@
 #include <fmt/format.h>
 #include <iostream>
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-std::optional<cxxopts::ParseResult>
-parseCommandLine(int argc, char *argv[]) {
-  cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
-  options.add_options()("l,log", "Log level (debug, info, warn, error, none)",
-                        cxxopts::value<std::string>()->default_value("info"))(
-      "smoke-test", "Run in smoke test mode (exits immediately after setup)")(
-      "h,help", "Print help");
-
-  cxxopts::ParseResult parsedArgs = options.parse(argc, argv);
-
-  if (parsedArgs.contains("help")) {
-    std::cout << options.help().c_str() << '\n';
-    return std::nullopt;
-  }
-
-  return parsedArgs;
-}
-// NOLINTEND(cppcoreguidelines-avoid-c-arrays, cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-
 void setupLocalization(QTranslator &translator) {
   QLocale locale = QLocale::system();
   QString langCode = locale.name();
@@ -49,43 +29,29 @@ void setupLocalization(QTranslator &translator) {
   }
 }
 
-void configureLogLevel(const std::string &levelStr) {
-  if (levelStr.empty()) {
-    return;
-  }
-
-  QStringList rules;
-  if (levelStr == "debug") {
-    rules << "*.debug=true" << "*.info=true" << "*.warning=true"
-          << "*.critical=true";
-  } else if (levelStr == "info") {
-    rules << "*.debug=false" << "*.info=true" << "*.warning=true"
-          << "*.critical=true";
-  } else if (levelStr == "warn" || levelStr == "warning") {
-    rules << "*.debug=false" << "*.info=false" << "*.warning=true"
-          << "*.critical=true";
-  } else if (levelStr == "error") {
-    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
-          << "*.critical=true";
-  } else if (levelStr == "none") {
-    rules << "*.debug=false" << "*.info=false" << "*.warning=false"
-          << "*.critical=false";
-  }
-  QLoggingCategory::setFilterRules(rules.join('\n'));
-}
-
 int main(int argc, char *argv[]) {
   try {
-    auto parsedArgs = parseCommandLine(argc, argv);
-    if (!parsedArgs.has_value()) {
+    // CLI parsing and configureLogLevel (logging module) live behind the
+    // same try/catch so option errors are classified separately from
+    // post-register bootstrap failures.
+    cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
+    options.add_options()(
+        "l,log", "Log level (debug, info, warn, error, none)",
+        cxxopts::value<std::string>()->default_value("info"))(
+        "smoke-test",
+        "Run in smoke test mode (exits immediately after setup)")(
+        "h,help", "Print help");
+
+    cxxopts::ParseResult parsedArgs = options.parse(argc, argv);
+    if (parsedArgs.contains("help")) {
+      std::cout << options.help().c_str() << '\n';
       return 0;
     }
 
     // F-11: custom handler retained (pedagogy + fatal/sink behavior);
     // see logging.cpp. qSetMessagePattern is the formatting-only alternative.
     qInstallMessageHandler(messageHandler);
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-    configureLogLevel(parsedArgs->operator[]("log").as<std::string>());
+    configureLogLevel(parsedArgs.operator[]("log").as<std::string>());
 
     // fmt demo (Keep list): Hello message uses fmt; logging.cpp uses fmt too.
     qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
@@ -110,7 +76,7 @@ int main(int argc, char *argv[]) {
 
     setTheme();
 
-    if (parsedArgs->contains("smoke-test")) {
+    if (parsedArgs.contains("smoke-test")) {
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
       services::unregisterAll();
@@ -124,8 +90,12 @@ int main(int argc, char *argv[]) {
     services::unregisterAll();
     QCoreApplication::removeTranslator(&translator);
     return exitCode;
+  } catch (const cxxopts::exceptions::exception &e) {
+    std::cerr << "Invalid command line: " << e.what() << '\n';
+    return 2;
   } catch (const std::exception &e) {
     // Lifecycle contract: every path after registerAll() must unregister.
+    // (CLI parse errors are handled above and never reach registerAll.)
     services::unregisterAll();
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;

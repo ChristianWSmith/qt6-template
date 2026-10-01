@@ -99,6 +99,9 @@ check "Presenter.cpp uses Q_ASSERT for model" \
 check "Presenter.cpp uses Q_ASSERT for view" \
   "${PRESENTER_CPP}" 'Q_ASSERT\(m_view != nullptr\)'
 
+check "Presenter.cpp does not declare a destructor" \
+  "${PRESENTER_CPP}" '~[A-Za-z0-9_]*Presenter' invert
+
 check "Test fixture uses MemoryPersistenceProvider" \
   "${TEST_FILE}" 'MemoryPersistenceProvider provider;'
 

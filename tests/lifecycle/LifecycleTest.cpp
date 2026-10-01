@@ -2,6 +2,13 @@
 #include "appmainwindow/AppMainWindow.h"
 #include "platform/core/FilePersistenceProvider.h"
 
+#include "features/applog/model/AppLogModel.h"
+#include "features/applog/presenter/AppLogPresenter.h"
+#include "features/applog/widget/AppLogWidget.h"
+#include "features/counter/model/CounterModel.h"
+#include "features/counter/presenter/CounterPresenter.h"
+#include "features/counter/widget/CounterWidget.h"
+
 #include <QApplication>
 #include <QCloseEvent>
 #include <QFile>
@@ -12,6 +19,29 @@
 #include <gtest/gtest.h>
 
 class LifecycleTest : public ::testing::Test {};
+
+// F-03 (Wave 3, simple test — not a framework): composition-root wiring
+// must actually construct the documented feature graph. Missing wiring
+// (model/widget/presenter/provider) is a silent-failure class this locks.
+TEST_F(LifecycleTest, CompositionRootConstructsFeatureGraph) {
+  AppMainWindow window;
+
+  auto *central = window.centralWidget();
+  ASSERT_NE(central, nullptr);
+
+  EXPECT_EQ(window.findChildren<FilePersistenceProvider *>().size(), 1);
+  EXPECT_EQ(window.findChildren<CounterModel *>().size(), 1);
+  EXPECT_EQ(window.findChildren<CounterWidget *>().size(), 1);
+  EXPECT_EQ(window.findChildren<CounterPresenter *>().size(), 1);
+  EXPECT_EQ(window.findChildren<AppLogModel *>().size(), 1);
+  EXPECT_EQ(window.findChildren<AppLogWidget *>().size(), 1);
+  EXPECT_EQ(window.findChildren<AppLogPresenter *>().size(), 1);
+
+  // Feature widgets must be in the window's object tree (layout reparents
+  // them under the central container, which is parented to the window).
+  EXPECT_TRUE(window.isAncestorOf(window.findChild<CounterWidget *>()));
+  EXPECT_TRUE(window.isAncestorOf(window.findChild<AppLogWidget *>()));
+}
 
 TEST_F(LifecycleTest, NormalCloseDoesNotCrash) {
   AppMainWindow window;

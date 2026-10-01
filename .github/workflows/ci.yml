@@ -66,11 +66,21 @@ jobs:
         shell: pwsh
         run: choco install innosetup 7zip -y
 
+      - name: Toolchain versions
+        shell: bash
+        run: |
+          source scripts/env.sh
+          echo "PLATFORM=${PLATFORM}"
+          echo "QT_BIN=${QT_BIN}"
+          echo "QT_ROOT=${QT_ROOT}"
+          cmake --version | head -1
+          "${CXX:-g++}" --version | head -1
+          python --version
+
       - name: Build and test
         shell: bash
         run: |
           source scripts/env.sh
-          export PATH="${QT_BIN}:${PATH}"
           pipenv run bash scripts/build.sh --test ON
         env:
           QT_QPA_PLATFORM: offscreen
@@ -79,7 +89,6 @@ jobs:
         shell: bash
         run: |
           source scripts/env.sh
-          export PATH="${QT_BIN}:${PATH}"
           bash scripts/test-generator.sh
         env:
           QT_QPA_PLATFORM: offscreen
