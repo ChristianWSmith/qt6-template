@@ -5,6 +5,7 @@
 #include "features/counter/widget/CounterWidget.h"
 
 #include <QLabel>
+#include <QPointer>
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QTest>
@@ -103,7 +104,7 @@ TEST_F(CounterTest, ClickingResetButtonResetsModelAndView) {
 // This test establishes the template's presenter destructor contract:
 // presenter destruction must not require its non-owning dependencies to
 // remain alive. It deliberately destroys view and model BEFORE the presenter,
-// mirroring production-like Qt reverse-deletion of reparented widgets.
+// mirroring production-like Qt reverse-deletion of represed widgets.
 //
 // This test does NOT claim to establish a Qt destruction-order guarantee.
 // It only proves the presenter does not dereference m_model/m_view in its
@@ -126,6 +127,40 @@ TEST(CounterTeardownTest, PresenterSurvivesDependencyDestruction) {
   SUCCEED();
 }
 
+// AUD-010 — Presenter QPointer hardening regression.
+//
+// Destroy the model mid-session while widget + presenter remain live, then
+// click increment. Presenter slots must null-guard via QPointer: no crash,
+// no model mutation, and the view keeps its last known state.
+TEST_F(CounterTest, PresenterGuardsNullModelAfterMidSessionDestruction) {
+  auto *liveModel = new CounterModel(provider, nullptr);
+  auto *liveView = new CounterWidget(nullptr);
+  auto *livePresenter = new CounterPresenter(liveModel, liveView, nullptr);
+
+  liveModel->increment();
+  ASSERT_EQ(liveModel->value(), 1);
+
+  auto *liveLabel = liveView->findChild<QLabel *>("counterLabel");
+  ASSERT_NE(liveLabel, nullptr);
+  EXPECT_EQ(liveLabel->text(), "1");
+
+  auto *liveButton = liveView->findChild<QPushButton *>("incrementButton");
+  ASSERT_NE(liveButton, nullptr);
+
+  // QPointer observability: the test-side handle reports null on destruction.
+  QPointer<CounterModel> observed(liveModel);
+  delete liveModel;
+  ASSERT_TRUE(observed.isNull());
+
+  // Presenter slot must null-guard; view must not be mutated further.
+  QTest::mouseClick(liveButton, Qt::LeftButton);
+  EXPECT_EQ(liveLabel->text(), "1");
+
+  delete livePresenter;
+  delete liveView;
+  SUCCEED();
+}
+
 // F-13 — Failure injection through the model layer.
 TEST_F(CounterTest, OperationalLoadErrorLeavesDefaultState) {
   model.increment();
@@ -137,10 +172,10 @@ TEST_F(CounterTest, OperationalLoadErrorLeavesDefaultState) {
 }
 
 TEST_F(CounterTest, SaveFailureIsForwardedToCaller) {
-  provider.failNextSave(PersistenceError::DurabilityFailure);
+  provider.failNextSave(PersistenceError::CommitError);
   const auto result = model.saveState();
   ASSERT_TRUE(result.hasError());
-  EXPECT_EQ(result.error(), PersistenceError::DurabilityFailure);
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
 }
 
 #include "CounterTest.moc"

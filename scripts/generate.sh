@@ -75,6 +75,7 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
 #pragma once
 <GEN:COMMON_H>
 #include "ui_${NAME_TITLE}Widget.h"
+#include <memory>
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -97,11 +98,12 @@ signals:
   // Signals emitted by this Widget to be connected to ${PRESENTER_STRING} Slots
 
 private slots:
-  // Slots for UI events (auto-connected by Qt Designer)
+  // Slots for UI events. Name them on_<uiObjectName>_... (Qt auto-connect);
+  // the name must match the .ui object name or the slot will never fire.
 
 private:
   <GEN:FRIEND_TEST>
-  Ui::${NAME_TITLE}Widget *ui;
+  std::unique_ptr<Ui::${NAME_TITLE}Widget> ui;
 };
 
 EOF
@@ -111,13 +113,15 @@ cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp" <<EOF
 #include "${NAME_TITLE}Widget.h"
 
 ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::${NAME_TITLE}Widget) {
+    : QWidget(parent), ui(std::make_unique<Ui::${NAME_TITLE}Widget>()) {
   ui->setupUi(this);
 }
 
-${NAME_TITLE}Widget::~${NAME_TITLE}Widget() { delete ui; }
+${NAME_TITLE}Widget::~${NAME_TITLE}Widget() = default;
 
-// Implements UI slots, typically emitting signals to the Presenter
+// Implements UI slots, typically emitting signals to the Presenter.
+// Slot names must follow Qt auto-connect convention: on_<uiObjectName>_clicked
+// (must match the .ui object name or the slot will never fire).
 
 EOF
 format "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp"
@@ -148,6 +152,10 @@ if [[ "${TYPE}" == "widget" ]]; then
   sed_inplace '/<GEN:COMMON_H>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   sed_inplace '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  echo "Generated ${NAME_TITLE}Widget."
+  echo ""
+  echo "Remaining composition-root wiring:"
+  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout."
   exit 0
 else
   sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
@@ -254,6 +262,7 @@ cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.h" <<EOF
 #include "../model/${NAME_TITLE}Model.h"
 #include "../widget/${NAME_TITLE}Widget.h"
 #include <QObject>
+#include <QPointer>
 
 class ${NAME_TITLE}Presenter : public QObject {
   Q_OBJECT
@@ -269,11 +278,13 @@ private slots:
 private:
   friend class ${NAME_TITLE}Test;
 
-  // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
+  // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
+  // Slots null-guard before calling into model/widget (dependencies may be
+  // destroyed mid-session; QPointer observes destruction and reports null).
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.
-  ${NAME_TITLE}Model *m_model;
-  ${NAME_TITLE}Widget *m_view;
+  QPointer<${NAME_TITLE}Model> m_model;
+  QPointer<${NAME_TITLE}Widget> m_view;
 };
 
 EOF
@@ -301,7 +312,21 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   qCDebug(appFeature) << "${NAME_TITLE}Presenter instantiated";
 }
 
-// Implements presenter slots
+// Implements presenter slots.
+// Null-guard before calling into model/widget — dependencies may be
+// destroyed mid-session while the presenter remains alive; QPointer
+// observes destruction and reports null.
+// Example:
+// void ${NAME_TITLE}Presenter::handleSomeAction() {
+//   if (!m_model)
+//     return;
+//   m_model->doSomething();
+// }
+// void ${NAME_TITLE}Presenter::handleSomeStateChanged(...) {
+//   if (!m_view)
+//     return;
+//   m_view->refresh(...);
+// }
 
 EOF
 format "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp"
@@ -339,3 +364,11 @@ TEST_F(${NAME_TITLE}Test, Placeholder) {
 
 EOF
 format "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
+
+echo "Generated ${NAME_TITLE}."
+echo ""
+echo "Remaining composition-root wiring:"
+echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow's initializer list."
+echo "  2. Append ${NAME_TITLE}Model to m_models."
+echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
+echo "  4. Implement ${NAME_TITLE}Model::loadState()."

@@ -148,6 +148,25 @@ TEST_F(AppLogTest, LoadDoesNotExceedMaxLogSize) {
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("exceed_109"));
 }
 
+// F-13 — Failure injection through the model layer.
+// Mirrors CounterTest OperationalLoadErrorLeavesDefaultState / SaveFailure
+// IsForwardedToCaller against AppLogModel's PersistenceResult forwarding.
+TEST_F(AppLogTest, OperationalLoadErrorLeavesDefaultState) {
+  model.addLogMessage("Persisted before failure");
+  ASSERT_TRUE(model.saveState().hasValue());
+
+  provider.failNextLoad(PersistenceError::IoError);
+  AppLogModel reloaded(provider, nullptr);
+  EXPECT_TRUE(reloaded.getLogMessages().isEmpty());
+}
+
+TEST_F(AppLogTest, SaveFailureIsForwardedToCaller) {
+  provider.failNextSave(PersistenceError::CommitError);
+  const auto result = model.saveState();
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
+}
+
 #include "AppLogTest.moc"
 
 // NOLINTEND

@@ -54,6 +54,12 @@ installPipenv
 # Source re-discovery relies on file(GLOB_RECURSE ... CONFIGURE_DEPENDS).
 # If a generator ever misses a new file, touch CMakeLists.txt manually.
 
+# Headless default must apply to gtest_discover_tests POST_BUILD discovery
+# (runs inside the Conan/CMake build) as well as subsequent CTest execution.
+if [ "${BUILD_TESTING}" == "ON" ]; then
+  export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
+fi
+
 pipenv run conan build "${PROJECT_ROOT}" \
   --output-folder "${BUILD_DIR}" \
   --profile:build="${CONAN_PROFILE}" \
@@ -63,7 +69,6 @@ pipenv run conan build "${PROJECT_ROOT}" \
   --lockfile="${CONAN_LOCK}"
 
 if [ "${BUILD_TESTING}" == "ON" ]; then
-  export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
   echo "Running tests (ctest --test-dir \"${BUILD_DIR}\")..."
   ctest --test-dir "${BUILD_DIR}" --output-on-failure
 else

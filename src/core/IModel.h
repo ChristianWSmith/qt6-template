@@ -13,9 +13,16 @@
 ///   - saveState() returns the provider's PersistenceResult so callers
 ///     (e.g. the composition root) can observe outcomes. Models forward
 ///     the provider result and do not log errors at the model layer.
+///   - API asymmetry is intentional today: loadState() returns void
+///     (models treat load errors internally — NotFound is first-run;
+///     operational errors are logged by the provider) while saveState()
+///     returns PersistenceResult<void> so the composition root can observe
+///     outcomes. Do not invent a parallel load-result API.
 ///   - saveState() is synchronous. FilePersistenceProvider commits via
 ///     QSaveFile atomic replace (not a power-loss durability guarantee).
 ///   - All methods execute on the GUI thread.
+///   - Persistence paths use QStandardPaths::AppDataLocation; tests enable
+///     Qt test mode (tests/main.cpp) so runs never touch real app data.
 class IModel {
 public:
   IModel() = default;

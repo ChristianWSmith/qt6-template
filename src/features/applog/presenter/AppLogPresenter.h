@@ -6,6 +6,7 @@
 #include "../../../events/LogEvent.h"
 
 #include <QObject>
+#include <QPointer>
 
 #include "../applogcommon.h"
 
@@ -24,10 +25,11 @@ private slots:
   void handleClearRequested();
 
 private:
-  friend class AppLogTest;
-  // Non-owning pointers. Owned via Qt parent-child under AppMainWindow.
+  // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
+  // Slots null-guard before calling into model/widget (dependencies may be
+  // destroyed mid-session; QPointer observes destruction and reports null).
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.
-  AppLogModel *m_model;
-  AppLogWidget *m_view;
+  QPointer<AppLogModel> m_model;
+  QPointer<AppLogWidget> m_view;
 };

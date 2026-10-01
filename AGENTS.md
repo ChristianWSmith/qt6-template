@@ -24,7 +24,7 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 ./scripts/run.sh --rebuild ON -- <args>     # Force rebuild, pass args to app
 ```
 
-Most scripts use `pipenv run` under the hood (auto-installs pipenv on first run).
+Most scripts use `pipenv run` under the hood. The scripts do **not** install the pipenv tool itself: `scripts/env.sh`'s `installPipenv` runs `pipenv install --dev` (installs the Pipfile packages into the project `.venv`; it requires the pipenv tool to already be available). CI installs the tool via `pip install pipenv` before invoking `pipenv install --dev --deploy`.
 **Exception:** `build.sh --test ON` runs `ctest` directly after the Conan build (not via `pipenv run`); `run.sh` default `--test` is OFF. Other tool invocations (conan, aqt, clang-format paths) go through pipenv.
 
 **Translations default OFF:** `build.sh` defaults `UPDATE_TRANSLATIONS` to `OFF` so normal builds do not mutate tracked `resources/i18n/*.ts`. Opt in with `--update-translations ON` when you intentionally refresh translation sources.
@@ -58,8 +58,14 @@ src/
 - **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
 - **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
 - **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`).
-- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). Rules include: widgets↛models, models↛widgets, models↛EventSystem, logging↛EventSystem.
-- **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
+- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Machine-enforced rules include:
+  1. Feature widgets and standalone `src/widgets/` must not include model headers (`model/` path segment or `*Model.h` basename; basename rule excludes `IModel.h`).
+  2. Feature models must not include widget headers or EventSystem/`events/` headers.
+  3. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`).
+  4. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
+  5. `src/core` must not include `widgets/`, `events/`, or `features/`.
+  Presenters, `src/appmainwindow/`, `src/main.cpp`, and `tests/` are exempt (wiring/bootstrap/tests). `src/events` → `src/logging` is an **allowed** direction.
+- **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `std::unique_ptr<Ui::ReusableWidget>`, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)
 
@@ -69,7 +75,7 @@ src/
 - **`BUILD_TESTING`:** `scripts/build.sh` defaults it to `ON`; `conanfile.py` CMake configure also defaults `BUILD_TESTING` to `ON` if unset. `run.sh` defaults `--test OFF`.
 - **`gtest_discover_tests(UnitTests)`** runs in default **POST_BUILD** discovery mode (plus explicit `DISCOVERY_TIMEOUT 30`). Tests are discovered after the test binary is built.
 - **Tests link `Qt6::Test`** (plus Core/Widgets from the root-scope `find_package`; `tests/CMakeLists.txt` requests `Qt6::Test` only). Custom `tests/main.cpp` provides `main()` (QApplication + gtest init) — do not link `gtest_main`.
-- **`ctest` runs directly** from `build.sh` (`ctest --test-dir "${BUILD_DIR}" --output-on-failure`) with `QT_QPA_PLATFORM` defaulting to `offscreen` when tests are ON.
+- **`ctest` runs directly** from `build.sh` (`ctest --test-dir "${BUILD_DIR}" --output-on-failure`) with `QT_QPA_PLATFORM` defaulting to `offscreen` when tests are ON. The default is exported **before** the Conan/CMake build so `gtest_discover_tests` POST_BUILD discovery also runs headless.
 - **`install()` covers the executable target only** (BUNDLE/LIBRARY/RUNTIME destinations). There is no `export()` / package-config install. Platform packaging (AppImage, installers, `.app`) is done by `.github/scripts/{linux-bundle-*.sh,mac-bundle-app.sh,windows-bundle.sh}` in CI.
 - **CI runs the generator smoke test** via `scripts/test-generator.sh` (generates `GenSmokeProbe`, checks conventions, builds with `--test ON`, cleans up). See `.github/workflows/ci.yml`.
 - **Conan dependency layout:** `requires` = fmt + cxxopts; `build_requires` = ninja; `test_requires` = gtest. `conan.lock` may also record profile-driven or transitive entries (e.g. Linux `xorg/system`, pkgconf/meson/cmake) beyond the declared recipe layout — that superset is expected Conan lock behavior, not a defect.
@@ -91,9 +97,11 @@ Name must start with an uppercase letter and be a valid C++ identifier (regex `^
 - Google Test (`gtest`), linked via `tests/CMakeLists.txt` into a single binary target **`UnitTests`** (hardcoded name; no `UT_NAME`)
 - `tests/CMakeLists.txt` requests `Qt6::Test` (Core/Widgets targets come from the root-scope `find_package`); custom `tests/main.cpp` supplies `main()` — do not link `gtest_main`
 - Tests are discovered via `gtest_discover_tests` (POST_BUILD default mode)
-- Run tests: `./scripts/build.sh --test ON` (default) which builds **and executes** the suite via CTest (ctest runs outside pipenv; `QT_QPA_PLATFORM` defaults to `offscreen` when tests are ON)
+- Run tests: `./scripts/build.sh --test ON` (default) which builds **and executes** the suite via CTest (ctest runs outside pipenv; `QT_QPA_PLATFORM` defaults to `offscreen` when tests are ON, applied before the build so test discovery is headless too)
 - CI runs the same path on Linux/Windows/macOS, plus `scripts/test-generator.sh`
-- Generated test files include `.moc` include at bottom — required for Qt meta-object compilation in test files
+- Generated test files include a `.moc` include at the bottom. It is **required** when the test `.cpp` defines `Q_OBJECT` (e.g. `tests/events/EventsTest.cpp`); feature fixtures without `Q_OBJECT` compile an empty moc — the include is harmless convention there, not a hard requirement for every test file.
+
+**Test-mode isolation contract:** `tests/main.cpp` enables Qt test mode (`QStandardPaths::setTestModeEnabled(true)`) and redirects QSettings UserScope paths to a temp dir **before** any test constructs persistence providers or windows. New test targets must preserve this contract — tests never write real `AppDataLocation` data or the developer's organization/application settings.
 
 ## Dependencies
 
@@ -175,7 +183,7 @@ auto sub = events::subscribe<LogEvent>(myHandler);
 events::publish(LogEvent{"message"});
 ```
 
-- Publishing is a GUI-thread operation under the current architecture.
+- Publishing is a GUI-thread operation under the current architecture. Debug builds assert the calling thread is the application thread.
 - Recursive publication is queued rather than immediate.
 
 #### Behavioral contract
@@ -188,7 +196,7 @@ events::publish(LogEvent{"message"});
 | Type safety | Event types must be default-constructible, copy-constructible, and copy-assignable (EventType concept). Delivery checks meta-type in all builds; debug builds also assert. Mismatch logs `qCritical(appEvent)` and does not deliver. |
 | Free-function subscribe | No per-subscription wrapper QObject is allocated. Connection context is `QCoreApplication`. `Subscription` holds `QMetaObject::Connection` only. Subscriptions belong to application lifetime; free-function handlers execute on the application thread under the GUI-thread policy. |
 | QObject lifetime | Dispatchers are parented to `QCoreApplication` when present (application-owned). Free-function connection context is also `QCoreApplication`. |
-| Threading | Publish from the GUI thread only (template policy; no worker threads). Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. |
+| Threading | Publish/subscribe are GUI-thread-only (template policy; no worker threads). The policy is enforced with `Q_ASSERT` in debug builds at publish and both subscribe paths. Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. The bus is not a general cross-thread synchronization mechanism. |
 
 #### Lifetime rules
 
@@ -199,6 +207,7 @@ events::publish(LogEvent{"message"});
 - Destroying a `Subscription` disconnects the handler (`reset()`); it does **not** depend on `deleteLater()`.
 - `Subscription` owns its connection lifetime (RAII) and holds only the `QMetaObject::Connection`.
 - Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present).
+- The `BusRegistry` dispatcher map is cleared on `QCoreApplication::aboutToQuit`, before Qt-owned dispatcher objects are destroyed. The registry never deletes dispatchers.
 - EventSystem use requires a running `QApplication` in this template.
 
 #### Production status of LogEvent / AppLog
@@ -218,9 +227,9 @@ events::publish(LogEvent{"message"});
 - Raw pointer / reference → non-owning unless explicitly documented
 - Event subscription → lifetime managed by Qt connection mechanism (auto-disconnect on receiver destruction)
 - `Subscription` owns its connection lifetime (RAII); free-function subscribe requires retaining the returned handle
-- EventSystem wrappers/dispatchers are application-owned, parented to `QCoreApplication` when present
+- Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present); the registry map is cleared on `aboutToQuit` before those objects are destroyed
 - Models take `IPersistenceProvider&` (required, non-owning reference)
-- Presenter holds non-owning raw pointers to model/widget; presenter destructors must not dereference them
+- Presenters hold non-owning `QPointer` refs to model/widget; presenter slots null-guard before calling into them; presenter destructors must not dereference them
 - Member declaration order in AppMainWindow is construction order only — not a Qt destruction-order guarantee
 - Qt signals/slots auto-disconnect when either QObject (sender or receiver) is destroyed
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child
@@ -244,10 +253,18 @@ Persistence failures have three distinct layers — do not conflate them:
 - Models take `IPersistenceProvider&` (required, not optional).
 - **`IModel::saveState()` returns `PersistenceResult<void>`.** Models forward the provider result; they do not flatten it. `NotFound` is first-run state (silent). Operational load/save failures are logged by the provider; models branch on the result without emitting duplicate persistence diagnostics.
 - **`AppMainWindow` holds `QList<IModel*>` and loops every model in `closeEvent`.** The composition root observes results; the default shutdown policy is **log-and-continue** (never blocks close on persistence failure).
-- `FilePersistenceProvider` commits via `QSaveFile` atomic replace (not power-loss durability). Persistence-failure logging is owned by the provider; models forward results without logging save errors.
+- `FilePersistenceProvider` commits via `QSaveFile` atomic replace (not power-loss durability). `QSaveFile::commit()` failures are reported as `PersistenceError::CommitError` (atomic replace did not complete); Qt does not surface fsync errors from `commit()`. Persistence-failure logging is owned by the provider; models forward results without logging save errors.
 - Use `toString(error)` for symbolic error logging.
 - Persistence keys embed the `APP_ID` compile definition from `app.env` (e.g. `APP_ID ".CounterState"`, `APP_ID ".AppLogState"`). Keys are strings passed to the provider; do not invent a separate key registry.
 - Storage path is `QStandardPaths::AppDataLocation + "/" + key + ".json"`. On Windows, `AppDataLocation` is the **Roaming** path (`AppLocalDataLocation` would be Local).
+
+#### Consumer-facing consequences
+
+- `closeEvent` never blocks shutdown on save failure (log-and-continue; see the composition-root bullet above). QSettings chrome (geometry/state) save is a separate channel from feature-state persistence, and failures there are also non-blocking at shutdown.
+- `QSaveFile` atomic replace is not power-loss durability: `PersistenceError::CommitError` means `QSaveFile::commit()` failed (the atomic replace did not complete); Qt does not surface fsync errors from `commit()`.
+- Corruption may present as first-run (`NotFound`) on load — an unreadable or damaged key is indistinguishable from never-saved state at the load boundary.
+- The `PersistenceError` taxonomy distinctions are load-bearing: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
+- AppDataLocation precondition: feature-state storage paths use `QStandardPaths::AppDataLocation`. Tests enable Qt test mode (`QStandardPaths::setTestModeEnabled(true)` in `tests/main.cpp`) so test runs never write the developer's real application data — new test targets inherit this contract.
 
 #### Configuration channels
 
@@ -265,7 +282,9 @@ Persistence keys use the `APP_ID` compile definition from `app.env` (e.g. `APP_I
 - Do not access or mutate them from worker threads.
 - Models execute on the GUI thread. Persistence operations are synchronous.
 - EventSystem delivery is always queued (Qt::QueuedConnection).
+- EventSystem publish/subscribe are GUI-thread-only; debug builds assert the calling thread is the application thread.
 - The EventSystem's BusRegistry mutex protects dispatcher creation, not event delivery.
+- The EventSystem is not a general cross-thread synchronization mechanism.
 - Logging is thread-safe (QMutex in message handler).
 - No API implies general thread safety merely because it contains a mutex.
 

@@ -3,12 +3,12 @@
 #include <QScrollBar>
 
 AppLogWidget::AppLogWidget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::AppLogWidget) {
+    : QWidget(parent), ui(std::make_unique<Ui::AppLogWidget>()) {
   ui->setupUi(this);
   qCDebug(appFeature) << "AppLogWidget instantiated";
 }
 
-AppLogWidget::~AppLogWidget() { delete ui; }
+AppLogWidget::~AppLogWidget() = default;
 
 void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
   QScrollBar *scrollBar = ui->logListWidget->verticalScrollBar();

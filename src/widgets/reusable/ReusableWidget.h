@@ -1,5 +1,6 @@
 #pragma once
 #include "ui_ReusableWidget.h"
+#include <memory>
 #include <QWidget>
 
 // Intentional teaching example of the standalone-widget convention
@@ -29,5 +30,5 @@ private slots:
   // Slots for UI events (auto-connected by Qt Designer)
 
 private:
-  Ui::ReusableWidget *ui;
+  std::unique_ptr<Ui::ReusableWidget> ui;
 };

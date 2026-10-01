@@ -2,12 +2,12 @@
 #include "../../../logging/logging.h"
 
 CounterWidget::CounterWidget(QWidget *parent)
-    : QWidget(parent), ui(new Ui::CounterWidget) {
+    : QWidget(parent), ui(std::make_unique<Ui::CounterWidget>()) {
   ui->setupUi(this);
   qCDebug(appFeature) << "CounterWidget instantiated";
 }
 
-CounterWidget::~CounterWidget() { delete ui; }
+CounterWidget::~CounterWidget() = default;
 
 void CounterWidget::displayCounter(int value) {
   ui->counterLabel->setText(QString::number(value));

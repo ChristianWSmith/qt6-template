@@ -1,6 +1,6 @@
 #pragma once
 #include <QJsonObject>
-#include <QObject>
+#include <QString>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -12,7 +12,10 @@ enum class PersistenceError : std::uint8_t {
   NotFound,
   IoError,
   InvalidData,
-  DurabilityFailure,
+  /// QSaveFile::commit() failed (atomic replace did not complete).
+  /// Not a power-loss durability guarantee — Qt does not surface fsync
+  /// errors from commit(); see FilePersistenceProvider.
+  CommitError,
 };
 
 constexpr std::string_view toString(PersistenceError error) {
@@ -20,7 +23,7 @@ constexpr std::string_view toString(PersistenceError error) {
   case PersistenceError::NotFound: return "NotFound";
   case PersistenceError::IoError: return "IoError";
   case PersistenceError::InvalidData: return "InvalidData";
-  case PersistenceError::DurabilityFailure: return "DurabilityFailure";
+  case PersistenceError::CommitError: return "CommitError";
   }
   return "Unknown";
 }
@@ -105,6 +108,13 @@ private:
   std::optional<PersistenceError> err_;
 };
 
+/// Storage-mechanics boundary for feature-state persistence.
+///
+/// Threading/lifetime contract:
+///   - Persistence operations are synchronous and execute on the GUI thread.
+///   - Models hold `IPersistenceProvider&` (required, non-owning reference);
+///     the provider must outlive every model that references it.
+///   - This interface does not own models; models do not own providers.
 class IPersistenceProvider {
 public:
   IPersistenceProvider() = default;
