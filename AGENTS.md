@@ -58,7 +58,13 @@ src/
 - **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
 - **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
 - **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`).
-- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). Rules include: widgets↛models, models↛widgets, models↛EventSystem, logging↛EventSystem.
+- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Machine-enforced rules include:
+  1. Feature widgets and standalone `src/widgets/` must not include model headers (`model/` path segment or `*Model.h` basename; basename rule excludes `IModel.h`).
+  2. Feature models must not include widget headers or EventSystem/`events/` headers.
+  3. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`).
+  4. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
+  5. `src/core` must not include `widgets/`, `events/`, or `features/`.
+  Presenters, `src/appmainwindow/`, `src/main.cpp`, and `tests/` are exempt (wiring/bootstrap/tests). `src/events` → `src/logging` is an **allowed** direction.
 - **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `Ui*` pointer, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)
