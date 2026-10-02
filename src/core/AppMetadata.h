@@ -12,7 +12,9 @@
 //   ORGANIZATION_NAME  QSettings organization
 //   APP_ID             reverse-DNS id; used in persistence keys and desktop files
 //
-// Persistence keys embed APP_ID, e.g. APP_ID ".CounterState".
+// Persistence keys embed APP_ID, e.g. APP_ID ".CounterState" (feature-state
+// channel via IPersistenceProvider; window chrome stays on QSettings in
+// AppMainWindow — do not merge channels).
 // Configure the project through app.env / scripts/build.sh — raw cmake/conan
 // without env will fail fast in conanfile.py and CMakeLists.txt.
 //

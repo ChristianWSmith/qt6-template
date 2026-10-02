@@ -121,7 +121,7 @@ This performs a Release build if needed and then runs the app. Arguments after `
 ├──── logging/                # qC* categories + message handler
 ├──── platform/               # {core/,theme/} FilePersistenceProvider, theme.hpp
 ├──── services/               # DemoConsoleLogService + registry/
-├──── widgets/<name>/         # Standalone widgets (e.g. ReusableWidget)
+├──── examples/widgets/     # Teaching artifacts (e.g. ReusableWidget)
 ├── tests/
 ├──── features/               # Flat test files (e.g. CounterTest.cpp), not per-feature dirs
 ├──── MemoryPersistenceProvider.h

@@ -34,15 +34,18 @@ target_link_libraries(UnitTests PRIVATE
 # resources.qrc via CMAKE_AUTORCC ON (root CMakeLists.txt). UnitTests does not
 # link the exe, so this target embeds style files independently via
 # qt_add_resources (belt-and-suspenders for the test binary only).
+# QSS list is derived from resources/resources.qrc (AUD-121) — single source
+# of truth for which style files ship. Do not hardcode a parallel list here.
+include("${CMAKE_SOURCE_DIR}/cmake/ParseQrcStyles.cmake")
+parse_qrc_qss_files(
+    "${CMAKE_SOURCE_DIR}/resources/resources.qrc"
+    "${CMAKE_SOURCE_DIR}/resources"
+    QSS_STYLE_FILES
+)
 qt_add_resources(UnitTests "unit_test_theme_resources"
     PREFIX "/"
     BASE "${CMAKE_SOURCE_DIR}/resources"
-    FILES
-        "${CMAKE_SOURCE_DIR}/resources/styles/custom.qss"
-        "${CMAKE_SOURCE_DIR}/resources/styles/linux/base.qss"
-        "${CMAKE_SOURCE_DIR}/resources/styles/macos/base.qss"
-        "${CMAKE_SOURCE_DIR}/resources/styles/windows/dark.qss"
-        "${CMAKE_SOURCE_DIR}/resources/styles/windows/light.qss"
+    FILES ${QSS_STYLE_FILES}
 )
 
 # Production-binary resource embedding regression check (Wave 3).

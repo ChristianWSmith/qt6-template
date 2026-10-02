@@ -1,11 +1,19 @@
 #include "AppLogModel.h"
 #include "logging/logging.h"
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QThread>
 
 namespace {
 constexpr auto KEY_LOG_MESSAGES = "logMessages";
+
+// Debug-only thread contract (AUD-115): model mutators run on the GUI
+// thread. Q_ASSERT compiles out in release builds — no runtime guard.
+void assertGuiThread() {
+  Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
+}
 } // namespace
 
 AppLogModel::AppLogModel(IPersistenceProvider &provider, QObject *parent)
@@ -15,6 +23,7 @@ AppLogModel::AppLogModel(IPersistenceProvider &provider, QObject *parent)
 }
 
 void AppLogModel::addLogMessage(const QString &message) {
+  assertGuiThread();
 
   QString timestampedMessage =
       QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") + " - " +
@@ -32,6 +41,7 @@ void AppLogModel::addLogMessage(const QString &message) {
 }
 
 void AppLogModel::clear() {
+  assertGuiThread();
   m_logMessages.clear();
   emit logCleared();
 }

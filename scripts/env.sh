@@ -8,7 +8,9 @@ installPipenv() {
     return 0
   fi
   export PIPENV_INSTALLED=1
-  pipenv install --dev
+  # --deploy matches CI (ci.yml uses --dev --deploy): fail if Pipfile.lock is
+  # out of sync instead of silently relocking (AUD-112).
+  pipenv install --dev --deploy
 }
 
 ENV_SOURCED="${ENV_SOURCED:-}"

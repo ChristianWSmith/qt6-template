@@ -3,16 +3,18 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${SCRIPT_DIR}/../../scripts/env.sh"
+# Built-binary + .app bundle resolution (AUD-003/AUD-109).
+source "${SCRIPT_DIR}/../../scripts/lib/resolve-app-path.sh"
 
 mkdir -p "${DIST_DIR}"
 
-export APP_PATH="${BUILD_DIR}/${APP_NAME}.app"
+export APP_PATH="${APP_BUNDLE:-${BUILD_DIR}/${APP_NAME}.app}"
 "${QT_BIN}/macdeployqt" "${APP_PATH}"
 
 FRAMEWORKS_DIR="${APP_PATH}/Contents/Frameworks"
 mkdir -p "${FRAMEWORKS_DIR}"
 
-APP_BIN="${APP_PATH}/Contents/MacOS/${APP_NAME}"
+# APP_BIN already set by resolve-app-path.sh (Contents/MacOS/${APP_NAME}).
 
 # Repath any non-Qt shared libraries Conan dropped next to the binary.
 # Conan deps are often static — skip cleanly when there are none.

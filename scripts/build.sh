@@ -74,18 +74,21 @@ if [ "${BUILD_TESTING}" == "ON" ]; then
 
   # Production bootstrap smoke: validates cxxopts + QApplication + registerAll +
   # AppMainWindow + setTheme + translator setup without a display.
-  if [ "${PLATFORM}" == "windows" ]; then
-    APP_SMOKE_TARGET="${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe"
-  elif [ "${PLATFORM}" == "darwin" ]; then
-    APP_SMOKE_TARGET="${BUILD_DIR}/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+  # Binary path resolved via scripts/lib/resolve-app-path.sh (AUD-003/AUD-109):
+  # Windows prefers the Ninja single-config layout at the build root.
+  source "${SCRIPT_DIR}/lib/resolve-app-path.sh"
+  if [ "${APP_BIN_EXISTS}" = "1" ]; then
+    echo "Running production smoke-test (${APP_BIN})..."
+    QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}" "${APP_BIN}" --smoke-test
   else
-    APP_SMOKE_TARGET="${BUILD_DIR}/${APP_NAME}"
-  fi
-  if [ -e "${APP_SMOKE_TARGET}" ]; then
-    echo "Running production smoke-test (${APP_SMOKE_TARGET})..."
-    QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}" "${APP_SMOKE_TARGET}" --smoke-test
-  else
-    echo "WARNING: smoke-test target not found: ${APP_SMOKE_TARGET}" >&2
+    # Missing smoke target is a hard failure under CI or when tests are ON
+    # (BUILD_TESTING=ON implies smoke is part of the requested build). Local
+    # convenience: warn and skip so a partial/dev build can still complete.
+    if [ "${CI:-false}" = "true" ] || [ "${BUILD_TESTING}" = "ON" ]; then
+      echo "ERROR: smoke-test target not found: ${APP_BIN}" >&2
+      exit 1
+    fi
+    echo "WARNING: smoke-test target not found: ${APP_BIN}" >&2
   fi
 else
   echo "Tests skipped (--test OFF). Build completed without running ctest."

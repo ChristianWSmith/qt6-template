@@ -4,6 +4,12 @@
 
 /// Models own application state and feature behavior.
 ///
+/// Vocabulary: this "Model" is application state (IModel) — NOT
+/// QAbstractItemModel. Qt item views (QListView/QTableView/etc.) need a
+/// QAbstractItemModel subclass (prefer QAbstractListModel for list-shaped
+/// data); do not force feature-state persistence through the item-model
+/// hierarchy.
+///
 /// Lifecycle:
 ///   - Constructors may call loadState() to restore persisted state.
 ///   - Missing state (NotFound) is a normal first-run condition.
@@ -18,10 +24,13 @@
 ///     (models treat load errors internally — NotFound is first-run;
 ///     operational errors are logged by the provider) while saveState()
 ///     returns PersistenceResult<void> so the composition root can observe
-///     outcomes. Do not invent a parallel load-result API.
+///     outcomes. Do not invent a parallel load-result API. Apps that need
+///     load-error UX must extend the IModel contract deliberately.
 ///   - saveState() is synchronous. FilePersistenceProvider commits via
 ///     QSaveFile atomic replace (not a power-loss durability guarantee).
-///   - All methods execute on the GUI thread.
+///   - All methods execute on the GUI thread. Thread-guard policy:
+///     debug-only Q_ASSERT GUI-thread checks in reference models; no
+///     runtime guard until worker threads enter scope (Async Policy).
 ///   - Persistence paths use QStandardPaths::AppDataLocation; tests enable
 ///     Qt test mode (tests/main.cpp) so runs never touch real app data.
 ///   - Model destructors and any code reachable during composition-root

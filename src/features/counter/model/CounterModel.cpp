@@ -1,9 +1,17 @@
 #include "CounterModel.h"
 #include "logging/logging.h"
+#include <QCoreApplication>
 #include <QJsonObject>
+#include <QThread>
 
 namespace {
 constexpr auto KEY_VALUE = "value";
+
+// Debug-only thread contract (AUD-115): model mutators run on the GUI
+// thread. Q_ASSERT compiles out in release builds — no runtime guard.
+void assertGuiThread() {
+  Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
+}
 } // namespace
 
 CounterModel::CounterModel(IPersistenceProvider &provider, QObject *parent)
@@ -15,11 +23,13 @@ CounterModel::CounterModel(IPersistenceProvider &provider, QObject *parent)
 int CounterModel::value() const { return m_value; }
 
 void CounterModel::increment() {
+  assertGuiThread();
   m_value++;
   emit valueChanged(m_value);
 }
 
 void CounterModel::reset() {
+  assertGuiThread();
   m_value = 0;
   emit valueChanged(m_value);
 }

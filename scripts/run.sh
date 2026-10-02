@@ -49,28 +49,30 @@ export CMAKE_BUILD_TYPE
 export BUILD_TESTING
 export UPDATE_TRANSLATIONS
 
-if [ "${PLATFORM}" == "windows" ]; then
-  APP_FINAL_TARGET="${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe"
-  APP_FINAL_TARGET="$(cygpath -w "${APP_FINAL_TARGET}")"
-elif [ "${PLATFORM}" == "darwin" ]; then
-  APP_FINAL_TARGET="${BUILD_DIR}/${APP_NAME}.app"
-else
-  APP_FINAL_TARGET="${BUILD_DIR}/${APP_NAME}"
-fi
+# Shared path helper (AUD-003/AUD-109): Windows prefers Ninja single-config
+# (${BUILD_DIR}/${APP_NAME}.exe); Darwin exports APP_BUNDLE for `open -n`.
+source "${SCRIPT_DIR}/lib/resolve-app-path.sh"
+APP_FINAL_TARGET="${APP_BIN}"
+APP_FINAL_BUNDLE="${APP_BUNDLE:-}"
 
-if [ "${CLEAN}" == "ON" ]; then 
+if [ "${CLEAN}" == "ON" ]; then
     ${SCRIPT_DIR}/clean.sh build
 fi
 
-if [ "${REBUILD}" == "ON" ] || [ ! -e "${APP_FINAL_TARGET}" ]; then
+if [ "${REBUILD}" == "ON" ] || [ "${APP_BIN_EXISTS}" != "1" ]; then
   "${SCRIPT_DIR}/build.sh" \
     --build-type "${CMAKE_BUILD_TYPE}" \
     --test "${BUILD_TESTING}" \
     --update-translations "${UPDATE_TRANSLATIONS}"
+  # Refresh existence flag after build (helper is not re-sourced by build.sh
+  # into this process).
+  source "${SCRIPT_DIR}/lib/resolve-app-path.sh"
+  APP_FINAL_TARGET="${APP_BIN}"
+  APP_FINAL_BUNDLE="${APP_BUNDLE:-}"
 fi
 
 if [ "${PLATFORM}" == "darwin" ]; then
-  open -n "${APP_FINAL_TARGET}" --args "${EXTRA_ARGS[@]}"
+  open -n "${APP_FINAL_BUNDLE:-${APP_FINAL_TARGET}}" --args "${EXTRA_ARGS[@]}"
 else
   "${APP_FINAL_TARGET}" "${EXTRA_ARGS[@]}"
 fi

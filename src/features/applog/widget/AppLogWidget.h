@@ -2,9 +2,7 @@
 
 #include "ui_AppLogWidget.h"
 
-#include "../applogcommon.h"
 #include <memory>
-#include <QString>
 #include <QStringList>
 #include <QWidget>
 
@@ -26,7 +24,6 @@ public:
 
   void clear();
   void setLogMessages(const QStringList &messages);
-  void handleLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();

@@ -109,12 +109,21 @@ private:
 EOF
 
 # WIDGET CPP
+# Feature widgets: src/features/<name>/widget/ → ../../../logging/.
+# Standalone widgets: src/widgets/<name>/ → ../../logging/.
+if [[ "${TYPE}" == "feature" ]]; then
+  WIDGET_LOGGING_INCLUDE="../../../logging/logging.h"
+else
+  WIDGET_LOGGING_INCLUDE="../../logging/logging.h"
+fi
 cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp" <<EOF
 #include "${NAME_TITLE}Widget.h"
+#include "${WIDGET_LOGGING_INCLUDE}"
 
 ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
     : QWidget(parent), ui(std::make_unique<Ui::${NAME_TITLE}Widget>()) {
   ui->setupUi(this);
+  qCDebug(appFeature) << "${NAME_TITLE}Widget instantiated";
 }
 
 ${NAME_TITLE}Widget::~${NAME_TITLE}Widget() = default;
@@ -155,7 +164,7 @@ if [[ "${TYPE}" == "widget" ]]; then
   echo "Generated ${NAME_TITLE}Widget."
   echo ""
   echo "Remaining composition-root wiring:"
-  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout."
+  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout in finishConstruction()."
   exit 0
 else
   sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
@@ -367,18 +376,38 @@ protected:
       : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
 };
 
-TEST_F(${NAME_TITLE}Test, Placeholder) {
-  EXPECT_TRUE(true);
+// Fixture constructs model(view, presenter) with MemoryPersistenceProvider
+// injected by reference. Scaffold saveState() persists an empty object —
+// it must forward a successful PersistenceResult, proving provider wiring.
+TEST_F(${NAME_TITLE}Test, ModelConstructedAndProviderInjectionWorks) {
+  const auto result = model.saveState();
+  EXPECT_TRUE(result.hasValue());
+}
+
+// Models forward the provider's PersistenceResult to the composition root;
+// they do not swallow operational save failures.
+TEST_F(${NAME_TITLE}Test, SaveFailureIsForwardedToCaller) {
+  provider.failNextSave(PersistenceError::CommitError);
+  const auto result = model.saveState();
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
 }
 
 // NOTE: Qt auto-connect slots must be named on_<uiObjectName>_clicked to match
-// .ui object names — a mismatch is a silent no-fire. After implementing the
-// feature, replace this placeholder with tests that:
-//   auto *btn = view.findChild<QPushButton *>("incrementButton");
+// .ui object names — a mismatch is a silent no-fire. Look up real .ui object
+// names from the generated .ui file (not hardcoded feature examples):
+//   auto *btn = view.findChild<QPushButton *>("<uiObjectName>");
 //   ASSERT_NE(btn, nullptr);
 //   QTest::mouseClick(btn, Qt::LeftButton);
 //   // assert model/view effect
 // See tests/features/CounterTest.cpp for the reference pattern.
+
+// TODO(feature author): once ${NAME_TITLE}Model::loadState() and a view state
+// API exist, add tests that seed persisted state through the provider,
+// construct a fresh model, assert restored model state, then construct the
+// presenter and assert the view shows restored state without interaction
+// (initial model→view sync). See CounterTest
+// PresenterRestoresPersistedStateIntoViewWithoutInteraction.
 
 #include "${NAME_TITLE}Test.moc"
 
@@ -390,8 +419,8 @@ format "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
 echo "Generated ${NAME_TITLE}."
 echo ""
 echo "Remaining composition-root wiring:"
-echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow's initializer list."
-echo "  2. Append ${NAME_TITLE}Model to m_models."
-echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
+echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow::constructFeatures() (model → widget → presenter order)."
+echo "  2. Call registerModel(${NAME_TITLE}Model) in constructFeatures()."
+echo "  3. Add ${NAME_TITLE}Widget to mainLayout in finishConstruction()."
 echo "  4. Implement ${NAME_TITLE}Model::loadState()."
-echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects (scaffold comment in generated Presenter.cpp)."
+echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects."

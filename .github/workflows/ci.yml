@@ -56,6 +56,22 @@ jobs:
           sudo apt-get install -y \
             libgl-dev libegl-dev libxkbcommon-dev libxcb-cursor0 \
             fuse libfuse2 imagemagick patchelf
+          # AUD-108: runner compiler major must match conan/profiles/linux.
+          PROFILE_MAJOR=$(awk -F= '/^compiler.version=/ { print $2 }' conan/profiles/linux)
+          PROFILE_MAJOR="${PROFILE_MAJOR%%.*}"
+          if ! command -v "g++-${PROFILE_MAJOR}" >/dev/null 2>&1; then
+            sudo apt-get install -y "gcc-${PROFILE_MAJOR}" "g++-${PROFILE_MAJOR}" || {
+              sudo apt-get install -y software-properties-common
+              sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+              sudo apt-get update
+              sudo apt-get install -y "gcc-${PROFILE_MAJOR}" "g++-${PROFILE_MAJOR}"
+            }
+          fi
+          sudo update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${PROFILE_MAJOR}" "${PROFILE_MAJOR}0" \
+            --slave /usr/bin/g++ g++ "/usr/bin/g++-${PROFILE_MAJOR}" \
+            --slave /usr/bin/gcov gcov "/usr/bin/gcov-${PROFILE_MAJOR}"
+          gcc --version | head -1
+          g++ --version | head -1
 
       - name: Set up MSVC (Windows)
         if: runner.os == 'Windows'
@@ -77,9 +93,30 @@ jobs:
           "${CXX:-g++}" --version | head -1
           python --version
 
+      # AUD-108: Linux runner compiler major must match conan/profiles/linux
+      # compiler.version. Conan does not verify profile vs detected compiler —
+      # drift here would silently build with the wrong toolchain. Profiles
+      # differ per platform; the guard is Linux-only.
+      - name: Compiler profile guard (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          PROFILE_VERSION=$(awk -F= '/^compiler.version=/ { print $2 }' conan/profiles/linux)
+          PROFILE_MAJOR="${PROFILE_VERSION%%.*}"
+          ACTUAL_VERSION=$("${CXX:-g++}" -dumpfullversion)
+          ACTUAL_MAJOR="${ACTUAL_VERSION%%.*}"
+          echo "conan/profiles/linux compiler.version=${PROFILE_VERSION} (major ${PROFILE_MAJOR})"
+          echo "runner ${CXX:-g++} -dumpfullversion=${ACTUAL_VERSION} (major ${ACTUAL_MAJOR})"
+          if [ "${PROFILE_MAJOR}" != "${ACTUAL_MAJOR}" ]; then
+            echo "ERROR: Linux runner compiler major ${ACTUAL_MAJOR} does not match conan/profiles/linux compiler.version=${PROFILE_VERSION}" >&2
+            echo "Install gcc-${PROFILE_MAJOR}/g++-${PROFILE_MAJOR} on the runner (see Install system dependencies step) or update the profile deliberately." >&2
+            exit 1
+          fi
+
       # Production binary --smoke-test runs inside build.sh --test ON (after ctest).
       # No separate CI step: the script invokes the built app headless on the same
-      # platform paths used by run.sh/packaging; a missing target warns locally.
+      # platform paths used by run.sh/packaging; a missing target hard-fails under
+      # CI/BUILD_TESTING=ON via scripts/lib/resolve-app-path.sh.
       - name: Build and test
         shell: bash
         run: |

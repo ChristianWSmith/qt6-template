@@ -121,6 +121,41 @@ TEST_F(AppLogTest, TrimmingPersistsOnlyRetainedState) {
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("persist_104"));
 }
 
+// AUD-116: setLogMessages name promises replacement. Calling it twice must
+// not accumulate items — full-state refresh clears then adds.
+TEST_F(AppLogTest, SetLogMessagesReplacesContentsWithoutDuplicates) {
+  view.setLogMessages(QStringList{"alpha", "beta"});
+  auto *list = view.findChild<QListWidget *>("logListWidget");
+  ASSERT_NE(list, nullptr);
+  ASSERT_EQ(list->count(), 2);
+
+  view.setLogMessages(QStringList{"gamma"});
+  ASSERT_EQ(list->count(), 1);
+  EXPECT_TRUE(list->item(0)->text().contains("gamma"));
+
+  view.setLogMessages(QStringList{});
+  EXPECT_EQ(list->count(), 0);
+}
+
+// AUD-116: presenter must push full model state on every log change/clear.
+// After exceeding the retention cap, the view shows exactly the retained
+// messages — no duplicate/append drift from a delta re-encode path.
+TEST_F(AppLogTest, PresenterFullStateRefreshMirrorsModelAfterTrim) {
+  for (int i = 0; i < kMaxLogSize + 5; ++i) {
+    model.addLogMessage(QString("full_%1").arg(i));
+  }
+  ASSERT_EQ(model.getLogMessages().size(), kMaxLogSize);
+
+  auto *list = view.findChild<QListWidget *>("logListWidget");
+  ASSERT_NE(list, nullptr);
+  ASSERT_EQ(list->count(), model.getLogMessages().size());
+  EXPECT_TRUE(list->item(0)->text().contains("full_5"));
+  EXPECT_TRUE(list->item(list->count() - 1)->text().contains("full_104"));
+
+  model.clear();
+  EXPECT_EQ(list->count(), 0);
+}
+
 // Presenter initial model→view sync (AppLog analog of CounterTest): models
 // load in ctor before the presenter exists; emissions during model
 // construction have no subscribers. The presenter ctor must push current

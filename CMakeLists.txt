@@ -63,8 +63,13 @@ target_link_libraries(${APP_NAME}_lib
 # AUTOUIC generates ui_*.h under ${CMAKE_CURRENT_BINARY_DIR}/${target}_autogen/include
 # (CMake AUTOUIC layout). Expose that dir once as INTERFACE on the lib so
 # consumers inherit it by linking — not via duplicated per-consumer paths.
-# Note: $<TARGET_PROPERTY:tgt,AUTOGEN_BUILD_DIR> on the same target evaluates
-# empty at generate time; use the documented default path instead.
+# AUD-110 (experiment result): $<TARGET_PROPERTY:${APP_NAME}_lib,AUTOGEN_BUILD_DIR>
+# was re-tested on this INTERFACE for consumer context (exe / UnitTests). It
+# evaluates empty in the consumers' compile lines — not only on the same-target
+# form — and consumers never receive MyApp_lib_autogen/include. Hardcoded path
+# below is load-bearing; do not "simplify" it to a generator expression.
+# Same-target emptiness remains: $<TARGET_PROPERTY:tgt,prop> on tgt's own
+# INTERFACE properties is also empty at generate time.
 target_include_directories(${APP_NAME}_lib
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
