@@ -117,6 +117,9 @@ check "Widget.h does not declare friend test class" \
 check "common.h documents shared-type purpose" \
   "${FEATURE_DIR}/${NAME_LOWER}common.h" 'shared header|shared types|Feature-local'
 
+check "common.h does not declare a Test class forward declaration" \
+  "${FEATURE_DIR}/${NAME_LOWER}common.h" 'class .*Test;' invert
+
 check "Test fixture uses MemoryPersistenceProvider" \
   "${TEST_FILE}" 'MemoryPersistenceProvider provider;'
 

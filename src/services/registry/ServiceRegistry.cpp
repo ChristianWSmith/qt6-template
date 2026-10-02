@@ -1,6 +1,6 @@
 #include "ServiceRegistry.hpp"
-#include "../ConsoleLogService.hpp"
-#include "../../events/LogEvent.h"
+#include "../DemoConsoleLogService.hpp"
+#include "../../events/DemoLogEvent.h"
 #include "../../events/system/EventSystem.hpp"
 
 namespace services {
@@ -10,16 +10,16 @@ namespace {
 // free-function Subscription; unregisterAll() explicitly resets it before
 // QApplication destruction, independent of static destructor timing.
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-events::Subscription g_consoleLogSubscription;
+events::Subscription g_demoConsoleLogSubscription;
 } // namespace
 
 void registerAll() {
-    g_consoleLogSubscription =
-        events::subscribe<LogEvent>(ConsoleLogService::handle);
+    g_demoConsoleLogSubscription =
+        events::subscribe<DemoLogEvent>(DemoConsoleLogService::handle);
 }
 
 void unregisterAll() {
-    g_consoleLogSubscription.reset();
+    g_demoConsoleLogSubscription.reset();
 }
 
 } // namespace services

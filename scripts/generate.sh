@@ -178,8 +178,6 @@ cat > "${TARGET_DIR}/${NAME_LOWER}common.h" <<EOF
 // business logic. Reference features test via public API + findChild and do
 // not declare friend test classes.
 
-class ${NAME_TITLE}Test;
-
 EOF
 format "${TARGET_DIR}/${NAME_LOWER}common.h"
 
@@ -372,6 +370,15 @@ protected:
 TEST_F(${NAME_TITLE}Test, Placeholder) {
   EXPECT_TRUE(true);
 }
+
+// NOTE: Qt auto-connect slots must be named on_<uiObjectName>_clicked to match
+// .ui object names — a mismatch is a silent no-fire. After implementing the
+// feature, replace this placeholder with tests that:
+//   auto *btn = view.findChild<QPushButton *>("incrementButton");
+//   ASSERT_NE(btn, nullptr);
+//   QTest::mouseClick(btn, Qt::LeftButton);
+//   // assert model/view effect
+// See tests/features/CounterTest.cpp for the reference pattern.
 
 #include "${NAME_TITLE}Test.moc"
 

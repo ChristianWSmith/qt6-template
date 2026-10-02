@@ -45,6 +45,13 @@ TEST_F(LifecycleTest, CompositionRootConstructsFeatureGraph) {
   EXPECT_TRUE(window.isAncestorOf(window.findChild<AppLogWidget *>()));
 }
 
+// OWN-012: AppMainWindow is stack-allocated in main(); setting
+// Qt::WA_DeleteOnClose would double-destroy the window.
+TEST_F(LifecycleTest, StackWindowDoesNotSetDeleteOnClose) {
+  AppMainWindow window;
+  EXPECT_FALSE(window.testAttribute(Qt::WA_DeleteOnClose));
+}
+
 TEST_F(LifecycleTest, NormalCloseDoesNotCrash) {
   AppMainWindow window;
   window.show();
@@ -123,8 +130,8 @@ TEST_F(LifecycleTest, CloseSavesFeatureStateEndToEnd) {
   EXPECT_EQ(loadResult.value().value("value").toInt(), 1);
 }
 
-// external persistence provider injection seam. When the ctor is
-// given a non-null provider it must be used (non-owning; no internal
+// external persistence provider injection seam. When the injected ctor is
+// used it must bind the caller-owned provider (non-owning; no internal
 // FilePersistenceProvider is constructed). A failing save at closeEvent must
 // be observed by the composition root and must NOT abort close — the
 // log-and-continue policy is unchanged.
@@ -134,7 +141,8 @@ TEST_F(LifecycleTest, CloseContinuesWhenInjectedProviderSaveFails) {
 
   // Provider declared before the window so it outlives it (destruction order
   // is reverse of declaration; the injected provider is caller-owned).
-  AppMainWindow window(&provider);
+  // Injected overload: borrow caller-owned provider (reference binding).
+  AppMainWindow window(provider);
   window.show();
   QApplication::processEvents();
 

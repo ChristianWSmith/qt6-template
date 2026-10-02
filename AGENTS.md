@@ -42,11 +42,12 @@ src/
 ├── features/<name>/    # {model,presenter,widget}/ per feature
 ├── logging/            # qC* categories + message handler
 ├── platform/           # {core/,theme/} — FilePersistenceProvider, theme.hpp
-├── services/           # ConsoleLogService + registry/
+├── services/           # DemoConsoleLogService + registry/
 └── widgets/<name>/     # standalone widgets (ReusableWidget teaching artifact)
 ```
 
-- Test tree: feature tests are flat files under `tests/features/<Name>Test.cpp` (not per-feature directories). Additional suites live under `tests/{events,lifecycle,persistence,services}/`, plus `tests/MemoryPersistenceProvider.h` and `tests/sanity_test.cpp`.
+- Test tree: feature tests are flat files under `tests/features/<Name>Test.cpp` (not per-feature directories). Additional suites live under `tests/{events,lifecycle,persistence,services,logging,themes}/`, plus `tests/MemoryPersistenceProvider.h` and `tests/sanity_test.cpp`.
+- `src/core/AppMetadata.h` documents that `APP_*` identifiers are PUBLIC compile definitions from `app.env` via `apply_app_metadata()` — not C++ `#define`s in headers.
 
 ## Build
 
@@ -54,13 +55,14 @@ src/
 - No Vulkan or Qt Concurrent dependency
 - Compile definitions centralized via `apply_app_metadata()` CMake function (applied to `${APP_NAME}_lib`, `${APP_NAME}`, and `UnitTests`)
 - `app.env` is the single source of truth for app metadata
-- **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` in application code only if Qt-native CLI is a deliberate project choice; do not remove cxxopts solely because Qt has an equivalent.
-- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
+- **`${APP_NAME}_lib` links `Qt6::Widgets` PUBLIC** (public headers include Widgets types) and `fmt::fmt` PRIVATE. Consumers inherit Widgets via the lib; explicit consumer link lines are redundant but harmless.
+- **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` / `QString::arg` / `std::format` in **production application code** if Qt-native/C++-standard facilities are a deliberate project choice; do not remove cxxopts/fmt from this template solely because Qt/std have equivalents — they demonstrate Conan dependency management.
+- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty. QSS open failures log under `appMain`.
 - **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
-- **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`).
-- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Rule numbering matches `scripts/check-architecture-boundaries.sh`:
+- **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`). Unknown tokens leave Qt rules unchanged.
+- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only) and as CTest `ArchitectureBoundaries` on UNIX. The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Rule numbering matches `scripts/check-architecture-boundaries.sh`:
   1. Feature widgets and standalone `src/widgets/` must not include model headers (`model/` path segment or `*Model.h` basename; basename rule excludes `IModel.h`).
-  2. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`).
+  2. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `DemoLogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`) and must not `#include` `events/` headers.
   3. Feature models must not include widget headers (`widget/` path or `*Widget.h` basename).
   4. Feature models must not include EventSystem/`events/` headers.
   5. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
@@ -68,6 +70,7 @@ src/
   
   Exemptions: presenters, `src/appmainwindow/`, `src/main.cpp`, `tests/`. Allowed directions (not violations): `src/events` → `src/logging`; `src/services` → `src/events` + `src/logging`; `src/platform` → `src/core` + `src/logging`; `src/features/*/model` → `src/core` + `src/logging`.
 - **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `std::unique_ptr<Ui::ReusableWidget>`, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
+- **`build.sh --test ON`** also runs the production binary `--smoke-test` headless after ctest (platform-aware path like `run.sh`). Packaging scripts (`.github/scripts/*`) require `--smoke-test` in `main.cpp`.
 
 ### Build targets and facts (verified)
 
@@ -125,13 +128,13 @@ QT_QPA_PLATFORM=offscreen ./build/tests/UnitTests --gtest_filter='CounterTest.*'
 2. In `src/logging/logging.cpp`: add `Q_LOGGING_CATEGORY(appMyFeature, "app.myfeature")`
 3. Use `qCDebug(appMyFeature) << ...` from the owning layer.
 
-New categories automatically inherit wildcard filter rules from `configureLogLevel` (e.g. `*.debug=true`). Filtering is by category string rules, not by per-category CLI flags. The custom `messageHandler` does not print the category name in each line.
+New categories automatically inherit wildcard filter rules from `configureLogLevel` (e.g. `*.debug=true`). Filtering is by category string rules, not by per-category CLI flags. The custom `messageHandler` prints the category name in each line when `QT_MESSAGELOGCONTEXT` is defined.
 
 **Inject a persistence provider into tests** (do not write real app data):
 
 ```cpp
 MemoryPersistenceProvider provider;  // tests/MemoryPersistenceProvider.h
-AppMainWindow window(&provider);     // injected path: caller-owned
+AppMainWindow window(provider);      // injected ctor: IPersistenceProvider&
 // Provider must outlive the window. Not reparented. See Ownership Rules.
 ```
 
@@ -201,10 +204,10 @@ The header `src/events/system/EventSystem.hpp` is the normative contract; this s
 
 ```cpp
 // QObject receiver (auto-disconnects on destruction):
-events::subscribe<LogEvent>(this, &MyClass::handleEvent);
+events::subscribe<DemoLogEvent>(this, &MyClass::handleEvent);
 
 // Free function (returns RAII Subscription handle):
-auto sub = events::subscribe<LogEvent>(myHandler);
+auto sub = events::subscribe<DemoLogEvent>(myHandler);
 // sub must be held alive for the subscription to remain active.
 ```
 
@@ -214,10 +217,10 @@ auto sub = events::subscribe<LogEvent>(myHandler);
 #### Publishing
 
 ```cpp
-events::publish(LogEvent{"message"});
+events::publish(DemoLogEvent{"message"});
 ```
 
-- Publishing is a GUI-thread operation under the current architecture. Debug builds assert the calling thread is the application thread.
+- Publishing is a GUI-thread operation under the current architecture. **All builds** reject wrong-thread publish/subscribe at runtime (`qCCritical(appEvent)` + no-op); debug builds also assert.
 - Recursive publication is queued rather than immediate.
 
 #### Behavioral contract
@@ -230,7 +233,7 @@ events::publish(LogEvent{"message"});
 | Type safety | Event types must be default-constructible, copy-constructible, and copy-assignable (EventType concept). Delivery checks meta-type in all builds; debug builds also assert. Mismatch logs `qCritical(appEvent)` and does not deliver. |
 | Free-function subscribe | No per-subscription wrapper QObject is allocated. Connection context is `QCoreApplication`. `Subscription` holds `QMetaObject::Connection` only. Subscriptions belong to application lifetime; free-function handlers execute on the application thread under the GUI-thread policy. |
 | QObject lifetime | Dispatchers are parented to `QCoreApplication` when present (application-owned). Free-function connection context is also `QCoreApplication`. |
-| Threading | Publish/subscribe are GUI-thread-only (template policy; no worker threads). The policy is enforced with `Q_ASSERT` in debug builds at publish and both subscribe paths. Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. The bus is not a general cross-thread synchronization mechanism. |
+| Threading | Publish/subscribe are GUI-thread-only (template policy; no worker threads). The policy is enforced at runtime in **all builds** (wrong-thread calls log `qCritical(appEvent)` and no-op) and with `Q_ASSERT` in debug builds. Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. The bus is not a general cross-thread synchronization mechanism. |
 
 #### Implementation constraints (Qt moc, exceptions, reset)
 
@@ -247,14 +250,14 @@ events::publish(LogEvent{"message"});
 - Destroying a `Subscription` disconnects the handler for future deliveries (`reset()`); it does **not** depend on `deleteLater()`. See Implementation constraints for in-flight queued events.
 - `Subscription` owns its connection lifetime (RAII) and holds only the `QMetaObject::Connection`.
 - Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present).
-- The `BusRegistry` dispatcher map is cleared on `QCoreApplication::aboutToQuit`, before Qt-owned dispatcher objects are destroyed. The registry never deletes dispatchers.
+- The `BusRegistry` dispatcher map is cleared on `QCoreApplication::aboutToQuit`, before Qt-owned dispatcher objects are destroyed. The registry never deletes dispatchers. `aboutToQuit` also sets `quitFired_`; publish/subscribe after shutdown refuse to recreate dispatchers.
 - EventSystem use requires a running `QApplication` in this template.
 
-#### Production status of LogEvent / AppLog
+#### Production status of DemoLogEvent / AppLog
 
-- The stock application does **not** publish `LogEvent` in production code. Absence of production LogEvent publishers is intentional pedagogy, not an unfinished feature.
-- Production **subscription** wiring exists: `AppLogPresenter` (QObject receiver, constructed by `AppMainWindow`) and `ConsoleLogService` (free-function, registered in `services::registerAll()`).
-- AppLog's real feature data path is model signals (`logChanged` / `logCleared`); the LogEvent bus path is demonstration wiring without a production feed.
+- The stock application does **not** publish `DemoLogEvent` in production code. Absence of production publishers is intentional pedagogy, not an unfinished feature. Types are named `Demo*` so code shape does not imply a live production flow.
+- Production **subscription** wiring exists: `AppLogPresenter` (QObject receiver, constructed by `AppMainWindow`) and `DemoConsoleLogService` (free-function, registered in `services::registerAll()`).
+- AppLog's real feature data path is model signals (`logChanged` / `logCleared`); the DemoLogEvent bus path is demonstration wiring without a production feed.
 - This is an **architectural demonstration** of EventSystem subscription, not a live end-to-end event flow.
 - Diagnostic logging (`qC*` + message handler) never uses the EventSystem.
 - Applications that need cross-component events publish their own domain events from semantically honest sites (feature actions, lifecycle, etc.) — do not route diagnostic logs onto the bus.
@@ -273,10 +276,12 @@ events::publish(LogEvent{"message"});
 - Member declaration order in AppMainWindow is construction order only — not a Qt destruction-order guarantee
 - Qt signals/slots auto-disconnect when either QObject (sender or receiver) is destroyed
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child
-- Persistence provider ownership is dual-mode:
-  - **Default:** when `AppMainWindow`'s ctor `provider` argument is `nullptr`, it constructs `FilePersistenceProvider(this)` — a QObject child of the window (Qt parent-child ownership).
-  - **Injected:** a non-null `IPersistenceProvider*` is caller-owned, is **not** reparented, and **must outlive** `AppMainWindow`. This is the tested persistence seam (`MemoryPersistenceProvider` in lifecycle tests). The type system does not encode owned-vs-borrowed; the outliving rule is contractual.
-- **`AppMainWindow` keeps a `QList<IModel*>` (`m_models`) for composition-root shutdown persistence.** Models implement `IModel`. The list is non-owning (Qt parent-child owns the models); it only drives `closeEvent`'s polymorphic `saveState()` loop.
+- Persistence provider ownership is encoded in **two `AppMainWindow` constructors**:
+  - **Default:** `AppMainWindow(QWidget *parent = nullptr)` constructs `FilePersistenceProvider(this)` — a QObject child of the window (Qt parent-child ownership).
+  - **Injected:** `AppMainWindow(IPersistenceProvider &provider, QWidget *parent = nullptr)` is caller-owned, is **not** reparented, and **must outlive** `AppMainWindow`. This is the tested persistence seam (`MemoryPersistenceProvider` in lifecycle tests). The reference type encodes non-null; the outliving rule remains contractual.
+- **`AppMainWindow` is stack-allocated in `main()` — do not set `Qt::WA_DeleteOnClose`** (would double-destroy the window). `closeEvent` intentionally calls `hide()` first.
+- **`AppMainWindow` keeps a `QList<IModel*>` (`m_models`) for composition-root shutdown persistence.** Models implement `IModel`. The list is non-owning (Qt parent-child owns the models); it only drives `closeEvent`'s polymorphic `saveState()` loop. Debug builds assert the list size matches constructed feature models.
+- **Model destructors and teardown-reachable code must not dereference `IPersistenceProvider&`** — persistence I/O is only valid during `loadState`/`saveState` while the provider is guaranteed alive.
 - Ownership mechanism follows object semantics: QObject feature objects use Qt parent-child; pure C++ services may use ordinary C++ lifetime where that improves clarity
 
 ### Persistence
@@ -307,6 +312,7 @@ Persistence failures have three distinct layers — do not conflate them:
 - At the **provider** boundary, `FilePersistenceProvider` distinguishes failure kinds: missing file → `NotFound` (first-run); exists-but-unreadable → `IoError`; damaged JSON / non-object → `InvalidData`; failed atomic replace → `CommitError`.
 - At the **model** boundary, `IModel::loadState()` is `void` by design: `NotFound` is silent first-run, and operational load errors (`IoError` / `InvalidData`) are also absorbed — the model keeps defaults. Corruption is therefore indistinguishable from never-saved **only at the model load boundary**, not at the provider. Do not invent a parallel load-result API unless the template's API contract changes.
 - The `PersistenceError` taxonomy distinctions are load-bearing at the provider and in `PersistenceResult`: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
+- **`PersistenceResult` is a C++20 `std::expected` analogue** (project pins C++20). On C++23, consider migrating both specializations to `std::expected` in a dedicated change; do not remove the type while on C++20.
 - AppDataLocation precondition: feature-state storage paths use `QStandardPaths::AppDataLocation`. Tests enable Qt test mode (`QStandardPaths::setTestModeEnabled(true)` in `tests/main.cpp`) so test runs never write the developer's real application data — new test targets inherit this contract.
 
 #### Configuration channels
@@ -352,7 +358,7 @@ Do not skip to step 7. A documented non-goal becomes a bug when the workload is 
 - **Qt / UI / application-facing APIs:** `QString`
 - **Generic event payloads:** `std::string` unless Qt-specific semantics are required
 
-Example: `LogEvent.message` is `std::string` at the bus boundary; the AppLog presenter converts once with `QString::fromStdString` when feeding the Qt model layer. Do not convert a single field across the boundary without establishing a repository-wide policy.
+Example: `DemoLogEvent.message` is `std::string` at the bus boundary; the AppLog presenter converts once with `QString::fromStdString` when feeding the Qt model layer. Do not convert a single field across the boundary without establishing a repository-wide policy.
 
 ### Logging Categories
 
@@ -362,7 +368,7 @@ Example: `LogEvent.message` is `std::string` at the bus boundary; the AppLog pre
 | `appFeature` | Feature widgets and presenters |
 | `appPersistence` | Model persistence load/save |
 | `appEvent` | EventSystem delivery diagnostics (type mismatch, etc.) |
-| `appService` | Service handlers (e.g. ConsoleLogService) |
+| `appService` | Service handlers (e.g. DemoConsoleLogService) |
 
 Diagnostic logging uses `qC*` categories and the custom message handler — **not** the EventSystem.
 

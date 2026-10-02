@@ -77,6 +77,9 @@ jobs:
           "${CXX:-g++}" --version | head -1
           python --version
 
+      # Production binary --smoke-test runs inside build.sh --test ON (after ctest).
+      # No separate CI step: the script invokes the built app headless on the same
+      # platform paths used by run.sh/packaging; a missing target warns locally.
       - name: Build and test
         shell: bash
         run: |

@@ -5,6 +5,7 @@
 #include "../applogcommon.h"
 #include <memory>
 #include <QString>
+#include <QStringList>
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -24,7 +25,7 @@ public:
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
   void clear();
-  void setLogMessages(const QVector<QString> &messages);
+  void setLogMessages(const QStringList &messages);
   void handleLogChanged(const LogDelta &logDelta);
 
 signals:

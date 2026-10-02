@@ -1,4 +1,5 @@
 #pragma once
+#include "AppMetadata.h"
 #include <QJsonObject>
 #include <QString>
 #include <cassert>

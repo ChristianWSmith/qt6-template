@@ -3,7 +3,7 @@
 #include "../model/AppLogModel.h"
 #include "../widget/AppLogWidget.h"
 
-#include "../../../events/LogEvent.h"
+#include "../../../events/DemoLogEvent.h"
 
 #include <QObject>
 #include <QPointer>
@@ -18,7 +18,7 @@ public:
                            QObject *parent = nullptr);
 
 private slots:
-  void onLogEventReceived(const LogEvent &event);
+  void onDemoLogEventReceived(const DemoLogEvent &event);
 
   void handleLogChanged(const LogDelta &logDelta);
   void handleLogCleared();

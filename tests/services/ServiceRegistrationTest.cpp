@@ -1,5 +1,5 @@
 // NOLINTBEGIN
-#include "events/LogEvent.h"
+#include "events/DemoLogEvent.h"
 #include "events/system/EventSystem.hpp"
 #include "services/registry/ServiceRegistry.hpp"
 
@@ -11,8 +11,8 @@
 namespace {
 
 // Test-local probe: count app.service messages produced by
-// ConsoleLogService::handle after services::registerAll(). Keeps production
-// ConsoleLogService free of test instrumentation.
+// DemoConsoleLogService::handle after services::registerAll(). Keeps production
+// DemoConsoleLogService free of test instrumentation.
 std::atomic<int> g_serviceMessages{0};
 QtMessageHandler g_previousHandler = nullptr;
 
@@ -47,24 +47,24 @@ protected:
 TEST_F(ServiceRegistrationTest, RegisterAllRetainsSubscriptionAndDelivers) {
   services::registerAll();
 
-  events::publish(LogEvent{"service-registration-probe"});
+  events::publish(DemoLogEvent{"service-registration-probe"});
 
   // EventSystem delivery is always queued (Qt::QueuedConnection).
   QTest::qWait(50);
 
   EXPECT_GE(g_serviceMessages.load(std::memory_order_relaxed), 1)
-      << "ConsoleLogService did not receive LogEvent after services::registerAll()";
+      << "DemoConsoleLogService did not receive DemoLogEvent after services::registerAll()";
 }
 
 TEST_F(ServiceRegistrationTest, SubscriptionRemainsAliveAcrossMultiplePublishes) {
   services::registerAll();
 
-  events::publish(LogEvent{"first"});
+  events::publish(DemoLogEvent{"first"});
   QTest::qWait(50);
   const int afterFirst = g_serviceMessages.load(std::memory_order_relaxed);
   ASSERT_GE(afterFirst, 1);
 
-  events::publish(LogEvent{"second"});
+  events::publish(DemoLogEvent{"second"});
   QTest::qWait(50);
   const int afterSecond = g_serviceMessages.load(std::memory_order_relaxed);
 
@@ -75,24 +75,24 @@ TEST_F(ServiceRegistrationTest, SubscriptionRemainsAliveAcrossMultiplePublishes)
 TEST_F(ServiceRegistrationTest, UnregisterAllStopsReception) {
   services::registerAll();
 
-  events::publish(LogEvent{"before-unregister"});
+  events::publish(DemoLogEvent{"before-unregister"});
   QTest::qWait(50);
   const int afterRegister = g_serviceMessages.load(std::memory_order_relaxed);
   ASSERT_GE(afterRegister, 1);
 
   services::unregisterAll();
 
-  events::publish(LogEvent{"after-unregister"});
+  events::publish(DemoLogEvent{"after-unregister"});
   QTest::qWait(50);
 
   EXPECT_EQ(g_serviceMessages.load(std::memory_order_relaxed), afterRegister)
-      << "ConsoleLogService received LogEvent after services::unregisterAll()";
+      << "DemoConsoleLogService received DemoLogEvent after services::unregisterAll()";
 }
 
 TEST_F(ServiceRegistrationTest, RepeatedUnregisterAllIsHarmless) {
   services::registerAll();
 
-  events::publish(LogEvent{"before-unregister"});
+  events::publish(DemoLogEvent{"before-unregister"});
   QTest::qWait(50);
   const int afterRegister = g_serviceMessages.load(std::memory_order_relaxed);
   ASSERT_GE(afterRegister, 1);
@@ -101,7 +101,7 @@ TEST_F(ServiceRegistrationTest, RepeatedUnregisterAllIsHarmless) {
   services::unregisterAll();
   services::unregisterAll();
 
-  events::publish(LogEvent{"after-unregister"});
+  events::publish(DemoLogEvent{"after-unregister"});
   QTest::qWait(50);
 
   EXPECT_EQ(g_serviceMessages.load(std::memory_order_relaxed), afterRegister)
@@ -110,18 +110,18 @@ TEST_F(ServiceRegistrationTest, RepeatedUnregisterAllIsHarmless) {
 
 TEST_F(ServiceRegistrationTest, ReRegisterAfterUnregisterRestoresDelivery) {
   services::registerAll();
-  events::publish(LogEvent{"first-window"});
+  events::publish(DemoLogEvent{"first-window"});
   QTest::qWait(50);
   const int afterFirst = g_serviceMessages.load(std::memory_order_relaxed);
   ASSERT_GE(afterFirst, 1);
 
   services::unregisterAll();
-  events::publish(LogEvent{"gap"});
+  events::publish(DemoLogEvent{"gap"});
   QTest::qWait(50);
   ASSERT_EQ(g_serviceMessages.load(std::memory_order_relaxed), afterFirst);
 
   services::registerAll();
-  events::publish(LogEvent{"second-window"});
+  events::publish(DemoLogEvent{"second-window"});
   QTest::qWait(50);
 
   EXPECT_GE(g_serviceMessages.load(std::memory_order_relaxed), afterFirst + 1)

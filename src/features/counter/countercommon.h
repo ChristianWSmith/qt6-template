@@ -1,3 +1,3 @@
 #pragma once
 
-class CounterTest;
+// Feature-local shared header for Counter.

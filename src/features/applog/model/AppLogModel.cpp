@@ -5,7 +5,6 @@
 #include <QJsonObject>
 
 namespace {
-constexpr int MAX_LOG_SIZE = 100;
 constexpr auto KEY_LOG_MESSAGES = "logMessages";
 } // namespace
 
@@ -24,7 +23,7 @@ void AppLogModel::addLogMessage(const QString &message) {
   m_logMessages.append(timestampedMessage);
 
   bool trimmed = false;
-  if (m_logMessages.size() > MAX_LOG_SIZE) {
+  if (m_logMessages.size() > kMaxLogSize) {
     m_logMessages.removeFirst();
     trimmed = true;
   }
@@ -37,7 +36,7 @@ void AppLogModel::clear() {
   emit logCleared();
 }
 
-const QVector<QString> &AppLogModel::getLogMessages() const {
+const QStringList &AppLogModel::getLogMessages() const {
   return m_logMessages;
 }
 
@@ -62,9 +61,9 @@ void AppLogModel::loadState() {
   }
 
   // Re-apply the retention cap after load so persisted state never
-  // exceeds MAX_LOG_SIZE even if the file was written by a prior version
+  // exceeds kMaxLogSize even if the file was written by a prior version
   // or an external writer.
-  while (m_logMessages.size() > MAX_LOG_SIZE) {
+  while (m_logMessages.size() > kMaxLogSize) {
     m_logMessages.removeFirst();
   }
 

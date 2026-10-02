@@ -8,9 +8,11 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 
-  // Demonstration only — stock app never publishes LogEvent in production
-  // (see AGENTS.md Production status of LogEvent / AppLog).
-  events::subscribe<LogEvent>(this, &AppLogPresenter::onLogEventReceived);
+  // Demonstration only — stock app never publishes DemoLogEvent in production
+  // (see AGENTS.md Production status of DemoLogEvent / AppLog). Features use Qt
+  // signals for real data; this subscription is EventSystem demo wiring only.
+  events::subscribe<DemoLogEvent>(this,
+                                  &AppLogPresenter::onDemoLogEventReceived);
 
   connect(m_view, &AppLogWidget::clearRequested, this,
           &AppLogPresenter::handleClearRequested);
@@ -24,7 +26,7 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   qCDebug(appFeature) << "AppLogPresenter instantiated";
 }
 
-void AppLogPresenter::onLogEventReceived(const LogEvent &event) {
+void AppLogPresenter::onDemoLogEventReceived(const DemoLogEvent &event) {
   if (!m_model)
     return;
   m_model->addLogMessage(QString::fromStdString(event.message));

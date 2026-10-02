@@ -56,12 +56,13 @@ This script builds the application using Conan and CMake. With `--test ON` (defa
 
 - **Default build type**: `Release`
 - **Default options**: `--test ON`, `--update-translations OFF`, `--clean OFF`
-- **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv)
+- **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv). Also runs the production binary `--smoke-test` headless after ctest (validates cxxopts + QApplication + registerAll + AppMainWindow + theme/translator bootstrap).
 - **`--update-translations OFF`**: Default builds do not mutate tracked `resources/i18n/*.ts`; opt in with `ON` to refresh translation sources
 - **Test binary**: single hardcoded target `UnitTests` (no `UT_NAME` indirection); tests link `Qt6::Test`
 - **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; `${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe` on Windows (e.g. `build/Release/MyApp.exe`)
 - **Qt installation**: Automatically installs Qt if it's not already available
 - **Source discovery**: `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`; touch `CMakeLists.txt` manually only if a generator ever misses a new file (fallback, not the default path)
+- **Packaging smoke test**: `.github/scripts/` packaging scripts run the built binary with `--smoke-test`; keep that flag in `main.cpp` when customizing the template
 
 #### Example
 
@@ -119,7 +120,7 @@ This performs a Release build if needed and then runs the app. Arguments after `
 ├──── features/<name>/        # {model,presenter,widget}/ per feature
 ├──── logging/                # qC* categories + message handler
 ├──── platform/               # {core/,theme/} FilePersistenceProvider, theme.hpp
-├──── services/               # ConsoleLogService + registry/
+├──── services/               # DemoConsoleLogService + registry/
 ├──── widgets/<name>/         # Standalone widgets (e.g. ReusableWidget)
 ├── tests/
 ├──── features/               # Flat test files (e.g. CounterTest.cpp), not per-feature dirs
@@ -153,7 +154,7 @@ This project follows a **strictly modular feature-first architecture**. Each fea
 - `widget/`: The view/UI layer (e.g. `FooWidget`). UI slots follow Qt auto-connect naming (`on_<uiObjectName>_clicked` etc.); the slot name must match the `.ui` object name.
 - Feature tests are flat files under `tests/features/` (e.g. `tests/features/CounterTest.cpp`), not per-feature directories. Additional suites: `tests/{events,lifecycle,persistence,services}/`, `tests/MemoryPersistenceProvider.h`, `tests/sanity_test.cpp`.
 
-Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem), `services/` (registry + ConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets).
+Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem + DemoLogEvent), `services/` (registry + DemoConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets).
 
 **Configuration channels:** `app.env` = build-time metadata SSOT; `QSettings(ORGANIZATION_NAME, APP_NAME)` = window/UI chrome (geometry/state); `IPersistenceProvider` = feature state (FilePersistenceProvider JSON via QSaveFile; MemoryPersistenceProvider test double). Persistence keys embed the `APP_ID` compile definition (e.g. `APP_ID ".CounterState"`).
 
@@ -193,7 +194,7 @@ Examples:
 ./scripts/generate.sh widget SimplePreview
 ```
 
-Each invocation ensures the resulting module adheres to project architecture and coding conventions by default. Feature modules also include a `common.h` file for shared types and friend declarations, and a Google Test stub covering all layers.
+Each invocation ensures the resulting module adheres to project architecture and coding conventions by default. Feature modules also include a `common.h` file for shared types, and a Google Test stub covering all layers.
 
 Generated code must follow the same conventions as the reference features (`CounterModel` / `AppLogModel`) — e.g. models take a required `IPersistenceProvider&`. `AGENTS.md` is the authoritative contract for these conventions.
 

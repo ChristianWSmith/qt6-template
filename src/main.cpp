@@ -75,10 +75,16 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setDesktopFileName(APP_ID);
 
     // Declared after QApplication so it is destroyed before the application
-    // on scope exit. Removed explicitly before return so QCoreApplication
-    // never observes a destroyed translator.
+    // on scope exit. qScopeGuard removes the translator on every path after
+    // setup (success, smoke, exception unwind) so QCoreApplication never
+    // observes a destroyed translator. Explicit removeTranslator calls below
+    // stay for readability — they document intent on the normal paths and
+    // are idempotent; catch paths rely on the guard alone.
     QTranslator translator;
     setupLocalization(translator);
+    const auto translatorGuard = qScopeGuard([&translator] {
+      QCoreApplication::removeTranslator(&translator);
+    });
 
     AppMainWindow mainWindow;
 
