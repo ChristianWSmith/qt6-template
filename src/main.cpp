@@ -30,6 +30,32 @@ void setupLocalization(QTranslator &translator) {
   }
 }
 
+// Runtime resource embedding check for --smoke-test (E-002).
+// Complements cmake/VerifyProductionResources.cmake hex-scan by exercising
+// the real Qt resource system in the production binary.
+bool verifyProductionResources() {
+  const QStringList required = {
+      QStringLiteral(":/icons/app_icon.png"),
+      QStringLiteral(":/styles/custom.qss"),
+#if defined(Q_OS_WIN)
+      QStringLiteral(":/styles/windows/dark.qss"),
+      QStringLiteral(":/styles/windows/light.qss"),
+#elif defined(Q_OS_MACOS)
+      QStringLiteral(":/styles/macos/base.qss"),
+#else
+      QStringLiteral(":/styles/linux/base.qss"),
+#endif
+  };
+  bool ok = true;
+  for (const QString &path : required) {
+    if (!QFile::exists(path)) {
+      qCCritical(appMain) << "Smoke test: missing embedded resource:" << path;
+      ok = false;
+    }
+  }
+  return ok;
+}
+
 int main(int argc, char *argv[]) {
   try {
     // CLI parsing and configureLogLevel (logging module) live behind the
@@ -59,18 +85,25 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
+    // App metadata immediately after QApplication so every later path
+    // (persistence, QSettings, AppDataLocation) sees correct identity.
+    // Invariant: no persistence or QSettings use before this block.
+    QApplication::setApplicationName(QString::fromUtf8(APP_NAME));
+    QApplication::setOrganizationName(QString::fromUtf8(ORGANIZATION_NAME));
+    QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
+    QGuiApplication::setDesktopFileName(APP_ID);
+
     // Visible lifecycle API remains services::registerAll()/unregisterAll().
     // qScopeGuard is structural backup so exception unwind after registration
     // cannot skip unregister. Explicit unregisterAll() calls below stay for
     // readability; they are idempotent.
+    // Note: on exception paths C++ destroys automatics (including this guard)
+    // BEFORE catch handlers run — the guard is the exception-path mechanism.
+    // Catch-block unregisterAll() calls below are idempotent no-ops after
+    // ~QApplication (Subscription::reset disconnects only).
     services::registerAll();
     const auto unregisterServicesGuard =
         qScopeGuard([] { services::unregisterAll(); });
-    QApplication::setApplicationName(QString::fromStdString(APP_NAME));
-    QApplication::setOrganizationName(
-        QString::fromStdString(ORGANIZATION_NAME));
-    QApplication::setWindowIcon(QIcon(":/icons/app_icon.png"));
-    QGuiApplication::setDesktopFileName(APP_ID);
 
     // Declared after QApplication so it is destroyed before the application
     // on scope exit. qScopeGuard removes the translator on every path after
@@ -93,6 +126,13 @@ int main(int argc, char *argv[]) {
     setTheme();
 
     if (parsedArgs.contains("smoke-test")) {
+      // May READ real AppDataLocation on developer machines (model ctors
+      // call loadState); does not save on this path.
+      if (!verifyProductionResources()) {
+        services::unregisterAll();
+        QCoreApplication::removeTranslator(&translator);
+        return 1;
+      }
       qCInfo(appMain)
           << "Smoke test successful: Application initialized and exiting.";
       services::unregisterAll();
@@ -110,8 +150,8 @@ int main(int argc, char *argv[]) {
     std::cerr << "Invalid command line: " << e.what() << '\n';
     return 2;
   } catch (const std::exception &e) {
-    // Lifecycle contract: every path after registerAll() must unregister.
-    // (CLI parse errors are handled above and never reach registerAll.)
+    // Idempotent after unwind (guard already ran during stack unwinding
+    // before this handler; ~QApplication has already destroyed the app).
     services::unregisterAll();
     std::cerr << "UNCAUGHT EXCEPTION: " << e.what() << '\n';
     return 1;

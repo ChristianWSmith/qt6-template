@@ -205,6 +205,40 @@ TEST_F(LifecycleTest, CtorRestoresGeometryFromQSettings) {
   EXPECT_EQ(restored.size(), targetSize);
 }
 
+// Model destructors must not call the persistence provider (C-002).
+// Tracking double counts load/save calls; destruction of the model must not
+// increment the counter. Provider stays alive after model destruction.
+namespace {
+class TrackingPersistenceProvider : public MemoryPersistenceProvider {
+public:
+  int calls = 0;
+
+  PersistenceResult<QJsonObject> loadState(const QString &key) override {
+    ++calls;
+    return MemoryPersistenceProvider::loadState(key);
+  }
+
+  PersistenceResult<void> saveState(const QString &key,
+                                    const QJsonObject &state) override {
+    ++calls;
+    return MemoryPersistenceProvider::saveState(key, state);
+  }
+};
+} // namespace
+
+TEST_F(LifecycleTest, ModelDestructorDoesNotTouchProvider) {
+  TrackingPersistenceProvider provider;
+  int callsAfterCtor = 0;
+  {
+    CounterModel model(provider, nullptr);
+    callsAfterCtor = provider.calls;
+    EXPECT_GE(callsAfterCtor, 1) << "ctor loadState should have run";
+  }
+  // ~CounterModel must not call loadState/saveState.
+  EXPECT_EQ(provider.calls, callsAfterCtor)
+      << "Model destructor must not use the persistence provider";
+}
+
 #include "LifecycleTest.moc"
 
 // NOLINTEND

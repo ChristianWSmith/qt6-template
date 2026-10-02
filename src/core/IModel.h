@@ -37,6 +37,11 @@
 ///     teardown must not dereference the persistence provider reference.
 ///     Persistence I/O is only valid during loadState (ctor) and saveState
 ///     (explicit/composition-root) while the provider is guaranteed alive.
+///   - Corrupt persisted state (InvalidData) is quarantined by
+///     FilePersistenceProvider (file renamed to *.corrupt) before models see
+///     defaults. The next saveState() writes fresh defaults; the corrupt
+///     bytes are preserved on disk for recovery, not silently overwritten
+///     in place.
 class IModel {
 public:
   IModel() = default;

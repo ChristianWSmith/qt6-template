@@ -41,6 +41,7 @@ void CounterModel::loadState() {
       return;
     }
     // Operational errors are logged by the provider; model only branches.
+    // InvalidData is quarantined at the provider (file renamed *.corrupt).
     return;
   }
   const QJsonObject &obj = result.value();

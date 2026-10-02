@@ -59,7 +59,7 @@ This script builds the application using Conan and CMake. With `--test ON` (defa
 - **`--test ON`**: Builds the test suite **and runs** it via CTest after configure/build (`ctest --test-dir` runs outside pipenv). Also runs the production binary `--smoke-test` headless after ctest (validates cxxopts + QApplication + registerAll + AppMainWindow + theme/translator bootstrap).
 - **`--update-translations OFF`**: Default builds do not mutate tracked `resources/i18n/*.ts`; opt in with `ON` to refresh translation sources
 - **Test binary**: single hardcoded target `UnitTests` (no `UT_NAME` indirection); tests link `Qt6::Test`
-- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; `${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe` on Windows (e.g. `build/Release/MyApp.exe`)
+- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; Windows prefers the Ninja single-config layout `${BUILD_DIR}/${APP_NAME}.exe`; VS multi-config trees nest under `${BUILD_TYPE}/` (resolved by `scripts/lib/resolve-app-path.sh`)
 - **Qt installation**: Automatically installs Qt if it's not already available
 - **Source discovery**: `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`; touch `CMakeLists.txt` manually only if a generator ever misses a new file (fallback, not the default path)
 - **Packaging smoke test**: `.github/scripts/` packaging scripts run the built binary with `--smoke-test`; keep that flag in `main.cpp` when customizing the template
@@ -82,7 +82,7 @@ This will optionally build and then run the application.
 
 - **Default build type**: `Debug`
 - **Default options**: `--clean OFF`, `--rebuild OFF`, `--test OFF`, `--update-translations OFF`
-- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; `${BUILD_DIR}/${BUILD_TYPE}/${APP_NAME}.exe` on Windows (e.g. `build/Release/MyApp.exe`)
+- **App output**: `${BUILD_DIR}/${APP_NAME}` on Linux (e.g. `build/MyApp`); `${BUILD_DIR}/${APP_NAME}.app` on macOS; Windows prefers the Ninja single-config layout `${BUILD_DIR}/${APP_NAME}.exe`; VS multi-config trees nest under `${BUILD_TYPE}/` (resolved by `scripts/lib/resolve-app-path.sh`)
 - **Qt installation**: Automatically installs Qt if not found
 - **Platform-aware**: Handles `.exe` on Windows and `.app` bundles on macOS
 - **Source discovery**: Same `CONFIGURE_DEPENDS` glob as `build.sh`
@@ -121,7 +121,9 @@ This performs a Release build if needed and then runs the app. Arguments after `
 ├──── logging/                # qC* categories + message handler
 ├──── platform/               # {core/,theme/} FilePersistenceProvider, theme.hpp
 ├──── services/               # DemoConsoleLogService + registry/
-├──── examples/widgets/     # Teaching artifacts (e.g. ReusableWidget)
+├──── widgets/                # Standalone widgets (generate.sh widget); teaching example lives in examples/widgets/ (not compiled into _lib)
+├── examples/
+├──── widgets/reusable/       # ReusableWidget teaching artifact (Wave 8; not in the app build)
 ├── tests/
 ├──── features/               # Flat test files (e.g. CounterTest.cpp), not per-feature dirs
 ├──── MemoryPersistenceProvider.h
@@ -154,7 +156,7 @@ This project follows a **strictly modular feature-first architecture**. Each fea
 - `widget/`: The view/UI layer (e.g. `FooWidget`). UI slots follow Qt auto-connect naming (`on_<uiObjectName>_clicked` etc.); the slot name must match the `.ui` object name.
 - Feature tests are flat files under `tests/features/` (e.g. `tests/features/CounterTest.cpp`), not per-feature directories. Additional suites: `tests/{events,lifecycle,persistence,services}/`, `tests/MemoryPersistenceProvider.h`, `tests/sanity_test.cpp`.
 
-Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem + DemoLogEvent), `services/` (registry + DemoConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets).
+Other `src/` modules: `core/` (IModel, IPersistenceProvider), `events/` (EventSystem + DemoLogEvent), `services/` (registry + DemoConsoleLogService), `platform/` (FilePersistenceProvider, theme), `appmainwindow/` (composition root), `widgets/` (standalone widgets via `generate.sh widget`; the committed teaching example is `examples/widgets/reusable/` and is not compiled into `_lib`).
 
 **Configuration channels:** `app.env` = build-time metadata SSOT; `QSettings(ORGANIZATION_NAME, APP_NAME)` = window/UI chrome (geometry/state); `IPersistenceProvider` = feature state (FilePersistenceProvider JSON via QSaveFile; MemoryPersistenceProvider test double). Persistence keys embed the `APP_ID` compile definition (e.g. `APP_ID ".CounterState"`).
 
@@ -311,12 +313,7 @@ Resulting icons are placed in `resources/icons/` and are automatically picked up
 - Want to rename the app? Update `APP_NAME` in `app.env`, then also: rename/delete `resources/i18n/*.ts` files (they are `APP_NAME`-prefixed; translations load `APP_NAME_<lang>.qm`), rerun `./scripts/configure-vscode.sh` (`.vscode` embeds `APP_NAME`), and check any other `APP_NAME`-derived generated or configuration locations. Renaming `app.env` alone does **not** rename the application end-to-end.
 - `app_icon.ico` is used for Windows, `app_icon.png` is used for Linux, `app_icon.icns` is for macOS, and `app_icon.svg` is not used, but is included for posterity.
 - Delete/rename `.ts` files in `resources/i18n/` after updating the `APP_NAME` in `app.env`.
-- You can modify which languages you want to bundle translations for in `CMakeLists.txt` here:
-```cmake
-qt_standard_project_setup(
-    I18N_TRANSLATED_LANGUAGES en es de fr
-)
-```
+- You can modify which languages you want to bundle translations for in `app.env` (`I18N_TRANSLATED_LANGUAGES`, CMake list — semicolon-separated). CMake/Conan consume it via `scripts/env.sh` → `conanfile.py` → `qt_standard_project_setup`.
 
 ---
 

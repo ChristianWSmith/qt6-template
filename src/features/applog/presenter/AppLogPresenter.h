@@ -13,24 +13,26 @@ class AppLogPresenter : public QObject {
   Q_OBJECT
 
 public:
-  explicit AppLogPresenter(AppLogModel *model, AppLogWidget *view,
+  // Ctor-by-reference encodes required non-null dependencies (matches models
+  // and AppMainWindow::constructFeatures). QPointer members observe
+  // mid-session destruction; slots null-guard as belt-and-suspenders.
+  explicit AppLogPresenter(AppLogModel &model, AppLogWidget &view,
                            QObject *parent = nullptr);
 
 private slots:
   void onDemoLogEventReceived(const DemoLogEvent &event);
 
   // Full-state view refresh (AUD-116). The LogDelta payload is intentionally
-  // ignored — the widget no longer re-encodes the model trim protocol.
+  // ignored — the presenter pushes the complete retained list via
+  // setLogMessages; the widget no longer re-encodes the model trim protocol.
   void handleLogChanged();
   void handleLogCleared();
   void handleClearRequested();
 
 private:
   // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
-  // Slots null-guard before calling into model/widget (dependencies may be
-  // destroyed mid-session; QPointer observes destruction and reports null).
-  // Presenter destructors must not dereference these pointers.
-  // Connections auto-disconnect when either QObject is destroyed.
+  // Slots null-guard as belt-and-suspenders (EventSystem path + partial-
+  // destruction tests). Presenter destructors must not dereference these.
   QPointer<AppLogModel> m_model;
   QPointer<AppLogWidget> m_view;
 

@@ -41,26 +41,30 @@ QT_END_NAMESPACE
 ///
 /// Lifetime invariants:
 ///   - Member declaration order is CONSTRUCTION order (not a Qt
-///   destruction-order
-///     guarantee). Qt does not guarantee arbitrary QObject destruction order.
+///     destruction-order guarantee). Qt does not guarantee arbitrary QObject
+///     destruction order.
 ///   - m_provider is bound before every model that references it.
-///   - For each feature, model and widget are constructed before the presenter.
+///   - For each feature, model and widget are constructed before the presenter
+///     (single wiring site: constructFeatures()).
 ///   - Ownership is Qt parent-child: QObject children of this window die with
-///   it.
+///     it.
 ///   - Presenter pointers are non-owning. Presenter destructors must NOT
 ///     dereference m_model or m_view. Signal/slot connections auto-disconnect
 ///     when either QObject is destroyed.
 ///   - Any teardown logic that needs model/widget state must run before
 ///     destruction (e.g. closeEvent), not in presenter destructors.
+///   - Model destructors and teardown-reachable code must NOT call the
+///     persistence provider. Persistence I/O is only valid during loadState
+///     (ctor) and saveState() while the provider is guaranteed alive.
+///   - Every entry in m_models must outlive AppMainWindow. Do not destroy
+///     feature models independently while the window is alive.
 ///
 /// Lifetime contracts (Wave 1):
 ///   - AppMainWindow is stack-allocated in main(). Do NOT set
 ///     Qt::WA_DeleteOnClose — the stack frame would double-destroy the window.
 ///   - closeEvent intentionally calls hide() first (visible-state contract;
 ///     covered by lifecycle tests).
-///   - Model destructors and any code reachable during window teardown must
-///     NOT dereference the IPersistenceProvider& the models hold. Models never
-///     touch the provider in their destructors today; keep that invariant.
+///   - Feature members are nullptr until constructFeatures() wires them.
 class AppMainWindow : public QMainWindow {
   Q_OBJECT
 
@@ -69,6 +73,7 @@ public:
   explicit AppMainWindow(QWidget *parent = nullptr);
 
   /// Injected: caller-owned provider; must outlive this window; NOT reparented.
+  /// Declare the provider before the window in caller scope.
   /// Models bind IPersistenceProvider& to this reference.
   explicit AppMainWindow(IPersistenceProvider &provider,
                          QWidget *parent = nullptr);
@@ -93,10 +98,11 @@ private:
   // restore (observes status; never blocks), window title, central layout.
   void finishConstruction();
 
-  // Constructs all model/widget/presenter triples (parent=this) in
-  // provider-bound → model → widget → presenter order, and registers each
-  // model via registerModel(). Called from both ctors after m_provider is
-  // bound; the sole composition-wiring site.
+  // Sole composition-wiring site. Constructs all model/widget/presenter
+  // triples (parent=this) in provider-bound → model → widget → presenter
+  // order (presenter takes model/view by reference; does not create them),
+  // and registers each model via registerModel(). Called from both ctors
+  // after m_provider is bound.
   void constructFeatures();
 
   // Asserts non-null and appends the model to the m_models registry used by
@@ -108,21 +114,22 @@ private:
   // Bound before models (construction order). Non-owning: either the
   // caller-injected provider (borrowed, must outlive this window) or the
   // internally constructed child (owned by Qt parent-child).
-  IPersistenceProvider *m_provider;
+  IPersistenceProvider *m_provider = nullptr;
 
   // Per feature: model and widget constructed before the presenter (non-owning
   // refs). Presenter destructors must not dereference these members.
-  CounterModel *m_counterModel;
-  CounterWidget *m_counterWidget;
-  CounterPresenter *m_counterPresenter;
+  // nullptr until constructFeatures() runs.
+  CounterModel *m_counterModel = nullptr;
+  CounterWidget *m_counterWidget = nullptr;
+  CounterPresenter *m_counterPresenter = nullptr;
 
-  AppLogModel *m_appLogModel;
-  AppLogWidget *m_appLogWidget;
-  AppLogPresenter *m_appLogPresenter;
+  AppLogModel *m_appLogModel = nullptr;
+  AppLogWidget *m_appLogWidget = nullptr;
+  AppLogPresenter *m_appLogPresenter = nullptr;
 
   // Non-owning registry of feature models for polymorphic shutdown
   // persistence. Populated via registerModel() in constructFeatures().
   // Qt parent-child ownership remains with this window; these pointers do
-  // not own.
+  // not own. Entries must outlive the window.
   QList<IModel *> m_models;
 };

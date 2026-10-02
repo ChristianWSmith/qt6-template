@@ -39,17 +39,18 @@ void AppMainWindow::registerModel(IModel *model) {
 void AppMainWindow::constructFeatures() {
   // Sole composition-wiring site. Provider is already bound (m_provider set
   // in the init list). Per feature: model → widget → presenter (presenter
-  // does not create model/widget). Models load persisted state in their
-  // constructors before the presenter exists.
+  // takes model/view by reference and does not create them). Models load
+  // persisted state in their constructors before the presenter exists.
   m_counterModel = new CounterModel(*m_provider, this);
   m_counterWidget = new CounterWidget(this);
   m_counterPresenter =
-      new CounterPresenter(m_counterModel, m_counterWidget, this);
+      new CounterPresenter(*m_counterModel, *m_counterWidget, this);
   registerModel(m_counterModel);
 
   m_appLogModel = new AppLogModel(*m_provider, this);
   m_appLogWidget = new AppLogWidget(this);
-  m_appLogPresenter = new AppLogPresenter(m_appLogModel, m_appLogWidget, this);
+  m_appLogPresenter =
+      new AppLogPresenter(*m_appLogModel, *m_appLogWidget, this);
   registerModel(m_appLogModel);
 }
 

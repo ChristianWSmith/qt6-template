@@ -10,7 +10,7 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 
 ## Single Source of Truth
 
-`app.env` is the canonical source for `APP_NAME`, `APP_VERSION`, `APP_ID`, `QT_VERSION`, etc. All scripts, Conan, and CMake consume it via `scripts/env.sh`. Changing `app.env` flows automatically into Conan/CMake naming and versioning — no need to touch `CMakeLists.txt` or `conanfile.py` for those fields. End-to-end rename is **not** automatic: also rename `resources/i18n/*.ts` files (`APP_NAME`-prefixed) and rerun `./scripts/configure-vscode.sh` (see VSCode Setup and Key Quirks).
+`app.env` is the canonical source for `APP_NAME`, `APP_VERSION`, `APP_ID`, `QT_VERSION`, `I18N_TRANSLATED_LANGUAGES`, etc. All scripts, Conan, and CMake consume it via `scripts/env.sh`. Changing `app.env` flows automatically into Conan/CMake naming and versioning — no need to touch `CMakeLists.txt` or `conanfile.py` for those fields. End-to-end rename is **not** automatic: also rename `resources/i18n/*.ts` files (`APP_NAME`-prefixed) and rerun `./scripts/configure-vscode.sh` (see VSCode Setup and Key Quirks).
 
 ## Build Commands
 
@@ -43,7 +43,7 @@ src/
 ├── logging/            # qC* categories + message handler
 ├── platform/           # {core/,theme/} — FilePersistenceProvider, theme.hpp
 ├── services/           # DemoConsoleLogService + registry/
-└── widgets/<name>/     # standalone widgets (see examples/widgets/reusable)
+└── widgets/<name>/     # standalone widgets (generate.sh widget); teaching example lives in examples/widgets/reusable/ (not compiled into _lib)
 ```
 
 - Test tree: feature tests are flat files under `tests/features/<Name>Test.cpp` (not per-feature directories). Additional suites live under `tests/{events,lifecycle,persistence,services,logging,themes}/`, plus `tests/MemoryPersistenceProvider.h` and `tests/sanity_test.cpp`.
@@ -57,18 +57,21 @@ src/
 - `app.env` is the single source of truth for app metadata
 - **`${APP_NAME}_lib` links `Qt6::Widgets` PUBLIC** (public headers include Widgets types) and `fmt::fmt` PRIVATE. Consumers inherit Widgets via the lib; explicit consumer link lines are redundant but harmless.
 - **cxxopts** is kept as a third-party Conan CLI dependency alongside **fmt** (dependency-management demonstration). Prefer `QCommandLineParser` / `QString::arg` / `std::format` in **production application code** if Qt-native/C++-standard facilities are a deliberate project choice; do not remove cxxopts/fmt from this template solely because Qt/std have equivalents — they demonstrate Conan dependency management.
-- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty. QSS open failures log under `appMain`.
+- **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()` sampled **once at `setTheme()`** — no live `colorSchemeChanged` re-apply (runtime OS theme switches need an app restart). Linux/macOS paths never sample `colorScheme()`. Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty. QSS open failures log under `appMain`.
 - **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
 - **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`). Unknown tokens leave Qt rules unchanged.
 - **Architecture boundary checks** run in `scripts/build.sh` (not CI-only) and as CTest `ArchitectureBoundaries` on UNIX. The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Rule numbering matches `scripts/check-architecture-boundaries.sh`:
   1. Feature widgets and standalone `src/widgets/` must not include model headers (`model/` path segment or `*Model.h` basename; basename rule excludes `IModel.h`).
+  1w. Feature/standalone widgets must not include `events/`, `EventSystem`, `platform/`, or `core/` headers (UI stays UI-only; **logging is allowed** — reference widgets include it).
   2. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `DemoLogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`) and must not `#include` `events/` headers.
   3. Feature models must not include widget headers (`widget/` path or `*Widget.h` basename).
   4. Feature models must not include EventSystem/`events/` headers.
   5. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
-  6. `src/core` must not include `widgets/`, `events/`, or `features/`.
+  6. `src/core` must not include `widgets/`, `events/`, `features/`, or `platform/`.
   
-  Exemptions: presenters, `src/appmainwindow/`, `src/main.cpp`, `tests/`. Allowed directions (not violations): `src/events` → `src/logging`; `src/services` → `src/events` + `src/logging`; `src/platform` → `src/core` + `src/logging`; `src/features/*/model` → `src/core` + `src/logging`.
+  Exemptions: presenters, `src/appmainwindow/`, `src/main.cpp`, `tests/`. Allowed directions (not violations): `src/events` → `src/logging`; `src/services` → `src/events` + `src/logging`; `src/platform` → `src/core` + `src/logging`; `src/features/*/model` → `src/core` + `src/logging`; `src/features/*/widget` → `src/logging`.
+- **UnitTests QSS embedding:** `tests/CMakeLists.txt` derives the QSS list from `resources/resources.qrc` via `cmake/ParseQrcStyles.cmake` (AUD-121) and embeds those files with `qt_add_resources` — the production qrc remains the single source of truth for which style files ship. Do not hardcode a parallel QSS list. `cmake/VerifyProductionResources.cmake` regression-checks the **production** executable (not UnitTests).
+- **CMake AUTOGEN_BUILD_DIR:** `CMakeLists.txt` sets `AUTOGEN_BUILD_DIR` explicitly on `${APP_NAME}_lib` and exposes `${AUTOGEN_BUILD_DIR}/include` as an INTERFACE include. Do not "simplify" this to a `$<TARGET_PROPERTY:...>` generator expression — generator-expression forms evaluate empty in consumer compile lines (AUD-110).
 - **ReusableWidget** lives at `examples/widgets/reusable/` (Wave 8 relocation). It is an intentional teaching example of the standalone-widget convention (deleted copy/move, `std::unique_ptr<Ui::ReusableWidget>`, signal/slot placeholders). It is **not** compiled into `${APP_NAME}_lib` and is not instantiated by the sample app. Copy the pattern into `src/widgets/<name>/` when scaffolding a real standalone widget. `generate.sh widget` remains the canonical generator for new widgets.
 - **`build.sh --test ON`** also runs the production binary `--smoke-test` headless after ctest. The binary path is resolved via `scripts/lib/resolve-app-path.sh`: Windows prefers the Ninja single-config layout at `${BUILD_DIR}/${APP_NAME}.exe` first, then falls back to multi-config `${BUILD_DIR}/${CMAKE_BUILD_TYPE}/${APP_NAME}.exe` (Visual Studio). Missing smoke binary: **hard-fail** under CI or when `BUILD_TESTING=ON`; otherwise warn and skip. Packaging scripts (`.github/scripts/*`) require `--smoke-test` in `main.cpp`.
 
@@ -86,8 +89,9 @@ src/
 - **Conan dependency layout:** `requires` = fmt + cxxopts; `build_requires` = ninja; `test_requires` = gtest. `conan.lock` may also record profile-driven or transitive entries (e.g. Linux `xorg/system`, pkgconf/meson/cmake) beyond the declared recipe layout — that superset is expected Conan lock behavior, not a defect.
 - **fmt lock example:** pin range in `conanfile.py` is `fmt/[>=12.0.0 <13]` (lock currently resolves 12.x). Use that range in docs/examples — do not cite older ranges.
 - **Dockerfile is toolchain-only** (compiler, cmake, pipenv, X11/build deps). It does **not** install a parallel system Qt; Qt still comes from the local `Qt/` tree via `scripts/install-qt.sh` (aqtinstall). Do not document a Docker Qt path.
-- **Dockerfile toolchain alignment:** Ubuntu 26.04 with explicit `gcc-15`/`g++-15` plus `update-alternatives` so plain `gcc`/`g++` resolve to major 15 — matching `conan/profiles/linux` `compiler.version=15`. CI Linux installs the profile major on the runner and runs a **Compiler profile guard** step that fails when the runner compiler major ≠ profile major (Conan does not verify this itself).
-- **aqtinstall is pinned to a git commit** (`076e1659…` in `Pipfile`), not floating `master` and not PyPI `3.3.0`. PyPI 3.3.0 cannot install Qt 6.11+ on Windows (Qt uses arch-specific repo folders such as `qt6_6111/qt6_6111_msvc2022_64/`; aqt PR #1000 adds that support). Switch to a PyPI release when aqtinstall >= 3.4.0 exists.
+- **Dockerfile toolchain alignment:** Ubuntu 26.04 with explicit `gcc-15`/`g++-15` plus `update-alternatives` so plain `gcc`/`g++` resolve to major 15 — matching `conan/profiles/linux` `compiler.version=15`. CI Linux installs the profile major on the runner and runs a **Compiler profile guard** step that fails when the runner compiler major ≠ profile major (Conan does not verify this itself). `conan/profiles/{linux,darwin}` also set `tools.cmake.cmaketoolchain:generator=Ninja` (Windows already did); `conan/profiles/darwin` pins apple-clang 21 + armv8 for macos-latest; `conan/profiles/windows` pins msvc 194 (v143 compat on VS 2026 images) deliberately.
+- **Conan profile pin check:** `scripts/check-conan-profile-toolchain.sh` compares every `conan/profiles/*` `compiler.version` pin against the detected host compiler (linux/darwin/windows). CI runs it as a **non-fatal** step (`continue-on-error: true`) while the linux pin intentionally targets incoming ubuntu-26.04 / gcc 15. Flip to fatal once runner migration is validated. Complements (does not replace) the Linux-only fatal Compiler profile guard.
+- **aqtinstall is pinned to a git commit** (`076e1659…` in `Pipfile`), not floating `master` and not PyPI `3.3.0`. PyPI 3.3.0 cannot install Qt 6.11+ on Windows (Qt uses arch-specific repo folders such as `qt6_6111/qt6_6111_msvc2022_64/`; aqt PR #1000 adds that support; the PR merged 2026-03-24 but is still unreleased on PyPI as of 2026-10-02). Switch to a PyPI release when a published release **contains PR #1000** (version may be 3.3.1+ rather than 3.4.0 — check the changelog).
 
 ## Code Generation
 
@@ -107,7 +111,7 @@ Name must start with an uppercase letter and be a valid C++ identifier (regex `^
 - CI runs the same path on Linux/Windows/macOS, plus `scripts/test-generator.sh`
 - Generated test files include a `.moc` include at the bottom. It is **required** when the test `.cpp` defines `Q_OBJECT` (e.g. `tests/events/EventsTest.cpp`); feature fixtures without `Q_OBJECT` compile an empty moc — the include is harmless convention there, not a hard requirement for every test file.
 
-**Test-mode isolation contract:** `tests/main.cpp` enables Qt test mode (`QStandardPaths::setTestModeEnabled(true)`) and redirects QSettings UserScope paths to a temp dir **before** any test constructs persistence providers or windows. New test targets must preserve this contract — tests never write real `AppDataLocation` data or the developer's organization/application settings.
+**Test-mode isolation contract:** `tests/main.cpp` enables Qt test mode (`QStandardPaths::setTestModeEnabled(true)`) and redirects QSettings UserScope paths to a temp dir **before** any test constructs persistence providers or windows. Invalid `QTemporaryDir` **aborts** the test bootstrap (isolation is not optional). If `QT_QPA_PLATFORM` is unset, `tests/main.cpp` defaults it to `offscreen` for IDE/headless builds. New test targets must preserve this contract — tests never write real `AppDataLocation` data or the developer's organization/application settings.
 
 ### Operational Recipes
 
@@ -139,7 +143,7 @@ AppMainWindow window(provider);      // injected ctor: IPersistenceProvider&
 // Provider must outlive the window. Not reparented. See Ownership Rules.
 ```
 
-Use `failNextSave(...)` / `failNextLoad(...)` on the double for one-shot failure injection. Feature fixtures construct `Model(provider, nullptr)` directly without a window.
+Use `failNextSave(...)` / `failNextLoad(...)` on the double for one-shot failure injection. Feature fixtures construct `Model(provider, nullptr)` directly without a window. `seedRaw(...)` injects arbitrary bytes for InvalidData taxonomy tests (`tests/persistence/MemoryPersistenceProviderTest.cpp`). Contract tests for the double (NotFound / round-trip / one-shot injection) live in `tests/persistence/MemoryProviderContractTest.cpp`.
 
 ## Dependencies
 
@@ -155,9 +159,9 @@ Use `failNextSave(...)` / `failNextLoad(...)` on the double for one-shot failure
 - **clang-tidy (editor-side)**: `.clang-tidy` sets `WarningsAsErrors: '*'` for editor/clangd use via `./scripts/configure-vscode.sh`. CI does not currently run clang-tidy as a build step. Keep generated code free of new tidy findings; preserve intentional NOLINT annotations.
 - **Qt AUTOMOC/AUTOUIC/AUTORCC**: `qt_standard_project_setup()` enables AUTOMOC and AUTOUIC only — **not** AUTORCC. This project sets `CMAKE_AUTORCC ON` in `CMakeLists.txt` so `resources.qrc` listed on the executable is actually processed. Without AUTORCC, a bare `.qrc` source is a silent no-op (no resources embedded). Do not remove the AUTORCC line; tests that embed QSS via `qt_add_resources` do not substitute for production embedding.
 - **Lockfile merges**: Conan lockfile is merged across all 3 platforms. If a version range doesn't satisfy all platforms, you'll need to pin explicitly in `conanfile.py`. The merged lock may contain additional profile/transitive packages; do not "clean" the lock without re-running `./scripts/conan-lock-update.sh` and re-validating CI.
-- **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages configured in `CMakeLists.txt` via `I18N_TRANSLATED_LANGUAGES`. Default builds do **not** update `.ts` files (`UPDATE_TRANSLATIONS=OFF`); opt in via `./scripts/build.sh --update-translations ON`. Delete/rename `.ts` files after app name changes.
+- **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages are configured in **`app.env`** (`I18N_TRANSLATED_LANGUAGES`) and threaded through Conan → CMake `qt_standard_project_setup`. Default builds do **not** update `.ts` files (`UPDATE_TRANSLATIONS=OFF`); opt in via `./scripts/build.sh --update-translations ON`. Delete/rename `.ts` files after app name changes (`resources/i18n/${APP_NAME}_<lang>.ts`).
 - **Metadata SSOT**: `app.env` is required. CMake and Conan fail fast with a clear error if `APP_*` variables are missing — there are no silent fallback defaults.
-- **Conan compiler profiles**: `conan/profiles/{linux,windows,darwin}` pin compiler versions for dependency resolution. Keep them aligned with the CI runners' actual toolchains when those change. The Dockerfile is aligned with `conan/profiles/linux` (gcc-15); CI enforces the Linux runner major via the Compiler profile guard step.
+- **Conan compiler profiles**: `conan/profiles/{linux,windows,darwin}` pin compiler versions for dependency resolution. Linux/darwin also set `tools.cmake.cmaketoolchain:generator=Ninja` (Windows already did). `scripts/check-conan-profile-toolchain.sh` compares pins to the detected host compiler (CI step is non-fatal while the linux pin intentionally targets incoming ubuntu-26.04 / gcc 15). Darwin pin is apple-clang 21 + armv8 for macos-latest. Windows msvc 194 is a deliberate v143 compat pin on VS 2026 images.
 - **CMake presets**: Conan CMakeToolchain generates `build/CMakePresets.json` and `CMakeUserPresets.json` (e.g. `cmake --preset conan-release`). Prefer `./scripts/build.sh`; presets are an optional IDE/parallel entry, not a replacement for `app.env` SSOT.
 
 ### Deferred (Wave 8 — revisit only if requirements change)
@@ -278,7 +282,7 @@ events::publish(DemoLogEvent{"message"});
 
 - The stock application does **not** publish `DemoLogEvent` in production code. Absence of production publishers is intentional pedagogy, not an unfinished feature. Types are named `Demo*` so code shape does not imply a live production flow.
 - Production **subscription** wiring exists: `AppLogPresenter` (QObject receiver, constructed by `AppMainWindow`; stores the receiver-lifetime `Subscription` for optional `reset()`) and `DemoConsoleLogService` (free-function, registered in `services::registerAll()`).
-- AppLog's real feature data path is model signals (`logChanged` / `logCleared`); the DemoLogEvent bus path is demonstration wiring without a production feed.
+- AppLog's real feature data path is model signals (`logChanged` / `logCleared`); the presenter always pushes **full retained state** via `AppLogWidget::setLogMessages` (AUD-116) — the `LogDelta` payload is not forwarded to the view. The DemoLogEvent bus path is demonstration wiring without a production feed.
 - This is an **architectural demonstration** of EventSystem subscription, not a live end-to-end event flow.
 - Diagnostic logging (`qC*` + message handler) never uses the EventSystem.
 - Applications that need cross-component events publish their own domain events from semantically honest sites (feature actions, lifecycle, etc.) — do not route diagnostic logs onto the bus.
@@ -331,6 +335,7 @@ Persistence failures have three distinct layers — do not conflate them:
 - `closeEvent` never blocks shutdown on save failure (log-and-continue; see the composition-root bullet above). QSettings chrome (geometry/state) save is a separate channel from feature-state persistence, and failures there are also non-blocking at shutdown.
 - `QSaveFile` atomic replace is not power-loss durability: `PersistenceError::CommitError` means `QSaveFile::commit()` failed (the atomic replace did not complete); Qt does not surface fsync errors from `commit()`.
 - At the **provider** boundary, `FilePersistenceProvider` distinguishes failure kinds: missing file → `NotFound` (first-run); exists-but-unreadable → `IoError`; damaged JSON / non-object → `InvalidData`; failed atomic replace → `CommitError`.
+- Corrupt persisted state (`InvalidData`) is **quarantined** by `FilePersistenceProvider` (file renamed to `*.corrupt`) before models see defaults. The next `saveState()` writes fresh defaults; the corrupt bytes are preserved on disk for recovery, not silently overwritten in place. The quarantine rename closes the `QFile` handle first (Windows cannot rename an open file).
 - At the **model** boundary, `IModel::loadState()` is `void` by design: `NotFound` is silent first-run, and operational load errors (`IoError` / `InvalidData`) are also absorbed — the model keeps defaults. Corruption is therefore indistinguishable from never-saved **only at the model load boundary**, not at the provider. Apps that need load-error UX (e.g. "data was reset because corrupt") must **extend the `IModel` contract deliberately** (return `PersistenceResult` from `loadState`, or a documented status signal) — do not "fix" this with ad-hoc parallel load-result APIs or model-layer duplicate persistence logging.
 - The `PersistenceError` taxonomy distinctions are load-bearing at the provider and in `PersistenceResult`: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
 - **`PersistenceResult` is a C++20 `std::expected` analogue** (project pins C++20). On C++23, consider migrating both specializations to `std::expected` in a dedicated change; do not remove the type while on C++20.
@@ -407,8 +412,8 @@ src/features/myfeature/
 
 - **`{name}common.h`** — always emitted by the generator. Use for cross-layer feature types (e.g. `LogDelta` in `applogcommon.h`). Reference features test via public API + `findChild` and do **not** declare `friend` test classes; the generator matches that philosophy.
 - **Model** (`model/`) — owns application state, exposes getters/setters, handles persistence via `IPersistenceProvider`. Implements `IModel` (`loadState()`, `saveState() -> PersistenceResult<void>`). **This template's Model is application state (IModel), not `QAbstractItemModel`.** For Qt item views prefer `QAbstractListModel` (or another `QAbstractItemModel` subclass) in a dedicated model/view feature — do not force feature-state persistence through the item-model hierarchy.
-- **Presenter** (`presenter/`) — receives model and widget via constructor, wires signals/slots between them
-- **Widget** (`widget/`) — UI only, no business logic, concrete class
+- **Presenter** (`presenter/`) — receives model and widget via constructor **by reference** (`Model &`, `Widget &`; non-null encoded in the type; QPointer members still observe mid-session destruction), wires signals/slots between them
+- **Widget** (`widget/`) — UI only, no business logic, concrete class. View API convention: **`display*`** methods for presenter→view state pushes (e.g. `CounterWidget::displayCounter`). Full-state replacement may use **`set*`** when the call promises replacement semantics (e.g. `AppLogWidget::setLogMessages` — clears then adds; the name is deliberate).
 
 Widget UI slots follow Qt auto-connect naming: `on_<uiObjectName>_clicked` etc.
 The slot name must match the `.ui` object name or the slot will never fire.
@@ -421,7 +426,7 @@ Follow this wiring order. Items marked **silent failure** do not produce a compi
 
 1. Generate the feature: `./scripts/generate.sh feature MyThing`
 2. Inspect the generated files (model/presenter/widget + test stub)
-3. Wire in `AppMainWindow::constructFeatures()` (the sole composition-wiring site; called from both ctors after the provider is bound) in this order: **model → widget → presenter** (presenter does **not** create model/widget). Provider must be bound before models (`IPersistenceProvider&` into the model).
+3. Wire in `AppMainWindow::constructFeatures()` (the sole composition-wiring site; called from both ctors after the provider is bound) in this order: **model → widget → presenter** (presenter does **not** create model/widget; it takes model/view by reference). Provider must be bound before models (`IPersistenceProvider&` into the model).
 4. **Register the model** in `constructFeatures()`: `registerModel(m_myThingModel)`. This is the sole `m_models` append site (non-null assert + list append). **Silent failure:** omitting `registerModel` disables shutdown persistence for that feature — there is no census assert to catch it. Models return `PersistenceResult<void>` from `saveState()`; do not invent a parallel save path.
 5. Connect model→presenter signals and widget→presenter request signals (widget UI slots use `on_<uiObjectName>_...` auto-connect names that match the `.ui` object).
 6. **Perform initial model→view synchronization** in the presenter ctor after connects (e.g. `m_view->displayX(m_model->x())`). Models load persisted state in their constructors *before* the presenter exists — emissions during model construction have no subscribers. **Silent failure:** without this step, a generated feature with restored state shows a stale/empty view until first interaction. See `CounterPresenter.cpp` / `AppLogPresenter.cpp`.
@@ -434,7 +439,7 @@ Follow this wiring order. Items marked **silent failure** do not produce a compi
 11. Verify shutdown persistence (closeEvent loop covers the new model via `registerModel` → `m_models`)
 12. Build and run the complete test suite: `./scripts/build.sh --test ON`
 
-`generate.sh` is the canonical starting point for new features. Generated output matches the reference conventions (`CounterModel` / `AppLogModel`): provider-by-reference, `PersistenceResult` forwarding in `saveState()`, and `NotFound` as first-run in `loadState()`. Generated `saveState()` **calls the provider** (it does not silently return success). Generated presenter scaffolds initial model→view sync (comment + example; fill in real calls). `loadState()` body remains feature-specific/TODO — fill it in. Do not "correct" generated code into a different architecture.
+`generate.sh` is the canonical starting point for new features. Generated output matches the reference conventions (`CounterModel` / `AppLogModel`): provider-by-reference, `PersistenceResult` forwarding in `saveState()`, and `NotFound` as first-run in `loadState()`. Generated `saveState()` **calls the provider** (it does not silently return success). Generated presenter scaffolds a **by-reference** ctor and initial model→view sync (comment + example; fill in real calls). Generated tests include provider-injection + save-failure forwarding checks **and** behavioral scaffolds (`RestoredStateVisibleWithoutInteraction`, `LoadStateRestoresPersistedValues`) — fill those in once `loadState()` and the view API exist. `loadState()` body remains feature-specific/TODO. Do not "correct" generated code into a different architecture.
 
 Composition-root extension summary: add triples in `constructFeatures()`, call `registerModel` for each model, add widgets with `mainLayout->addWidget(...)` in `finishConstruction()`. Do not add feature widgets to `AppMainWindow.ui`. There is no model-census assert to update.
 
@@ -495,6 +500,7 @@ There is no auto-registration macro. Registration is visible and explicit.
 - `closeEvent` saves QSettings chrome (observes `QSettings::status()`, logs a warning on non-`NoError`) + iterates `QList<IModel*>` calling `saveState()`; results are observed (logged via `qCDebug(appPersistence)` when error) but never block shutdown — no `processEvents()` pumping.
 - Service teardown is explicit: `services::unregisterAll()` runs from `main()` on every path after `registerAll()` (normal, smoke-test, and exception catch paths) before returning — and thus before `QApplication` destruction on those paths.
 - QObject destruction follows the ownership tree.
+- Model destructors must not call the persistence provider (locked by `LifecycleTest.ModelDestructorDoesNotTouchProvider` via a tracking double).
 
 ### Non-Goals
 
@@ -511,7 +517,7 @@ This template intentionally does not:
 
 GitHub Actions builds and tests on Linux, Windows, and macOS.
 Uses the same Conan/pipenv setup as dev scripts for parity.
-CI steps: architecture-boundary check (Linux), **Compiler profile guard (Linux)** (runner compiler major must match `conan/profiles/linux`), `scripts/build.sh --test ON` (includes production `--smoke-test`; missing smoke binary hard-fails under CI), generator smoke test (`scripts/test-generator.sh`), then platform packaging via `.github/scripts/`.
+CI steps: architecture-boundary check (Linux), **Compiler profile guard (Linux)** (runner compiler major must match `conan/profiles/linux`), **Conan profile pin check** (all platforms; non-fatal while the linux pin targets incoming ubuntu-26.04 — via `scripts/check-conan-profile-toolchain.sh`), `scripts/build.sh --test ON` (includes production `--smoke-test`; missing smoke binary hard-fails under CI), generator smoke test (`scripts/test-generator.sh`), then platform packaging via `.github/scripts/`.
 See `.github/workflows/ci.yml`.
 
 ---

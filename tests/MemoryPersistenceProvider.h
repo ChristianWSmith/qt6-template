@@ -14,7 +14,15 @@
 ///   - corrupt JSON (parse error) → InvalidData
 ///   - valid JSON that is not an object → InvalidData
 /// This is an API-boundary double, not a storage-behavior clone
-/// (no filesystem, no QSaveFile commit semantics).
+/// (no filesystem, no QSaveFile commit semantics, no quarantine rename).
+///
+/// Fidelity notes (G-007):
+///   - Stores compact JSON objects only via saveState; seedRaw() injects
+///     arbitrary bytes to simulate damaged or non-object storage that cannot
+///     be produced through the public QJsonObject saveState API.
+///   - Error kinds other than NotFound are available via failNextLoad /
+///     failNextSave injection (CommitError, IoError, InvalidData).
+///   - Not thread-safe — matches the GUI-thread persistence contract.
 class MemoryPersistenceProvider : public IPersistenceProvider {
 public:
   void failNextLoad(PersistenceError error) { nextLoadError_ = error; }

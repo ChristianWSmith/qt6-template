@@ -57,6 +57,7 @@ void AppLogModel::loadState() {
       return;
     }
     // Operational errors are logged by the provider; model only branches.
+    // InvalidData is quarantined at the provider (file renamed *.corrupt).
     return;
   }
 
@@ -72,9 +73,9 @@ void AppLogModel::loadState() {
 
   // Re-apply the retention cap after load so persisted state never
   // exceeds kMaxLogSize even if the file was written by a prior version
-  // or an external writer.
-  while (m_logMessages.size() > kMaxLogSize) {
-    m_logMessages.removeFirst();
+  // or an external writer. Single mid() suffix take — O(n), not O(n·excess).
+  if (m_logMessages.size() > kMaxLogSize) {
+    m_logMessages = m_logMessages.mid(m_logMessages.size() - kMaxLogSize);
   }
 
   qCInfo(appPersistence) << "Loaded" << m_logMessages.size() << "log messages";

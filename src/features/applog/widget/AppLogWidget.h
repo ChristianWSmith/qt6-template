@@ -23,6 +23,9 @@ public:
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
   void clear();
+  // Full-state replacement (AUD-116): clears then adds. Name set* (not
+  // display*) because the call promises replacement semantics, not an
+  // incremental push. CounterWidget uses displayCounter for value pushes.
   void setLogMessages(const QStringList &messages);
 
 signals:

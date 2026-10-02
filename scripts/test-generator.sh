@@ -106,6 +106,13 @@ check "Presenter.cpp uses Q_ASSERT for view" \
 check "Presenter.cpp scaffolds initial model→view sync after connects" \
   "${PRESENTER_CPP}" 'Initial model → view synchronization'
 
+check "Presenter.h ctor takes model/view by reference" \
+  "${FEATURE_DIR}/presenter/${NAME_TITLE}Presenter.h" \
+  "${NAME_TITLE}Model &model"
+
+check "Presenter.cpp ctor takes model/view by reference" \
+  "${PRESENTER_CPP}" "${NAME_TITLE}Model &model"
+
 check "Presenter.cpp does not declare a destructor" \
   "${PRESENTER_CPP}" '~[A-Za-z0-9_]*Presenter' invert
 
@@ -117,6 +124,9 @@ check "Model.h does not declare friend test class" \
 
 check "Widget.h does not declare friend test class" \
   "${FEATURE_DIR}/widget/${NAME_TITLE}Widget.h" 'friend class' invert
+
+check "Model.h documents provider-dtor invariant" \
+  "${MODEL_H}" 'must NOT call the persistence'
 
 check "common.h documents shared-type purpose" \
   "${FEATURE_DIR}/${NAME_LOWER}common.h" 'shared header|shared types|Feature-local'
@@ -130,8 +140,14 @@ check "Test fixture uses MemoryPersistenceProvider" \
 check "Test fixture wires model(provider, nullptr)" \
   "${TEST_FILE}" 'model\(provider, nullptr\)'
 
-check "Test fixture wires presenter(&model, &view)" \
-  "${TEST_FILE}" 'presenter\(&model, &view\)'
+check "Test fixture wires presenter(model, view) by reference" \
+  "${TEST_FILE}" 'presenter\(model, view\)'
+
+check "Test file includes behavioral restore scaffold" \
+  "${TEST_FILE}" 'RestoredStateVisibleWithoutInteraction'
+
+check "Test file includes loadState restore scaffold" \
+  "${TEST_FILE}" 'LoadStateRestoresPersistedValues'
 
 check "Test file includes .moc" \
   "${TEST_FILE}" "#include \"${NAME_TITLE}Test\.moc\""

@@ -2,9 +2,9 @@
 #include "../../../events/system/EventSystem.hpp"
 #include "../../../logging/logging.h"
 
-AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
+AppLogPresenter::AppLogPresenter(AppLogModel &model, AppLogWidget &view,
                                  QObject *parent)
-    : QObject(parent), m_model(model), m_view(view) {
+    : QObject(parent), m_model(&model), m_view(&view) {
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 

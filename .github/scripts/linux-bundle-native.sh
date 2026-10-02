@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+# Native Linux tarball packaging.
+#
+# Runtime Qt contract (E-011):
+#   - This script does NOT rewrite rpath to /usr/lib. That path is wrong for
+#     multiarch distros (Qt often lives in /usr/lib/x86_64-linux-gnu) and for
+#     the aqt-installed Qt this template builds against.
+#   - The staged binary keeps the link-time rpath into the local Qt/ tree.
+#     On target systems, provide Qt via the system package (distro Qt6 on the
+#     loader path) or set LD_LIBRARY_PATH to a Qt install.
+#   - The staged binary MUST pass --smoke-test before tarring (packaging
+#     validation parity with AppImage/mac/windows scripts).
 set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -40,7 +51,14 @@ mkdir -p "${TARGET_ROOT_DIR}/share/icons/hicolor/512x512/apps"
 
 cp "${SOURCE_BINARY_PATH}" "${TARGET_ROOT_DIR}/bin/${APP_NAME}"
 chmod +x "${TARGET_ROOT_DIR}/bin/${APP_NAME}"
-patchelf --set-rpath '/usr/lib' "${TARGET_ROOT_DIR}/bin/${APP_NAME}"
+
+# Smoke-test the staged binary before packaging (E-011).
+# Use build-environment Qt (PATH + LD_LIBRARY_PATH from env.sh / local Qt/).
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}"
+export LD_LIBRARY_PATH="${QT_ROOT}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+echo "Smoke-testing staged binary: ${TARGET_ROOT_DIR}/bin/${APP_NAME}"
+"${TARGET_ROOT_DIR}/bin/${APP_NAME}" --smoke-test
+echo "Staged binary smoke-test passed."
 
 cat << EOF > "${TARGET_ROOT_DIR}/share/applications/${DESKTOP_TEMPLATE_NAME}"
 [Desktop Entry]
