@@ -37,23 +37,28 @@ static void quarantineCorruptFile(const QString &key, const QString &filePath) {
 PersistenceResult<QJsonObject>
 FilePersistenceProvider::loadState(const QString &key) {
   const QString filePath = getFilePath(key);
-  QFile file(filePath);
-  if (!file.open(QIODevice::ReadOnly)) {
-    if (file.exists()) {
-      qCWarning(appPersistence)
-          << "Persistence load failed for key:" << key << "-"
-          << toString(PersistenceError::IoError)
-          << "(file exists but could not be opened)";
+  QByteArray data;
+  {
+    // Close the QFile before parse/quarantine: Windows cannot rename a file
+    // while a handle is open (Linux allows it — platform-sensitive bug).
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+      if (file.exists()) {
+        qCWarning(appPersistence)
+            << "Persistence load failed for key:" << key << "-"
+            << toString(PersistenceError::IoError)
+            << "(file exists but could not be opened)";
+        return PersistenceResult<QJsonObject>::failure(
+            PersistenceError::IoError);
+      }
+      qCDebug(appPersistence)
+          << "Persistence load: no state file for key:" << key << "(first run)";
       return PersistenceResult<QJsonObject>::failure(
-          PersistenceError::IoError);
+          PersistenceError::NotFound);
     }
-    qCDebug(appPersistence)
-        << "Persistence load: no state file for key:" << key << "(first run)";
-    return PersistenceResult<QJsonObject>::failure(
-        PersistenceError::NotFound);
+    data = file.readAll();
   }
 
-  const QByteArray data = file.readAll();
   QJsonParseError parseError{};
   const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
 
