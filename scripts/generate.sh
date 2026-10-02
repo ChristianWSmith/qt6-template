@@ -309,6 +309,15 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   // connect(m_model, &${NAME_TITLE}Model::someStateChanged, this,
   //         &${NAME_TITLE}Presenter::handleSomeStateChanged);
 
+  // Initial model → view synchronization (required).
+  // Models load persisted state in their constructors BEFORE this presenter
+  // exists, so emissions during model construction have no subscribers.
+  // After connections are established, push current model state to the view once.
+  // Replace the example with the feature's real model→view update calls
+  // (see CounterPresenter.cpp / AppLogPresenter.cpp).
+  // Example:
+  // m_view->displayX(m_model->x());
+
   qCDebug(appFeature) << "${NAME_TITLE}Presenter instantiated";
 }
 
@@ -372,3 +381,4 @@ echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to 
 echo "  2. Append ${NAME_TITLE}Model to m_models."
 echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
 echo "  4. Implement ${NAME_TITLE}Model::loadState()."
+echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects (scaffold comment in generated Presenter.cpp)."

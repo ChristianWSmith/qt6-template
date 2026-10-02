@@ -24,6 +24,11 @@ qt_standard_project_setup(
     I18N_TRANSLATED_LANGUAGES en es de fr
 )
 
+# qt_standard_project_setup enables AUTOMOC/AUTOUIC only — not AUTORCC.
+# Without AUTORCC, a .qrc listed as an executable source is a silent no-op
+# (resources are not embedded). Enable AUTORCC so resources.qrc is processed.
+set(CMAKE_AUTORCC ON)
+
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.hpp src/*.ui)
 list(REMOVE_ITEM LIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 

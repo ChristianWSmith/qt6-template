@@ -10,7 +10,7 @@ Qt6 + CMake + Conan C++ GUI application template. Single-app repo (not a monorep
 
 ## Single Source of Truth
 
-`app.env` is the canonical source for `APP_NAME`, `APP_VERSION`, `APP_ID`, `QT_VERSION`, etc. All scripts, Conan, and CMake consume it via `scripts/env.sh`. Changing `app.env` flows automatically into builds — no need to touch CMakeLists.txt or conanfile.py for naming/versioning.
+`app.env` is the canonical source for `APP_NAME`, `APP_VERSION`, `APP_ID`, `QT_VERSION`, etc. All scripts, Conan, and CMake consume it via `scripts/env.sh`. Changing `app.env` flows automatically into Conan/CMake naming and versioning — no need to touch `CMakeLists.txt` or `conanfile.py` for those fields. End-to-end rename is **not** automatic: also rename `resources/i18n/*.ts` files (`APP_NAME`-prefixed) and rerun `./scripts/configure-vscode.sh` (see VSCode Setup and Key Quirks).
 
 ## Build Commands
 
@@ -115,7 +115,7 @@ Name must start with an uppercase letter and be a valid C++ identifier (regex `^
 
 - **CMake re-glob**: source discovery uses `file(GLOB_RECURSE ... CONFIGURE_DEPENDS)`. If a generator ever misses a new file, touch `CMakeLists.txt` manually — this is a fallback, not the default path.
 - **clang-tidy (editor-side)**: `.clang-tidy` sets `WarningsAsErrors: '*'` for editor/clangd use via `./scripts/configure-vscode.sh`. CI does not currently run clang-tidy as a build step. Keep generated code free of new tidy findings; preserve intentional NOLINT annotations.
-- **Qt AUTOUIC/AUTOMOC/AUTORCC**: CMake handles `.ui`, `.moc`, `.qrc` automatically — no manual wrapping needed.
+- **Qt AUTOMOC/AUTOUIC/AUTORCC**: `qt_standard_project_setup()` enables AUTOMOC and AUTOUIC only — **not** AUTORCC. This project sets `CMAKE_AUTORCC ON` in `CMakeLists.txt` so `resources.qrc` listed on the executable is actually processed. Without AUTORCC, a bare `.qrc` source is a silent no-op (no resources embedded). Do not remove the AUTORCC line; tests that embed QSS via `qt_add_resources` do not substitute for production embedding.
 - **Lockfile merges**: Conan lockfile is merged across all 3 platforms. If a version range doesn't satisfy all platforms, you'll need to pin explicitly in `conanfile.py`. The merged lock may contain additional profile/transitive packages; do not "clean" the lock without re-running `./scripts/conan-lock-update.sh` and re-validating CI.
 - **Translations**: `qt_add_translations` uses `resources/i18n/` for `.ts` files. Languages configured in `CMakeLists.txt` via `I18N_TRANSLATED_LANGUAGES`. Default builds do **not** update `.ts` files (`UPDATE_TRANSLATIONS=OFF`); opt in via `./scripts/build.sh --update-translations ON`. Delete/rename `.ts` files after app name changes.
 - **Metadata SSOT**: `app.env` is required. CMake and Conan fail fast with a clear error if `APP_*` variables are missing — there are no silent fallback defaults.
@@ -198,13 +198,19 @@ events::publish(LogEvent{"message"});
 | QObject lifetime | Dispatchers are parented to `QCoreApplication` when present (application-owned). Free-function connection context is also `QCoreApplication`. |
 | Threading | Publish/subscribe are GUI-thread-only (template policy; no worker threads). The policy is enforced with `Q_ASSERT` in debug builds at publish and both subscribe paths. Callbacks run on the receiver's thread via queued delivery. Free-function handlers execute on the application thread under the GUI-thread policy. `BusRegistry` mutex protects dispatcher creation, not event delivery. The bus is not a general cross-thread synchronization mechanism. |
 
+#### Implementation constraints (Qt moc, exceptions, reset)
+
+- **moc constraint:** `EventDispatcher<T>` cannot use `Q_OBJECT` because Qt moc does not support `Q_OBJECT` in class templates. The non-template base carries the Qt signal using **QVariant transport**. A typed signal directly on `EventDispatcher<T>` is not viable under Qt 6 moc — do not "simplify" the bus into code that does not build. The runtime meta-type check is intentional defense-in-depth at that type-erasure boundary.
+- **Exception policy:** event handlers must not throw. Delivery uses Qt queued connections; exceptions from handlers follow Qt slot semantics (undefined unless handled in the handler). The EventSystem does not define a custom exception framework — do not add a catch layer in the bus.
+- **Subscription::reset() semantics:** `reset()` disconnects the connection for **future** delivery. Per Qt queued-connection semantics, events already posted to a still-alive receiver's queue may still be delivered after `reset()`. New deliveries are prevented. Destroying a `Subscription` does not depend on `deleteLater()`.
+
 #### Lifetime rules
 
 - QObject subscriptions auto-disconnect when the receiver is destroyed.
 - Free-function subscriptions belong to application lifetime; connection context is `QCoreApplication`.
 - Free-function subscriptions require the caller to hold the `Subscription` object. Retain the handle for as long as the handler must remain active.
 - Free-function `subscribe` is `[[nodiscard]]`; discarding the `Subscription` disconnects immediately.
-- Destroying a `Subscription` disconnects the handler (`reset()`); it does **not** depend on `deleteLater()`.
+- Destroying a `Subscription` disconnects the handler for future deliveries (`reset()`); it does **not** depend on `deleteLater()`. See Implementation constraints for in-flight queued events.
 - `Subscription` owns its connection lifetime (RAII) and holds only the `QMetaObject::Connection`.
 - Application-owned dispatchers are reclaimed with `QApplication` (parented to `QCoreApplication` when present).
 - The `BusRegistry` dispatcher map is cleared on `QCoreApplication::aboutToQuit`, before Qt-owned dispatcher objects are destroyed. The registry never deletes dispatchers.
@@ -233,7 +239,9 @@ events::publish(LogEvent{"message"});
 - Member declaration order in AppMainWindow is construction order only — not a Qt destruction-order guarantee
 - Qt signals/slots auto-disconnect when either QObject (sender or receiver) is destroyed
 - AppMainWindow is the composition root and owns all feature objects via Qt parent-child
-- `FilePersistenceProvider` is a QObject child of AppMainWindow
+- Persistence provider ownership is dual-mode:
+  - **Default:** when `AppMainWindow`'s ctor `provider` argument is `nullptr`, it constructs `FilePersistenceProvider(this)` — a QObject child of the window (Qt parent-child ownership).
+  - **Injected:** a non-null `IPersistenceProvider*` is caller-owned, is **not** reparented, and **must outlive** `AppMainWindow`. This is the tested persistence seam (`MemoryPersistenceProvider` in lifecycle tests). The type system does not encode owned-vs-borrowed; the outliving rule is contractual.
 - **`AppMainWindow` keeps a `QList<IModel*>` (`m_models`) for composition-root shutdown persistence.** Models implement `IModel`. The list is non-owning (Qt parent-child owns the models); it only drives `closeEvent`'s polymorphic `saveState()` loop.
 - Ownership mechanism follows object semantics: QObject feature objects use Qt parent-child; pure C++ services may use ordinary C++ lifetime where that improves clarity
 
@@ -262,8 +270,9 @@ Persistence failures have three distinct layers — do not conflate them:
 
 - `closeEvent` never blocks shutdown on save failure (log-and-continue; see the composition-root bullet above). QSettings chrome (geometry/state) save is a separate channel from feature-state persistence, and failures there are also non-blocking at shutdown.
 - `QSaveFile` atomic replace is not power-loss durability: `PersistenceError::CommitError` means `QSaveFile::commit()` failed (the atomic replace did not complete); Qt does not surface fsync errors from `commit()`.
-- Corruption may present as first-run (`NotFound`) on load — an unreadable or damaged key is indistinguishable from never-saved state at the load boundary.
-- The `PersistenceError` taxonomy distinctions are load-bearing: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
+- At the **provider** boundary, `FilePersistenceProvider` distinguishes failure kinds: missing file → `NotFound` (first-run); exists-but-unreadable → `IoError`; damaged JSON / non-object → `InvalidData`; failed atomic replace → `CommitError`.
+- At the **model** boundary, `IModel::loadState()` is `void` by design: `NotFound` is silent first-run, and operational load errors (`IoError` / `InvalidData`) are also absorbed — the model keeps defaults. Corruption is therefore indistinguishable from never-saved **only at the model load boundary**, not at the provider. Do not invent a parallel load-result API unless the template's API contract changes.
+- The `PersistenceError` taxonomy distinctions are load-bearing at the provider and in `PersistenceResult`: `NotFound` = first-run; `IoError` vs `InvalidData` vs `CommitError` are operational failures with distinct meanings — do not collapse them into a generic failure.
 - AppDataLocation precondition: feature-state storage paths use `QStandardPaths::AppDataLocation`. Tests enable Qt test mode (`QStandardPaths::setTestModeEnabled(true)` in `tests/main.cpp`) so test runs never write the developer's real application data — new test targets inherit this contract.
 
 #### Configuration channels
@@ -345,21 +354,24 @@ The slot name must match the `.ui` object name or the slot will never fire.
 
 ### Adding a New Feature
 
+Follow this wiring order. Items marked **silent failure** do not produce a compile error if omitted — verify them explicitly.
+
 1. Generate the feature: `./scripts/generate.sh feature MyThing`
 2. Inspect the generated files (model/presenter/widget + test stub)
-3. Wire the feature into `AppMainWindow` (construct model, widget, and presenter — the presenter does **not** create model/widget)
-4. Provide required dependencies (`IPersistenceProvider&` into the model)
-5. Connect presenter/widget/model signals and slots (widget UI slots use `on_<uiObjectName>_...` auto-connect names that match the `.ui` object)
-6. **Add the feature widget to `AppMainWindow`'s central layout** via `mainLayout->addWidget(...)` in the `AppMainWindow` constructor. The central layout is code-built — do not add feature widgets to `AppMainWindow.ui`.
-7. Add persistence behavior:
-   - load in the model ctor (`loadState()`; treat `NotFound` as first-run)
-   - models participate in shutdown save via the composition-root `QList<IModel*>` list — append the new model pointer in `AppMainWindow` ctor after construction (`m_models << m_myThingModel`) so `closeEvent`'s polymorphic loop calls `saveState()`. Models return `PersistenceResult<void>`; do not invent a parallel save path.
-8. Register cross-component events only where justified (EventSystem)
-9. Add tests as flat files under `tests/features/` (e.g. `tests/features/MyThingTest.cpp`)
-10. Verify shutdown persistence (closeEvent loop covers the new model via `m_models`)
-11. Build and run the complete test suite: `./scripts/build.sh --test ON`
+3. Construct in `AppMainWindow` in this order: **model → widget → presenter** (presenter does **not** create model/widget). Provider must be bound before models (`IPersistenceProvider&` into the model).
+4. Connect model→presenter signals and widget→presenter request signals (widget UI slots use `on_<uiObjectName>_...` auto-connect names that match the `.ui` object).
+5. **Perform initial model→view synchronization** in the presenter ctor after connects (e.g. `m_view->displayX(m_model->x())`). Models load persisted state in their constructors *before* the presenter exists — emissions during model construction have no subscribers. **Silent failure:** without this step, a generated feature with restored state shows a stale/empty view until first interaction. See `CounterPresenter.cpp` / `AppLogPresenter.cpp`.
+6. **Append the model to `m_models`** in the `AppMainWindow` ctor (`m_models << m_myThingModel`). **Silent failure:** forgetting this disables shutdown persistence for that feature. Models return `PersistenceResult<void>` from `saveState()`; do not invent a parallel save path.
+7. **Add the feature widget to `AppMainWindow`'s central layout** via `mainLayout->addWidget(...)` in the constructor. The central layout is code-built — do not add feature widgets to `AppMainWindow.ui`. **Silent failure:** omitting this leaves the widget constructed but not shown.
+8. Persistence behavior:
+   - load in the model ctor (`loadState()`; treat `NotFound` as first-run; operational load errors keep defaults — see Persistence section)
+   - shutdown save is driven by the composition-root `m_models` loop in `closeEvent`
+9. Register cross-component events only where justified (EventSystem)
+10. Add tests as flat files under `tests/features/` (e.g. `tests/features/MyThingTest.cpp`)
+11. Verify shutdown persistence (closeEvent loop covers the new model via `m_models`)
+12. Build and run the complete test suite: `./scripts/build.sh --test ON`
 
-`generate.sh` is the canonical starting point for new features. Generated output matches the reference conventions (`CounterModel` / `AppLogModel`): provider-by-reference, `PersistenceResult` forwarding in `saveState()`, and `NotFound` as first-run in `loadState()`. Generated `saveState()` **calls the provider** (it does not silently return success). `loadState()` body remains feature-specific/TODO — fill it in. Do not "correct" generated code into a different architecture.
+`generate.sh` is the canonical starting point for new features. Generated output matches the reference conventions (`CounterModel` / `AppLogModel`): provider-by-reference, `PersistenceResult` forwarding in `saveState()`, and `NotFound` as first-run in `loadState()`. Generated `saveState()` **calls the provider** (it does not silently return success). Generated presenter scaffolds initial model→view sync (comment + example; fill in real calls). `loadState()` body remains feature-specific/TODO — fill it in. Do not "correct" generated code into a different architecture.
 
 The central layout is code-built in `AppMainWindow`; add feature widgets with `mainLayout->addWidget(...)`. Do not add feature widgets to `AppMainWindow.ui`.
 

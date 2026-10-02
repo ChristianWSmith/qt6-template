@@ -99,6 +99,9 @@ check "Presenter.cpp uses Q_ASSERT for model" \
 check "Presenter.cpp uses Q_ASSERT for view" \
   "${PRESENTER_CPP}" 'Q_ASSERT\(m_view != nullptr\)'
 
+check "Presenter.cpp scaffolds initial model→view sync after connects" \
+  "${PRESENTER_CPP}" 'Initial model → view synchronization'
+
 check "Presenter.cpp does not declare a destructor" \
   "${PRESENTER_CPP}" '~[A-Za-z0-9_]*Presenter' invert
 

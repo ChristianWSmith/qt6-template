@@ -32,7 +32,7 @@ QT_END_NAMESPACE
 ///     injected, it is non-owning — the caller owns lifetime and it MUST
 ///     outlive this window. An injected provider is NOT reparented unless it
 ///     already has a suitable parent.
-///   - Presenters hold non-owning raw pointers to model and widget.
+///   - Presenters hold non-owning QPointer refs to model and widget.
 ///   - Models hold non-owning IPersistenceProvider& to the provider.
 ///
 /// Lifetime invariants:
