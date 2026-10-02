@@ -33,6 +33,32 @@ TEST_F(CounterTest, SaveStateReturnsSuccessAndPersistsValue) {
   EXPECT_EQ(reloaded.value(), 1);
 }
 
+// Presenter initial model→view sync: models load in ctor before the presenter
+// exists; emissions during model construction have no subscribers. The presenter
+// ctor must push current model state to the view once. This test locks that
+// convention for restored (non-default) state without any user interaction.
+TEST_F(CounterTest, PresenterRestoresPersistedStateIntoViewWithoutInteraction) {
+  MemoryPersistenceProvider seedProvider;
+  {
+    CounterModel seed(seedProvider, nullptr);
+    for (int i = 0; i < 5; ++i) {
+      seed.increment();
+    }
+    ASSERT_EQ(seed.value(), 5);
+    ASSERT_TRUE(seed.saveState().hasValue());
+  }
+
+  CounterModel restored(seedProvider, nullptr);
+  ASSERT_EQ(restored.value(), 5);
+
+  CounterWidget view(nullptr);
+  CounterPresenter presenter(&restored, &view);
+
+  auto *label = view.findChild<QLabel *>("counterLabel");
+  ASSERT_NE(label, nullptr);
+  EXPECT_EQ(label->text(), "5");
+}
+
 TEST_F(CounterTest, IncrementEmitsValueChangedAndUpdatesView) {
   QSignalSpy spy(&model, &CounterModel::valueChanged);
 

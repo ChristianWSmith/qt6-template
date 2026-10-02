@@ -1,4 +1,5 @@
 #pragma once
+#include "AppMetadata.h"
 #include "IPersistenceProvider.h"
 
 /// Models own application state and feature behavior.
@@ -23,6 +24,10 @@
 ///   - All methods execute on the GUI thread.
 ///   - Persistence paths use QStandardPaths::AppDataLocation; tests enable
 ///     Qt test mode (tests/main.cpp) so runs never touch real app data.
+///   - Model destructors and any code reachable during composition-root
+///     teardown must not dereference the persistence provider reference.
+///     Persistence I/O is only valid during loadState (ctor) and saveState
+///     (explicit/composition-root) while the provider is guaranteed alive.
 class IModel {
 public:
   IModel() = default;

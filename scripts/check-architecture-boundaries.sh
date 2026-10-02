@@ -91,7 +91,7 @@ check_basename_includes "${ROOT}/src/widgets" '*' \
 # --- Rule 2: logging must not reference the EventSystem surface --------------
 LOGGING_DIR="${ROOT}/src/logging"
 if [ -d "${LOGGING_DIR}" ]; then
-  LOGGING_ES_PATTERN='events::|LogEvent|EventSystem|BusRegistry|EventDispatcher|Subscription'
+  LOGGING_ES_PATTERN='events::|LogEvent|DemoLogEvent|EventSystem|BusRegistry|EventDispatcher|Subscription'
   if hits=$(grep -rnE "${LOGGING_ES_PATTERN}" "${LOGGING_DIR}" \
       --include='*.h' --include='*.hpp' --include='*.cpp' 2>/dev/null) \
     && [ -n "${hits}" ]; then
@@ -100,6 +100,10 @@ if [ -d "${LOGGING_DIR}" ]; then
     fail=1
   fi
 fi
+
+# --- Rule 2b: logging must not include events/ headers -----------------------
+check_layer_includes "${LOGGING_DIR}" '*' 'events/' \
+  'logging includes events/'
 
 # --- Rule 3: feature models must not include widget headers ------------------
 check_layer_includes "${ROOT}/src/features" '*/model/*' 'widget/' \

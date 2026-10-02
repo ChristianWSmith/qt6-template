@@ -1,6 +1,6 @@
 // NOLINTBEGIN
 #include "MemoryPersistenceProvider.h"
-#include "events/LogEvent.h"
+#include "events/DemoLogEvent.h"
 #include "events/system/EventSystem.hpp"
 #include "features/applog/applogcommon.h"
 #include "features/applog/model/AppLogModel.h"
@@ -40,7 +40,7 @@ TEST_F(AppLogTest, ModelEmitsLogChanged) {
 TEST_F(AppLogTest, PresenterForwardsEvent_ModelEmits_ViewUpdates) {
   QSignalSpy modelSpy(&model, &AppLogModel::logChanged);
 
-  LogEvent event;
+  DemoLogEvent event;
   event.message = "Presenter test message";
   events::publish(event);
 
@@ -73,8 +73,6 @@ TEST_F(AppLogTest, ClearButtonClearsModelAndView) {
 }
 
 TEST_F(AppLogTest, TrimmingRemovesOldestBeyondMaxSize) {
-  // Mirrors AppLogModel MAX_LOG_SIZE (src/features/applog/model/AppLogModel.cpp).
-  constexpr int kMaxLogSize = 100;
   QSignalSpy spy(&model, &AppLogModel::logChanged);
 
   for (int i = 0; i < kMaxLogSize + 5; ++i) {
@@ -107,7 +105,6 @@ TEST_F(AppLogTest, TrimmingRemovesOldestBeyondMaxSize) {
 }
 
 TEST_F(AppLogTest, TrimmingPersistsOnlyRetainedState) {
-  constexpr int kMaxLogSize = 100;
   MemoryPersistenceProvider localProvider;
   AppLogModel localModel(localProvider, nullptr);
 
@@ -124,10 +121,36 @@ TEST_F(AppLogTest, TrimmingPersistsOnlyRetainedState) {
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("persist_104"));
 }
 
-// loadState must re-apply MAX_LOG_SIZE even when persisted state
+// Presenter initial model→view sync (AppLog analog of CounterTest): models
+// load in ctor before the presenter exists; emissions during model
+// construction have no subscribers. The presenter ctor must push current
+// model state to the view once. This test locks that convention for restored
+// (non-default) state without any user interaction.
+TEST_F(AppLogTest, PresenterRestoresPersistedStateIntoViewWithoutInteraction) {
+  MemoryPersistenceProvider seedProvider;
+  {
+    AppLogModel seed(seedProvider, nullptr);
+    seed.addLogMessage("restored-one");
+    seed.addLogMessage("restored-two");
+    ASSERT_TRUE(seed.saveState().hasValue());
+  }
+
+  AppLogModel restored(seedProvider, nullptr);
+  ASSERT_EQ(restored.getLogMessages().size(), 2);
+
+  AppLogWidget view(nullptr);
+  AppLogPresenter presenter(&restored, &view);
+
+  auto *list = view.findChild<QListWidget *>("logListWidget");
+  ASSERT_NE(list, nullptr);
+  ASSERT_EQ(list->count(), 2);
+  EXPECT_TRUE(list->item(0)->text().contains("restored-one"));
+  EXPECT_TRUE(list->item(1)->text().contains("restored-two"));
+}
+
+// loadState must re-apply kMaxLogSize even when persisted state
 // exceeds the cap (e.g. written by a prior version or external writer).
 TEST_F(AppLogTest, LoadDoesNotExceedMaxLogSize) {
-  constexpr int kMaxLogSize = 100;
   constexpr int kOverCap = 10;
 
   MemoryPersistenceProvider localProvider;

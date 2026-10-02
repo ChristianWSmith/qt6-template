@@ -53,6 +53,13 @@ add_test(NAME ProductionResourcesEmbedded
         -P "${CMAKE_SOURCE_DIR}/cmake/VerifyProductionResources.cmake"
 )
 
+# Architecture boundary heuristic checks (also run in scripts/build.sh).
+# Available on Unix CI/dev hosts; Windows may lack bash in PATH for direct ctest.
+if(UNIX)
+  add_test(NAME ArchitectureBoundaries
+      COMMAND bash "${CMAKE_SOURCE_DIR}/scripts/check-architecture-boundaries.sh")
+endif()
+
 include(GoogleTest)
 gtest_discover_tests(UnitTests
   DISCOVERY_TIMEOUT 30

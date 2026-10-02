@@ -22,16 +22,17 @@ QT_END_NAMESPACE
 
 /// Composition root. Owns feature objects via Qt parent-child ownership.
 ///
-/// Ownership model:
+/// Ownership model (two ctor overloads encode the persistence-seam mode):
 ///   - QObject feature objects (models, widgets, presenters): Qt parent-child
 ///     (parent = this). Widgets may be reparented into the layout container;
 ///     they remain owned by this window's QObject tree.
-///   - Persistence provider: when the ctor's @p provider argument is nullptr,
-///     a FilePersistenceProvider is constructed as a child of this window
-///     (default path, owned via Qt parent-child). When a non-null provider is
-///     injected, it is non-owning — the caller owns lifetime and it MUST
-///     outlive this window. An injected provider is NOT reparented unless it
-///     already has a suitable parent.
+///   - Persistence provider: two explicit ownership modes are encoded in the
+///     constructor overloads (no dual-mode nullptr pointer):
+///     - Default ctor: a FilePersistenceProvider is constructed as a Qt child
+///       of this window (owned via Qt parent-child).
+///     - Injected ctor (IPersistenceProvider&): caller-owned; it MUST outlive
+///       this window and is NOT reparented. Models bind
+///       IPersistenceProvider& to this reference.
 ///   - Presenters hold non-owning QPointer refs to model and widget.
 ///   - Models hold non-owning IPersistenceProvider& to the provider.
 ///
@@ -46,17 +47,25 @@ QT_END_NAMESPACE
 ///     when either QObject is destroyed.
 ///   - Any teardown logic that needs model/widget state must run before
 ///     destruction (e.g. closeEvent), not in presenter destructors.
+///
+/// Lifetime contracts (Wave 1):
+///   - AppMainWindow is stack-allocated in main(). Do NOT set
+///     Qt::WA_DeleteOnClose — the stack frame would double-destroy the window.
+///   - closeEvent intentionally calls hide() first (visible-state contract;
+///     covered by lifecycle tests).
+///   - Model destructors and any code reachable during window teardown must
+///     NOT dereference the IPersistenceProvider& the models hold. Models never
+///     touch the provider in their destructors today; keep that invariant.
 class AppMainWindow : public QMainWindow {
   Q_OBJECT
 
 public:
-  /// @param provider Optional external persistence provider. When non-null the
-  ///   caller owns it and it must outlive this window; AppMainWindow does not
-  ///   reparent it. When nullptr (default), a FilePersistenceProvider is
-  ///   constructed as a child of this window.
-  /// @param parent Optional Qt parent widget.
-  explicit AppMainWindow(IPersistenceProvider *provider = nullptr,
-                         QWidget *parent = nullptr);
+  /// Default: constructs FilePersistenceProvider as a Qt child of this window.
+  explicit AppMainWindow(QWidget *parent = nullptr);
+
+  /// Injected: caller-owned provider; must outlive this window; NOT reparented.
+  /// Models bind IPersistenceProvider& to this reference.
+  explicit AppMainWindow(IPersistenceProvider &provider, QWidget *parent = nullptr);
   ~AppMainWindow();
 
   AppMainWindow(const AppMainWindow &) = delete;
@@ -64,13 +73,20 @@ public:
   AppMainWindow(AppMainWindow &&) = delete;
   AppMainWindow &operator=(AppMainWindow &&) = delete;
 
+  // Hides first (visible-state contract) then saves chrome + feature state
+  // via the m_models loop; never blocks close on persistence failure.
   void closeEvent(QCloseEvent *event) override;
 
 private:
+  // Shared post-init-list wiring for both ctor overloads: ui setup, m_models
+  // registry, NDEBUG assert, QSettings chrome restore, window title, layout.
+  void finishConstruction();
+
   std::unique_ptr<Ui::AppMainWindow> ui;
 
   // Bound before models (construction order). Non-owning: either the
-  // caller-injected provider or the internally constructed child.
+  // caller-injected provider (borrowed, must outlive this window) or the
+  // internally constructed child (owned by Qt parent-child).
   IPersistenceProvider *m_provider;
 
   // Per feature: model and widget constructed before the presenter (non-owning refs).

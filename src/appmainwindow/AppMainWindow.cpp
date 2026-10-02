@@ -9,14 +9,12 @@
 #include <QHBoxLayout>
 #include <QWidget>
 
-AppMainWindow::AppMainWindow(IPersistenceProvider *provider, QWidget *parent)
+AppMainWindow::AppMainWindow(QWidget *parent)
     : QMainWindow(parent), ui(std::make_unique<Ui::AppMainWindow>()),
       // Provider first: models bind a non-owning IPersistenceProvider&.
-      // External providers are non-owning (caller-owned, must outlive this
-      // window); nullptr constructs a FilePersistenceProvider child of this
-      // window (default path). Do not reparent an injected provider.
-      m_provider(provider != nullptr ? provider
-                                    : new FilePersistenceProvider(this)),
+      // Default path: owned FilePersistenceProvider child of this window.
+      // Constructed before every model that references it.
+      m_provider(new FilePersistenceProvider(this)),
       m_counterModel(new CounterModel(*m_provider, this)),
       m_counterWidget(new CounterWidget(this)),
       m_counterPresenter(
@@ -25,13 +23,43 @@ AppMainWindow::AppMainWindow(IPersistenceProvider *provider, QWidget *parent)
       m_appLogWidget(new AppLogWidget(this)),
       m_appLogPresenter(
           new AppLogPresenter(m_appLogModel, m_appLogWidget, this)) {
+  finishConstruction();
+}
 
+AppMainWindow::AppMainWindow(IPersistenceProvider &provider, QWidget *parent)
+    : QMainWindow(parent), ui(std::make_unique<Ui::AppMainWindow>()),
+      // Injected path: borrow the caller-owned provider. Do NOT reparent and
+      // do NOT take ownership — the caller must outlive this window.
+      m_provider(&provider),
+      m_counterModel(new CounterModel(*m_provider, this)),
+      m_counterWidget(new CounterWidget(this)),
+      m_counterPresenter(
+          new CounterPresenter(m_counterModel, m_counterWidget, this)),
+      m_appLogModel(new AppLogModel(*m_provider, this)),
+      m_appLogWidget(new AppLogWidget(this)),
+      m_appLogPresenter(
+          new AppLogPresenter(m_appLogModel, m_appLogWidget, this)) {
+  finishConstruction();
+}
+
+void AppMainWindow::finishConstruction() {
   ui->setupUi(this);
 
   // Polymorphic IModel registry for shutdown persistence.
   // Individual pointers remain for wiring/feature access; this list drives
   // closeEvent's save loop over every feature model.
   m_models << m_counterModel << m_appLogModel;
+
+  // Debug: catch forgotten m_models appends (silent persistence opt-in).
+  // Counts known feature model types; IModel is not a QObject so a generic
+  // findChildren<IModel*> is impossible — assert the composition-root list
+  // matches the constructed feature models.
+#ifndef NDEBUG
+  const int modelChildren =
+      findChildren<CounterModel *>().size() +
+      findChildren<AppLogModel *>().size();
+  Q_ASSERT(modelChildren == m_models.size());
+#endif
 
   QSettings settings(ORGANIZATION_NAME, APP_NAME);
   restoreGeometry(settings.value("window/geometry").toByteArray());

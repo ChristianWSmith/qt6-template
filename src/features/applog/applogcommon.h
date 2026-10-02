@@ -2,7 +2,7 @@
 
 #include <QString>
 
-class AppLogTest;
+inline constexpr int kMaxLogSize = 100;
 
 struct LogDelta {
   QString message;

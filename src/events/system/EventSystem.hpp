@@ -55,12 +55,17 @@ namespace events {
 ///   - BusRegistry clears its non-owning dispatcher map on
 ///     QCoreApplication::aboutToQuit — before Qt-owned dispatcher QObjects
 ///     are destroyed. The registry never deletes dispatchers.
+///   - aboutToQuit also sets BusRegistry::quitFired_. Publish/subscribe after
+///     quit refuse to recreate dispatchers (qCCritical + no-op) rather than
+///     constructing late unparented dispatchers against a dying application.
 ///
 /// Threading
 ///   - Publish from the GUI thread only (template policy; no worker threads).
-///   - The GUI-thread policy is enforced with Q_ASSERT in debug builds at
-///     publish and both subscribe paths. Release builds keep the runtime
-///     QCoreApplication::instance() checks only.
+///   - The GUI-thread policy is enforced at runtime in all builds at publish
+///     and both subscribe paths: wrong-thread calls log qCCritical(appEvent)
+///     and are rejected (no-op / empty Subscription). Debug builds keep a
+///     Q_ASSERT as a belt-and-suspenders double-check after the runtime
+///     guard.
 ///   - Callbacks execute on the receiver QObject's thread via queued delivery.
 ///     Free-function handlers execute on the application thread under the
 ///     GUI-thread policy.
@@ -151,6 +156,11 @@ public:
           << "EventSystem: publish requires a running QCoreApplication";
       return;
     }
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+      qCCritical(appEvent)
+          << "EventSystem: publish requires the application thread";
+      return;
+    }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
     emit eventPublished(QVariant::fromValue(event));
@@ -213,8 +223,22 @@ public:
           << "EventSystem: publish requires a running QCoreApplication";
       return;
     }
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+      qCCritical(appEvent)
+          << "EventSystem: publish requires the application thread";
+      return;
+    }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: publish after application shutdown";
+        return;
+      }
+    }
     dispatcher<T>().publish(event);
   }
 
@@ -229,8 +253,22 @@ public:
           << "QCoreApplication";
       return;
     }
+    if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe requires the application thread";
+      return;
+    }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: subscribe after application shutdown";
+        return;
+      }
+    }
     QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
@@ -257,7 +295,21 @@ public:
           << "QCoreApplication";
       return Subscription{};
     }
+    if (QThread::currentThread() != context->thread()) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe requires the application thread";
+      return Subscription{};
+    }
     Q_ASSERT(QThread::currentThread() == context->thread());
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: subscribe after application shutdown";
+        return Subscription{};
+      }
+    }
     auto conn = QObject::connect(
         &dispatcher<T>(), &EventDispatcherBase::eventPublished, context,
         [func](const QVariant &var) {
@@ -292,6 +344,7 @@ private:
             app, &QCoreApplication::aboutToQuit, app, []() {
               BusRegistry &r = instance();
               std::unique_lock clearLock(r.mutex_);
+              r.quitFired_ = true;
               r.dispatchers_.clear();
             });
         reg.quitHookInstalled_ = true;
@@ -320,6 +373,10 @@ private:
   std::unordered_map<std::type_index, EventDispatcherBase *> dispatchers_;
   std::mutex mutex_;
   bool quitHookInstalled_ = false;
+  // Set under mutex_ when aboutToQuit clears dispatchers_. Publish/subscribe
+  // check quitFired_ (under the same mutex) before calling dispatcher<T>(),
+  // so a post-quit call cannot recreate dispatchers against a dying app.
+  bool quitFired_ = false;
 };
 
 /// QObject-receiver subscription. Thin wrapper over BusRegistry::subscribe.

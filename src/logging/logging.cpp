@@ -29,23 +29,29 @@ Q_LOGGING_CATEGORY(appService, "app.service")
 // What qSetMessagePattern CAN produce if the template later prefers the
 // canonical formatting path (categories + configureLogLevel stay either way):
 //   qSetMessagePattern(
-//       "[%{time datetime yyyy-MM-dd hh:mm:ss.zzz}][%{type}] %{message}"
+//       "[%{time datetime yyyy-MM-dd hh:mm:ss.zzz}][%{type}] %{category} %{message}"
 //       " (%{file}:%{line}:%{function})");
 // Differences vs this handler: lowercase %{type} names, all output on stderr,
-// no fatal abort visible in application code, no category in the line
-// (current handler also omits category; filtering is via configureLogLevel).
+// no fatal abort visible in application code. Both show the category when
+// QT_MESSAGELOGCONTEXT provides it; filtering is via configureLogLevel.
 //
-// Category note: this handler does not print QMessageLogContext::category.
-// Category *filtering* is the canonical, kept mechanism (configureLogLevel /
-// QLoggingCategory::setFilterRules). Add %{category} via pattern, or extend
-// this handler, only if line-level category display becomes a requirement.
+// Category note: this handler prints QMessageLogContext::category when
+// QT_MESSAGELOGCONTEXT is defined and the category string is non-null/non-empty
+// (line-level category display). Category *filtering* remains the canonical
+// mechanism (configureLogLevel / QLoggingCategory::setFilterRules).
 //
 // fmt note: fmt is a documented Conan demonstration (AGENTS.md Keep list).
 // Losing this site would leave only main.cpp's Hello message as the demo.
+//
+// Mutex note: the mutex is intentionally leaked (heap-allocated, never
+// destroyed) so it cannot be destroyed during static teardown before static
+// objects that might still log from their destructors. The mutex is
+// non-recursive — this handler must NOT call qC* logging macros (which
+// would re-enter messageHandler and deadlock).
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg) {
-  static QMutex mutex;
-  QMutexLocker lock(&mutex);
+  static QMutex *mutex = new QMutex;
+  QMutexLocker lock(mutex);
 
   std::string prefix;
 
@@ -73,9 +79,15 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context,
   std::string logMessage;
 
 #ifdef QT_MESSAGELOGCONTEXT
-  logMessage = fmt::format("[{}][{}] {} ({}:{}:{})", timestamp, prefix,
-                           msg.toStdString(), context.file, context.line,
-                           context.function);
+  if (context.category != nullptr && context.category[0] != '\0') {
+    logMessage = fmt::format("[{}][{}][{}] {} ({}:{}:{})", timestamp, prefix,
+                             context.category, msg.toStdString(), context.file,
+                             context.line, context.function);
+  } else {
+    logMessage = fmt::format("[{}][{}] {} ({}:{}:{})", timestamp, prefix,
+                             msg.toStdString(), context.file, context.line,
+                             context.function);
+  }
 #else
   logMessage =
       fmt::format("[{}][{}] {}", timestamp, prefix, msg.toStdString());

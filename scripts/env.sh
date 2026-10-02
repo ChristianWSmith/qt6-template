@@ -28,7 +28,11 @@ source "${PROJECT_ROOT}/app.env"
 export LLDB_PORT="${LLDB_PORT:-12345}"
 
 # --- OS DETECTION ---
-export PLATFORM="$(python -c 'import platform; print(platform.system().lower())')"
+if command -v python3 >/dev/null 2>&1; then
+  export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
+else
+  export PLATFORM="$(python -c 'import platform; print(platform.system().lower())')"
+fi
 
 case "${PLATFORM}" in
   linux)

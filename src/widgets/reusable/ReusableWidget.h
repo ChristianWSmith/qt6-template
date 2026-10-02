@@ -3,9 +3,8 @@
 #include <memory>
 #include <QWidget>
 
-// Intentional teaching example of the standalone-widget convention
-// (see scripts/generate.sh widget mode and AGENTS.md). Not instantiated
-// by the sample application.
+// Teaching artifact for the standalone-widget convention (see
+// scripts/generate.sh widget mode). Not instantiated by the sample app.
 
 QT_BEGIN_NAMESPACE
 namespace Ui {}

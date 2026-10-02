@@ -50,9 +50,13 @@ function(apply_app_metadata target)
     )
 endfunction()
 
-target_link_libraries(${APP_NAME}_lib PRIVATE
-    Qt6::Widgets
-    fmt::fmt
+# Public headers include Qt Widgets types; PUBLIC propagates usage
+# requirements to consumers of _lib. fmt stays PRIVATE (logging.cpp only).
+target_link_libraries(${APP_NAME}_lib
+    PUBLIC
+        Qt6::Widgets
+    PRIVATE
+        fmt::fmt
 )
 
 # Consumers (exe, tests) inherit src/ via the library. Do not re-state it.

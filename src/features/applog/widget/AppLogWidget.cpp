@@ -31,7 +31,7 @@ void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
 
 void AppLogWidget::clear() { ui->logListWidget->clear(); }
 
-void AppLogWidget::setLogMessages(const QVector<QString> &messages) {
+void AppLogWidget::setLogMessages(const QStringList &messages) {
   ui->logListWidget->addItems(messages);
   ui->logListWidget->scrollToBottom();
 }

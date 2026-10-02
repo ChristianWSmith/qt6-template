@@ -8,6 +8,17 @@ VSCODE_DIR="${PROJECT_ROOT}/.vscode"
 
 mkdir -p "${VSCODE_DIR}"
 
+# Platform-aware program path for launch.json. Debug is the launch-config
+# default (matches the Debug-focused debug configs even when Release is the
+# build default); Windows nests the binary under the build-type dir.
+if [ "${PLATFORM}" == "windows" ]; then
+  APP_PROGRAM="${BUILD_DIR}/Debug/${APP_NAME}.exe"
+elif [ "${PLATFORM}" == "darwin" ]; then
+  APP_PROGRAM="${BUILD_DIR}/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+else
+  APP_PROGRAM="${BUILD_DIR}/${APP_NAME}"
+fi
+
 # Generate settings.json
 cat > "${VSCODE_DIR}/settings.json" <<EOF
 {
@@ -42,7 +53,7 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "name": "Debug ${APP_NAME}",
       "type": "lldb",
       "request": "launch",
-      "program": "${BUILD_DIR}/${APP_NAME}",
+      "program": "${APP_PROGRAM}",
       "args": [],
       "cwd": "${PROJECT_ROOT}"
     },
@@ -50,7 +61,7 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "name": "Debug ${APP_NAME} (w/Qt Debug)",
       "type": "lldb",
       "request": "launch",
-      "program": "${BUILD_DIR}/${APP_NAME}",
+      "program": "${APP_PROGRAM}",
       "args": [],
       "cwd": "${PROJECT_ROOT}",
       "env": {
@@ -62,7 +73,7 @@ cat > "${VSCODE_DIR}/launch.json" <<EOF
       "type": "lldb",
       "request": "attach",
       "targetCreateCommands": [
-          "target create ${BUILD_DIR}/${APP_NAME}"
+          "target create ${APP_PROGRAM}"
       ],
       "processCreateCommands": [
           "platform select remote-linux",

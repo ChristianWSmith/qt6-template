@@ -7,6 +7,8 @@
 #include <QVariant>
 #include <gtest/gtest.h>
 
+#include <vector>
+
 struct Event {
   int value;
 };
@@ -119,6 +121,16 @@ public slots:
   void forward(const Event &e) {
     events::publish(Event2{QString("Value was %1").arg(e.value)});
   }
+};
+
+class ValueCollector : public QObject {
+  Q_OBJECT
+public:
+  std::vector<int> *values;
+  explicit ValueCollector(std::vector<int> *v) : values(v) {}
+
+public slots:
+  void collect(const Event &e) { values->push_back(e.value); }
 };
 
 // --- Free-function helpers ---
@@ -543,6 +555,58 @@ TEST_F(EventTest, TypeMismatchViaDirectSignalIsNotDelivered) {
   QTest::qWait(20);
   EXPECT_EQ(received, 0)
       << "Mismatched QVariant must not deliver to typed Event subscribers";
+}
+
+// Wave 2 (ES-005): reset() disconnects future delivery; already-posted queued
+// events may still deliver to a still-alive receiver. Locks that contract.
+TEST_F(EventTest, FreeFunctionResetPreventsFutureDeliveryAndAllowsInFlight) {
+  g_freeValue = 0;
+  g_freeCallCount = 0;
+
+  events::Subscription sub = events::subscribe<Event>(freeCountHandler);
+
+  // Publish without waiting — event is queued.
+  events::publish(Event{1});
+  // Immediately reset before the event loop runs.
+  sub.reset();
+  ASSERT_FALSE(sub.isConnected());
+
+  QTest::qWait(5);
+
+  // In-flight delivery is allowed (at most once for one publish). Per the
+  // documented contract, events already posted to a still-alive receiver's
+  // queue MAY still be delivered after reset().
+  EXPECT_LE(g_freeCallCount, 1);
+
+  const int afterInFlight = g_freeCallCount;
+
+  // Future publishes must not deliver.
+  events::publish(Event{2});
+  QTest::qWait(5);
+
+  EXPECT_EQ(g_freeCallCount, afterInFlight)
+      << "reset() must prevent future delivery after the in-flight window";
+}
+
+// Wave 2 (ES-006): per-connection FIFO via Qt queued connections. Distinct
+// payloads published rapidly must arrive in publish order.
+TEST_F(EventTest, PerConnectionFifoPreservesDistinctPayloadOrder) {
+  std::vector<int> received;
+  ValueCollector collector(&received);
+  events::subscribe<Event>(&collector, &ValueCollector::collect);
+
+  constexpr int count = 10;
+  for (int i = 1; i <= count; ++i) {
+    events::publish(Event{i});
+  }
+  QTest::qWait(20);
+
+  ASSERT_EQ(received.size(), static_cast<std::size_t>(count));
+  for (int i = 0; i < count; ++i) {
+    EXPECT_EQ(received[static_cast<std::size_t>(i)], i + 1)
+        << "Per-connection FIFO must preserve distinct payload order at index "
+        << i;
+  }
 }
 
 #include "EventsTest.moc"
