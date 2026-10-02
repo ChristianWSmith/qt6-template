@@ -2,9 +2,11 @@
 
 #include <QCoreApplication>
 #include <QObject>
+#include <QPointer>
 #include <QThread>
 #include <QVariant>
 #include <concepts>
+#include <mutex>
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
@@ -31,10 +33,16 @@ namespace events {
 ///   - Recursive publication is queued rather than immediate.
 ///
 /// Lifetime
-///   - QObject-receiver subscribe: connection lifetime follows the receiver.
+///   - QObject-receiver subscribe returns a Subscription. Connection
+///     lifetime follows the receiver QObject (Qt auto-disconnect on receiver
+///     destruction). Discarding that handle is the normal Qt pattern for a
+///     receiver-lifetime connection and does not disconnect; reset() still
+///     disconnects for early unsubscribe. The free-function facade marks the
+///     QObject overload [[nodiscard]] for consistency — use a named variable
+///     or (void) when intentionally discarding.
 ///   - Free-function subscribe: caller must retain the Subscription
-///   ([[nodiscard]]).
-///   - Discarding a Subscription disconnects the handler immediately.
+///     ([[nodiscard]]). Discarding a free-function Subscription disconnects
+///     the handler immediately (RAII).
 ///   - Subscription::reset() disconnects the connection for future delivery;
 ///     it does not depend on deleteLater() to unsubscribe and does not require
 ///     a running event loop. Per Qt queued-connection semantics, events already
@@ -57,16 +65,11 @@ namespace events {
 ///   - aboutToQuit also sets BusRegistry::quitFired_. Publish/subscribe after
 ///     quit refuse to recreate dispatchers (qCCritical + no-op) rather than
 ///     constructing late unparented dispatchers against a dying application.
-///   - The smoke-test path in main() may never call QApplication::exec(), so
-///     aboutToQuit may never fire. That path must call services::unregisterAll()
-///     and must not publish after teardown.
-///
-/// Single-application constraint
-///   - BusRegistry is process-global and keyed to a single QCoreApplication
-///     lifetime. A second QApplication in the same process is not supported:
-///     quitFired_ / quitHookInstalled_ are sticky and the dispatcher map is
-///     not reset for a new application. One QApplication per process is a hard
-///     requirement for this template.
+///   - Quit lifecycle re-arms per QCoreApplication instance: a process that
+///     constructs a new QCoreApplication after a previous one quit gets a
+///     fresh aboutToQuit hook and cleared quit flags. Hook state is
+///     QPointer-tracked and reset on app destruction so the same instance is
+///     never double-connected.
 ///
 /// Threading
 ///   - Publish from the GUI thread only (template policy; no worker threads).
@@ -78,33 +81,22 @@ namespace events {
 ///   - Callbacks execute on the receiver QObject's thread via queued delivery.
 ///     Free-function handlers execute on the application thread under the
 ///     GUI-thread policy.
-///   - There is no BusRegistry mutex. Under the GUI-thread-only policy all
-///     registry state is already serialized by the event loop; a mutex would
-///     imply a cross-thread safety contract the bus does not provide.
+///   - BusRegistry mutex protects dispatcher creation, not event delivery.
 ///   - The bus is not a general cross-thread synchronization mechanism.
-///
-/// Event payload copy cost
-///   - QVariant transport copies each event once into the QVariant and once
-///     per subscriber (var.value<T>()). Choose event payload sizes
-///     accordingly; large payloads on a hot path are a design smell.
 ///
 /// Service registration lifecycle
 ///   - QApplication exists → services::registerAll() → application runs →
 ///     services::unregisterAll() → QApplication destruction.
 ///   - unregisterAll() resets retained subscriptions explicitly; it is
 ///     idempotent and independent of static destructor timing.
-///   - On C++ exception paths, qScopeGuard runs during stack unwinding before
-///     catch handlers; catch-block unregisterAll() calls are idempotent no-ops
-///     after ~QApplication. The guard is the exception-path mechanism.
 ///
 /// API boundary
-///   - Application code should use events::publish and events::subscribe
-///     (free-function and QObject overloads). These are the supported
-///     public-facing entry points.
-///   - BusRegistry also exposes equivalent static publish/subscribe
-///     operations; consumers should use the free-function facade.
+///   - events::publish and events::subscribe (free functions) are the
+///     supported public-facing entry points. BusRegistry also exposes
+///     equivalent static operations; consumers should use the free-function
+///     facade.
 ///   - BusRegistry::dispatcher<T>() is an internal implementation detail
-///     (private). Do not call it or treat it as public API.
+///     (private). Do not rely on direct dispatcher access.
 ///   - Runtime QVariant type check remains as defense-in-depth against
 ///     QVariant corruption; the primary protection is the typed public API
 ///     plus the private dispatcher boundary.
@@ -112,8 +104,8 @@ namespace events {
 /// Type safety
 ///   - Event types must be default-constructible, copy-constructible, and
 ///     copy-assignable (compile-time; EventType concept).
-///   - Delivery checks meta-type in all builds; debug builds also assert.
-///     Mismatch logs qCritical(appEvent) and does not deliver.
+///   - Delivery checks QVariant meta-type in all builds; debug builds also
+///     assert. Mismatch logs qCritical(appEvent) and does not deliver.
 ///
 /// Qt moc constraint (do not "simplify" away QVariant transport)
 ///   - EventDispatcher<T> cannot use Q_OBJECT: Qt moc does not support
@@ -170,9 +162,6 @@ template <typename T> class EventDispatcher : public EventDispatcherBase {
 public:
   using EventDispatcherBase::EventDispatcherBase;
 
-  // Inner instance/thread guards are belt-and-suspenders for white-box
-  // findChildren escape hatches; the public policy checks live in
-  // BusRegistry::{publish,subscribe}.
   void publish(const T &event) {
     if (!QCoreApplication::instance()) {
       qCCritical(appEvent)
@@ -190,23 +179,37 @@ public:
   }
 };
 
-/// RAII free-function subscription handle. The returned Subscription must be
-/// retained; discarding it disconnects the handler immediately.
+/// RAII subscription handle over QMetaObject::Connection.
+///
+/// Free-function subscriptions: destruction disconnects (default). The
+/// returned Subscription must be retained; discarding it disconnects the
+/// handler immediately.
+///
+/// QObject-receiver subscriptions: destruction does not disconnect
+/// (receiver-lifetime mode via forReceiverLifetime). Connection lifetime
+/// follows the receiver QObject; reset() still disconnects for early
+/// unsubscribe.
 class Subscription {
 public:
   Subscription() noexcept = default;
-  ~Subscription() { reset(); }
+  ~Subscription() {
+    if (disconnectOnDestroy_) {
+      reset();
+    }
+  }
 
   Subscription(const Subscription &) = delete;
   Subscription &operator=(const Subscription &) = delete;
 
   Subscription(Subscription &&other) noexcept
-      : connection_(std::exchange(other.connection_, {})) {}
+      : connection_(std::exchange(other.connection_, {})),
+        disconnectOnDestroy_(other.disconnectOnDestroy_) {}
 
   Subscription &operator=(Subscription &&other) noexcept {
     if (this != &other) {
       reset();
       connection_ = std::exchange(other.connection_, {});
+      disconnectOnDestroy_ = other.disconnectOnDestroy_;
     }
     return *this;
   }
@@ -216,8 +219,9 @@ public:
   }
 
   /// Logical unsubscription: disconnect only. The connection context is
-  /// application-owned (QCoreApplication). reset() does not call
-  /// deleteLater() and does not require a running event loop.
+  /// application-owned (QCoreApplication) for free-function handles.
+  /// reset() does not call deleteLater() and does not require a running
+  /// event loop. Works for both free-function and receiver-lifetime handles.
   void reset() {
     if (static_cast<bool>(connection_)) {
       QObject::disconnect(connection_);
@@ -225,21 +229,35 @@ public:
     }
   }
 
+  /// Free-function / general RAII handle: destruction disconnects.
   explicit Subscription(QMetaObject::Connection conn)
-      : connection_(std::move(conn)) {}
+      : connection_(std::move(conn)), disconnectOnDestroy_(true) {}
+
+  /// QObject-receiver lifetime handle: destruction does NOT disconnect.
+  /// Qt tears the connection down when the receiver QObject is destroyed.
+  /// Use when the caller intends the normal Qt receiver-lifetime pattern
+  /// (handle may be discarded; early unsubscribe is still available via
+  /// reset() while the handle is retained).
+  static Subscription forReceiverLifetime(QMetaObject::Connection conn) {
+    Subscription sub(std::move(conn));
+    sub.disconnectOnDestroy_ = false;
+    return sub;
+  }
 
 private:
   QMetaObject::Connection connection_;
+  bool disconnectOnDestroy_ = true;
 };
 
 /// Internal event bus. Public API is events::publish / events::subscribe
-/// (thin wrappers over the static methods below). dispatcher<T>() returns a
-/// pointer and is an implementation detail — not a public mutable-ref escape
-/// hatch. Returns nullptr when quitFired_ is set or no QCoreApplication
-/// exists (post-teardown / smoke path without exec()).
+/// (thin wrappers over the static methods below). dispatcher<T>() is a
+/// private implementation detail — not a public mutable-ref escape hatch.
 class BusRegistry {
 public:
-  template <EventType T> static void publish(const T &event) {
+  template <EventType T> static void publish(T event) {
+    // Pre-check before touching the dispatcher map: after application
+    // teardown the map is cleared on aboutToQuit, and a late publish must
+    // not construct an unparented dispatcher or bind a stale reference.
     if (!QCoreApplication::instance()) {
       qCCritical(appEvent)
           << "EventSystem: publish requires a running QCoreApplication";
@@ -252,50 +270,49 @@ public:
     }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
-    if (instance().quitFired_) {
-      qCCritical(appEvent) << "EventSystem: publish after application shutdown";
-      return;
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: publish after application shutdown";
+        return;
+      }
     }
-    EventDispatcher<T> *disp = dispatcher<T>();
-    if (!disp) {
-      qCCritical(appEvent)
-          << "EventSystem: publish after application shutdown";
-      return;
-    }
-    disp->publish(event);
+    dispatcher<T>().publish(event);
   }
 
-  /// QObject-receiver subscribe. Connection lifetime follows the receiver.
+  /// QObject-receiver subscribe. Returns a receiver-lifetime Subscription:
+  /// connection lifetime follows the receiver; discarding the handle does
+  /// not disconnect. reset() still disconnects for early unsubscribe.
   template <EventType T, typename Obj>
-  static void subscribe(Obj *receiver, void (Obj::*method)(const T &))
+  static Subscription subscribe(Obj *receiver, void (Obj::*method)(const T &))
     requires(std::is_base_of_v<QObject, Obj>)
   {
     if (!QCoreApplication::instance()) {
       qCCritical(appEvent)
           << "EventSystem: QObject subscribe requires a running"
           << "QCoreApplication";
-      return;
+      return Subscription{};
     }
     if (QThread::currentThread() != QCoreApplication::instance()->thread()) {
       qCCritical(appEvent)
           << "EventSystem: subscribe requires the application thread";
-      return;
+      return Subscription{};
     }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
-    if (instance().quitFired_) {
-      qCCritical(appEvent)
-          << "EventSystem: subscribe after application shutdown";
-      return;
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: subscribe after application shutdown";
+        return Subscription{};
+      }
     }
-    EventDispatcher<T> *disp = dispatcher<T>();
-    if (!disp) {
-      qCCritical(appEvent)
-          << "EventSystem: subscribe after application shutdown";
-      return;
-    }
-    QObject::connect(
-        disp, &EventDispatcherBase::eventPublished, receiver,
+    auto conn = QObject::connect(
+        &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
           T event{};
           if (!detail::checkedEventValue(var, event)) {
@@ -304,6 +321,7 @@ public:
           (receiver->*method)(event);
         },
         Qt::QueuedConnection);
+    return Subscription::forReceiverLifetime(std::move(conn));
   }
 
   /// Free-function subscribe. Uses QCoreApplication::instance() as the
@@ -311,6 +329,9 @@ public:
   /// handlers execute on the application thread under the GUI-thread policy.
   /// Subscriptions belong to application lifetime; services::unregisterAll()
   /// is the explicit teardown mechanism for retained service subscriptions.
+  /// Function-pointer-only: capturing lambdas/functors would reintroduce the
+  /// lifetime hazards Subscription exists to avoid for stateless handlers;
+  /// stateful handlers must use QObject receivers.
   template <EventType T>
   [[nodiscard]] static Subscription subscribe(void (*func)(const T &)) {
     QObject *context = QCoreApplication::instance();
@@ -326,19 +347,17 @@ public:
       return Subscription{};
     }
     Q_ASSERT(QThread::currentThread() == context->thread());
-    if (instance().quitFired_) {
-      qCCritical(appEvent)
-          << "EventSystem: subscribe after application shutdown";
-      return Subscription{};
-    }
-    EventDispatcher<T> *disp = dispatcher<T>();
-    if (!disp) {
-      qCCritical(appEvent)
-          << "EventSystem: subscribe after application shutdown";
-      return Subscription{};
+    {
+      BusRegistry &reg = instance();
+      std::unique_lock lock(reg.mutex_);
+      if (reg.quitFired_) {
+        qCCritical(appEvent)
+            << "EventSystem: subscribe after application shutdown";
+        return Subscription{};
+      }
     }
     auto conn = QObject::connect(
-        disp, &EventDispatcherBase::eventPublished, context,
+        &dispatcher<T>(), &EventDispatcherBase::eventPublished, context,
         [func](const QVariant &var) {
           T event{};
           if (!detail::checkedEventValue(var, event)) {
@@ -353,50 +372,61 @@ public:
 private:
   /// Internal implementation detail. Do not expose; use the free-function
   /// events::publish / events::subscribe facade.
-  /// Returns nullptr when quitFired_ is set or no QCoreApplication exists —
-  /// callers must treat that as shutdown refusal (no dispatcher recreation).
-  template <EventType T> static EventDispatcher<T> *dispatcher() {
+  template <EventType T> static EventDispatcher<T> &dispatcher() {
+    const std::type_index type = typeid(T);
     BusRegistry &reg = instance();
-    if (reg.quitFired_) {
-      return nullptr;
-    }
+    std::unique_lock lock(reg.mutex_);
 
     // Structural lifetime guarantee:
-    //   On first dispatcher creation, connect QCoreApplication::aboutToQuit
-    //   to clear the non-owning map while QObject children (dispatchers)
-    //   still exist. Qt then destroys the dispatcher objects with the
-    //   application. The map never deletes or dereferences entries after
-    //   that clear; adding a BusRegistry destructor that iterates+deletes
-    //   would double-delete against Qt ownership.
-    if (!reg.quitHookInstalled_) {
-      if (auto *app = QCoreApplication::instance()) {
-        QObject::connect(
-            app, &QCoreApplication::aboutToQuit, app, []() {
-              BusRegistry &r = instance();
-              r.quitFired_ = true;
-              r.dispatchers_.clear();
-            });
+    //   On first dispatcher creation for a given QCoreApplication instance,
+    //   connect aboutToQuit to clear the non-owning map while QObject
+    //   children (dispatchers) still exist. Qt then destroys the dispatcher
+    //   objects with the application. The map never deletes or dereferences
+    //   entries after that clear; adding a BusRegistry destructor that
+    //   iterates+deletes would double-delete against Qt ownership.
+    //
+    // Quit-lifecycle re-arm (AUD-123 Option A):
+    //   hookedApp_ is a QPointer — null after app destruction. When the
+    //   current instance differs from the hooked instance (or no hook yet),
+    //   clear quit flags and install aboutToQuit + destroyed handlers for
+    //   the current app. Same-instance access never reinstalls (no
+    //   double-connect). After aboutToQuit but before destruction,
+    //   quitFired_ stays set for the dying instance — guards keep refusing.
+    if (auto *app = QCoreApplication::instance()) {
+      if (reg.hookedApp_.data() != app) {
+        reg.quitFired_ = false;
+        QObject::connect(app, &QCoreApplication::aboutToQuit, app, []() {
+          BusRegistry &r = instance();
+          std::unique_lock clearLock(r.mutex_);
+          r.quitFired_ = true;
+          r.dispatchers_.clear();
+        });
+        // Reset hook state when this app is destroyed so a subsequent
+        // QCoreApplication reinstalls aboutToQuit (no double-connect).
+        QObject::connect(app, &QObject::destroyed, app, []() {
+          BusRegistry &r = instance();
+          std::unique_lock clearLock(r.mutex_);
+          r.quitHookInstalled_ = false;
+          r.quitFired_ = false;
+          r.hookedApp_.clear();
+        });
         reg.quitHookInstalled_ = true;
-      } else {
-        return nullptr;
+        reg.hookedApp_ = app;
       }
     }
 
     // Non-owning: QObject parent (QCoreApplication) owns the dispatcher when
     // one exists. Raw pointer avoids double-delete against Qt parent/child.
-    EventDispatcherBase *&basePtr = reg.dispatchers_[typeid(T)];
+    EventDispatcherBase *&basePtr = reg.dispatchers_[type];
     if (!basePtr) {
-      auto *app = QCoreApplication::instance();
-      if (!app || reg.quitFired_) {
-        return nullptr;
-      }
+      // Parented to QCoreApplication when present (application-owned).
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      auto *typed = new EventDispatcher<T>(app);
+      auto *typed = new EventDispatcher<T>(QCoreApplication::instance());
       basePtr = typed;
       qRegisterMetaType<T>();
     }
 
-    return static_cast<EventDispatcher<T> *>(basePtr);
+    return *static_cast<EventDispatcher<T> *>(basePtr);
   }
 
   static BusRegistry &instance() {
@@ -405,19 +435,29 @@ private:
   }
 
   std::unordered_map<std::type_index, EventDispatcherBase *> dispatchers_;
+  std::mutex mutex_;
   bool quitHookInstalled_ = false;
-  // Set on aboutToQuit when the map is cleared. Plain bool: GUI-thread-only
-  // policy means no concurrent writer. Publish/subscribe check this before
-  // dispatcher<T>(), which also refuses to create when set.
+  // QPointer: null after QCoreApplication destruction. Compared against
+  // QCoreApplication::instance() to detect app-instance change for re-arm.
+  QPointer<QCoreApplication> hookedApp_;
+  // Set under mutex_ when aboutToQuit clears dispatchers_. Publish/subscribe
+  // check quitFired_ (under the same mutex) before calling dispatcher<T>(),
+  // so a post-quit call cannot recreate dispatchers against a dying app.
+  // Cleared when a new QCoreApplication instance appears (re-arm).
   bool quitFired_ = false;
 };
 
-/// QObject-receiver subscription. Thin wrapper over BusRegistry::subscribe.
+/// QObject-receiver subscription. Returns a receiver-lifetime Subscription
+/// (see Subscription::forReceiverLifetime). Discarding the handle is the
+/// normal Qt pattern — connection lifetime follows the receiver; it does
+/// not disconnect on handle destruction. reset() still disconnects for
+/// early unsubscribe. Thin wrapper over BusRegistry::subscribe.
 template <EventType T, typename Obj>
-void subscribe(Obj *receiver, void (Obj::*method)(const T &))
+[[nodiscard]] Subscription subscribe(Obj *receiver,
+                                     void (Obj::*method)(const T &))
   requires(std::is_base_of_v<QObject, Obj>)
 {
-  BusRegistry::subscribe<T, Obj>(receiver, method);
+  return BusRegistry::subscribe<T, Obj>(receiver, method);
 }
 
 /// Free-function subscription. The returned Subscription must be retained;
@@ -429,6 +469,12 @@ void subscribe(Obj *receiver, void (Obj::*method)(const T &))
 /// lifetime; services::unregisterAll() is the explicit teardown mechanism for
 /// retained service subscriptions.
 ///
+/// Function-pointer-only by design: capturing lambdas/functors would
+/// reintroduce the lifetime hazards Subscription exists to avoid for
+/// stateless handlers. Stateful handlers must use QObject receivers (Qt
+/// auto-disconnect on receiver destruction) or application-owned static
+/// state that outlives the subscription.
+///
 /// Thin wrapper over BusRegistry::subscribe.
 template <EventType T>
 [[nodiscard]] Subscription subscribe(void (*func)(const T &)) {
@@ -436,8 +482,8 @@ template <EventType T>
 }
 
 /// Thin wrapper over BusRegistry::publish.
-template <EventType T> void publish(const T &event) {
-  BusRegistry::publish<T>(event);
+template <EventType T> void publish(T event) {
+  BusRegistry::publish<T>(std::move(event));
 }
 
 } // namespace events

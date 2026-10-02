@@ -10,14 +10,11 @@ mkdir -p "${VSCODE_DIR}"
 
 # Platform-aware program path for launch.json. Debug is the launch-config
 # default (matches the Debug-focused debug configs even when Release is the
-# build default); Windows nests the binary under the build-type dir.
-if [ "${PLATFORM}" == "windows" ]; then
-  APP_PROGRAM="${BUILD_DIR}/Debug/${APP_NAME}.exe"
-elif [ "${PLATFORM}" == "darwin" ]; then
-  APP_PROGRAM="${BUILD_DIR}/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
-else
-  APP_PROGRAM="${BUILD_DIR}/${APP_NAME}"
-fi
+# build default). Shared helper (AUD-003/AUD-109): Windows prefers the Ninja
+# single-config path at the build root; VS multi-config remains a fallback.
+CMAKE_BUILD_TYPE="Debug"
+source "${SCRIPT_DIR}/lib/resolve-app-path.sh"
+APP_PROGRAM="${APP_BIN}"
 
 # Generate settings.json
 cat > "${VSCODE_DIR}/settings.json" <<EOF

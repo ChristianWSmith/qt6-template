@@ -11,18 +11,23 @@ AppLogPresenter::AppLogPresenter(AppLogModel &model, AppLogWidget &view,
   // Demonstration only — stock app never publishes DemoLogEvent in production
   // (see AGENTS.md Production status of DemoLogEvent / AppLog). Features use Qt
   // signals for real data; this subscription is EventSystem demo wiring only.
-  events::subscribe<DemoLogEvent>(this,
-                                  &AppLogPresenter::onDemoLogEventReceived);
+  // Stored handle (AUD-105): presenter is a QObject child of the window;
+  // connection lifetime also follows receiver destruction.
+  m_demoLogSubscription =
+      events::subscribe<DemoLogEvent>(this,
+                                      &AppLogPresenter::onDemoLogEventReceived);
 
   connect(m_view, &AppLogWidget::clearRequested, this,
           &AppLogPresenter::handleClearRequested);
 
+  // AUD-116: model keeps logChanged(LogDelta)/logCleared; the presenter
+  // always pushes full state. The LogDelta payload is not forwarded.
   connect(m_model, &AppLogModel::logChanged, this,
           &AppLogPresenter::handleLogChanged);
   connect(m_model, &AppLogModel::logCleared, this,
           &AppLogPresenter::handleLogCleared);
 
-  m_view->displayLogMessages(m_model->getLogMessages());
+  m_view->setLogMessages(m_model->getLogMessages());
   qCDebug(appFeature) << "AppLogPresenter instantiated";
 }
 
@@ -32,16 +37,16 @@ void AppLogPresenter::onDemoLogEventReceived(const DemoLogEvent &event) {
   m_model->addLogMessage(QString::fromStdString(event.message));
 }
 
-void AppLogPresenter::handleLogChanged(const LogDelta &logDelta) {
-  if (!m_view)
+void AppLogPresenter::handleLogChanged() {
+  if (!m_view || !m_model)
     return;
-  m_view->displayLogChanged(logDelta);
+  m_view->setLogMessages(m_model->getLogMessages());
 }
 
 void AppLogPresenter::handleLogCleared() {
-  if (!m_view)
+  if (!m_view || !m_model)
     return;
-  m_view->clear();
+  m_view->setLogMessages(m_model->getLogMessages());
 }
 
 void AppLogPresenter::handleClearRequested() {

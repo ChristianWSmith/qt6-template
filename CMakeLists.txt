@@ -63,7 +63,10 @@ target_link_libraries(${APP_NAME}_lib
 )
 
 # Explicit AUTOGEN_BUILD_DIR: do not depend on CMake's default
-# <dir>/<target>_autogen layout (E-003).
+# <dir>/<target>_autogen layout (E-003). The INTERFACE include below uses
+# this named path — not a $<TARGET_PROPERTY:...> generator expression.
+# AUD-110: generator-expression forms evaluate empty in consumer compile
+# lines (exe / UnitTests); the concrete path is load-bearing.
 set(AUTOGEN_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}_lib_autogen")
 set_target_properties(${APP_NAME}_lib PROPERTIES
     AUTOGEN_BUILD_DIR "${AUTOGEN_BUILD_DIR}"

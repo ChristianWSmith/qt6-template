@@ -13,14 +13,17 @@ NAME_TITLE="GenSmokeProbe"
 NAME_LOWER="$(echo "${NAME_TITLE}" | tr '[:upper:]' '[:lower:]')"
 FEATURE_DIR="${FEATURES_DIR}/${NAME_LOWER}"
 TEST_FILE="${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
+WIDGET_CPP="${FEATURE_DIR}/widget/${NAME_TITLE}Widget.cpp"
 
 MODEL_H="${FEATURE_DIR}/model/${NAME_TITLE}Model.h"
 MODEL_CPP="${FEATURE_DIR}/model/${NAME_TITLE}Model.cpp"
 PRESENTER_CPP="${FEATURE_DIR}/presenter/${NAME_TITLE}Presenter.cpp"
 
+GEN_LOG="$(mktemp)"
+
 cleanup() {
   rm -rf "${FEATURE_DIR}"
-  rm -f "${TEST_FILE}"
+  rm -f "${TEST_FILE}" "${GEN_LOG}"
 }
 
 if [[ -e "${FEATURE_DIR}" ]] || [[ -e "${TEST_FILE}" ]]; then
@@ -31,7 +34,8 @@ fi
 trap cleanup EXIT
 
 echo "==> Generating feature ${NAME_TITLE}"
-"${SCRIPT_DIR}/generate.sh" feature "${NAME_TITLE}"
+"${SCRIPT_DIR}/generate.sh" feature "${NAME_TITLE}" > "${GEN_LOG}"
+cat "${GEN_LOG}"
 
 FAILED=0
 
@@ -147,6 +151,32 @@ check "Test file includes loadState restore scaffold" \
 
 check "Test file includes .moc" \
   "${TEST_FILE}" "#include \"${NAME_TITLE}Test\.moc\""
+
+# Generator fidelity (AUD-106 / AUD-119)
+
+check "Widget.cpp includes logging header" \
+  "${WIDGET_CPP}" 'logging/logging\.h'
+
+check "Widget.cpp logs instantiation via appFeature category" \
+  "${WIDGET_CPP}" 'qCDebug\(appFeature\) << ".*Widget instantiated"'
+
+check "Generator checklist mentions constructFeatures" \
+  "${GEN_LOG}" 'constructFeatures'
+
+check "Generator checklist mentions registerModel" \
+  "${GEN_LOG}" 'registerModel'
+
+check "Test stub asserts provider-injection via saveState success" \
+  "${TEST_FILE}" 'EXPECT_TRUE\(result\.hasValue\(\)\)'
+
+check "Test stub asserts save-failure forwarding to caller" \
+  "${TEST_FILE}" 'EXPECT_EQ\(result\.error\(\), PersistenceError::CommitError\)'
+
+check "Test stub is not placeholder-only" \
+  "${TEST_FILE}" 'EXPECT_TRUE\(true\);' invert
+
+check "Test stub uses neutral findChild example (no hardcoded UI names)" \
+  "${TEST_FILE}" 'incrementButton' invert
 
 if ! tail -n 8 "${TEST_FILE}" | grep -q '\.moc"'; then
   echo "FAIL: .moc include is not near the end of the test file"

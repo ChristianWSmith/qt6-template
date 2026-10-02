@@ -3,6 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/../../scripts/env.sh
+# Built-binary resolution (AUD-003/AUD-109). Keep APP_BIN as the AppDir
+# destination below — the helper result is saved under a distinct name.
+source "${SCRIPT_DIR}/../../scripts/lib/resolve-app-path.sh"
+BUILD_APP_BIN="${APP_BIN}"
 
 mkdir -p "${DIST_DIR}"
 
@@ -13,29 +17,34 @@ export APP_BIN="${BIN_DIR}/${APP_NAME}"
 
 export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
-# appimagetool pin (E-018): default pins the continuous x86_64 build
-# published 2025-12-04 (sha256 from GitHub release assets). Override
-# APPIMAGETOOL_URL / APPIMAGETOOL_SHA256 for a newer or private build.
-APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage}"
-APPIMAGETOOL_SHA256="${APPIMAGETOOL_SHA256:-a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0}"
+# AUD-111: pin appimagetool to a released tag + sha256 (no floating
+# "continuous" channel). Tag 1.9.1 is the latest non-continuous release.
+APPIMAGETOOL_VERSION="1.9.1"
+APPIMAGETOOL_URL="https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage"
+APPIMAGETOOL_SHA256="ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0"
 APPIMAGETOOL_PATH="${PROJECT_ROOT}/appimagetool"
 
-if [ ! -f "${APPIMAGETOOL_PATH}" ]; then
-    wget "${APPIMAGETOOL_URL}" -O "${APPIMAGETOOL_PATH}"
-    chmod +x "${APPIMAGETOOL_PATH}"
-fi
+fetch_appimagetool() {
+    curl -fsSL "${APPIMAGETOOL_URL}" -o "${APPIMAGETOOL_PATH}"
+}
 
-if [ -n "${APPIMAGETOOL_SHA256}" ]; then
-    echo "${APPIMAGETOOL_SHA256}  ${APPIMAGETOOL_PATH}" | sha256sum -c -
-else
-    echo "WARNING: APPIMAGETOOL_SHA256 unset — appimagetool is not checksum-verified (E-018)." >&2
+# Verify checksum on every run; re-download when missing or mismatched.
+if ! echo "${APPIMAGETOOL_SHA256}  ${APPIMAGETOOL_PATH}" 2>/dev/null | sha256sum -c - >/dev/null 2>&1; then
+    echo "Fetching appimagetool ${APPIMAGETOOL_VERSION} (${APPIMAGETOOL_URL})..."
+    fetch_appimagetool
 fi
+if ! echo "${APPIMAGETOOL_SHA256}  ${APPIMAGETOOL_PATH}" | sha256sum -c -; then
+    echo "error: appimagetool sha256 mismatch (expected ${APPIMAGETOOL_SHA256})" >&2
+    rm -f "${APPIMAGETOOL_PATH}"
+    exit 1
+fi
+chmod +x "${APPIMAGETOOL_PATH}"
 
 mkdir -p "${BIN_DIR}"
 mkdir -p "${LIB_DIR}"
 mkdir -p "${APP_PLUGINS_DIR}"
 cp -r "${QT_PLUGINS_DIR}/." "${APP_PLUGINS_DIR}/"
-cp "${BUILD_DIR}/${APP_NAME}" "${APP_BIN}"
+cp "${BUILD_APP_BIN}" "${APP_BIN}"
 chmod +x "${APP_BIN}"
 
 seen_deps=()
@@ -62,17 +71,10 @@ gather_deps() {
 
 gather_deps "${APP_BIN}"
 
-EXCLUDELIST_PATH="$(mktemp)"
-# Excludelist fetch failure must be fatal (E-018) — empty blacklist would
-# copy blacklisted libs into the AppImage.
-if ! wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist; then
-    echo "ERROR: failed to fetch pkg2appimage excludelist" >&2
-    rm -f "${EXCLUDELIST_PATH}"
-    exit 1
-fi
-if [ ! -s "${EXCLUDELIST_PATH}" ]; then
-    echo "ERROR: pkg2appimage excludelist download was empty" >&2
-    rm -f "${EXCLUDELIST_PATH}"
+# AUD-111: vendored excludelist — do not wget pkg2appimage master.
+EXCLUDELIST_PATH="${SCRIPT_DIR}/appimage-excludelist"
+if [ ! -f "${EXCLUDELIST_PATH}" ]; then
+    echo "error: vendored excludelist missing: ${EXCLUDELIST_PATH}" >&2
     exit 1
 fi
 BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \

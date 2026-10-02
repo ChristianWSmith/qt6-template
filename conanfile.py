@@ -55,10 +55,15 @@ class MyConanApp(ConanFile):
         self.copy_shared_libs()
 
     def copy_shared_libs(self):
+        # Single-config Ninja (pinned in conan/profiles/{windows,darwin})
+        # places the app binary at ${BUILD_DIR} root; multi-config generators
+        # (Visual Studio) nest under ${BUILD_DIR}/${build_type}. Copy DLLs /
+        # dylibs next to the binary under the Ninja layout. If a multi-config
+        # generator is ever used on Windows, point out_dir at the build_type
+        # subfolder instead (see scripts/lib/resolve-app-path.sh fallback).
         out_dir = self.build_folder
         if self.settings.os == "Windows":
             exts = ["*.dll"]
-            out_dir = os.path.join(self.build_folder, self.settings.get_safe("build_type"))
         elif self.settings.os == "Macos":
             exts = ["*.dylib"]
         else:

@@ -111,8 +111,15 @@ private:
 
 /// Storage-mechanics boundary for feature-state persistence.
 ///
+/// Configuration channels: this provider handles **feature state only**.
+/// Window/UI chrome (geometry/state) uses QSettings(ORGANIZATION_NAME,
+/// APP_NAME) in AppMainWindow — do not merge the channels.
+///
 /// Threading/lifetime contract:
 ///   - Persistence operations are synchronous and execute on the GUI thread.
+///     Thread-guard policy: debug-only Q_ASSERT GUI-thread checks in
+///     FilePersistenceProvider; no runtime guard until worker threads enter
+///     scope (Async Policy).
 ///   - Models hold `IPersistenceProvider&` (required, non-owning reference);
 ///     the provider must outlive every model that references it.
 ///   - This interface does not own models; models do not own providers.

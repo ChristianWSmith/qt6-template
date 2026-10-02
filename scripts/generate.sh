@@ -119,12 +119,21 @@ private:
 EOF
 
 # WIDGET CPP
+# Feature widgets: src/features/<name>/widget/ → ../../../logging/.
+# Standalone widgets: src/widgets/<name>/ → ../../logging/.
+if [[ "${TYPE}" == "feature" ]]; then
+  WIDGET_LOGGING_INCLUDE="../../../logging/logging.h"
+else
+  WIDGET_LOGGING_INCLUDE="../../logging/logging.h"
+fi
 cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.cpp" <<EOF
 #include "${NAME_TITLE}Widget.h"
+#include "${WIDGET_LOGGING_INCLUDE}"
 
 ${NAME_TITLE}Widget::${NAME_TITLE}Widget(QWidget *parent)
     : QWidget(parent), ui(std::make_unique<Ui::${NAME_TITLE}Widget>()) {
   ui->setupUi(this);
+  qCDebug(appFeature) << "${NAME_TITLE}Widget instantiated";
 }
 
 ${NAME_TITLE}Widget::~${NAME_TITLE}Widget() = default;
@@ -165,7 +174,7 @@ if [[ "${TYPE}" == "widget" ]]; then
   echo "Generated ${NAME_TITLE}Widget."
   echo ""
   echo "Remaining composition-root wiring:"
-  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout."
+  echo "  1. Add ${NAME_TITLE}Widget to AppMainWindow's mainLayout in finishConstruction()."
   exit 0
 else
   sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
@@ -289,8 +298,8 @@ class ${NAME_TITLE}Presenter : public QObject {
 
 public:
   // Ctor-by-reference encodes required non-null dependencies (matches models
-  // and AppMainWindow.bindFeatures). QPointer members observe mid-session
-  // destruction; slots null-guard as belt-and-suspenders.
+  // and AppMainWindow::constructFeatures). QPointer members observe
+  // mid-session destruction; slots null-guard as belt-and-suspenders.
   explicit ${NAME_TITLE}Presenter(${NAME_TITLE}Model &model,
                                    ${NAME_TITLE}Widget &view,
                                    QObject *parent = nullptr);
@@ -383,6 +392,23 @@ protected:
       : model(provider, nullptr), view(nullptr), presenter(model, view) {}
 };
 
+// Fixture constructs model(view, presenter) with MemoryPersistenceProvider
+// injected by reference. Scaffold saveState() persists an empty object —
+// it must forward a successful PersistenceResult, proving provider wiring.
+TEST_F(${NAME_TITLE}Test, ModelConstructedAndProviderInjectionWorks) {
+  const auto result = model.saveState();
+  EXPECT_TRUE(result.hasValue());
+}
+
+// Models forward the provider's PersistenceResult to the composition root;
+// they do not swallow operational save failures.
+TEST_F(${NAME_TITLE}Test, SaveFailureIsForwardedToCaller) {
+  provider.failNextSave(PersistenceError::CommitError);
+  const auto result = model.saveState();
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::CommitError);
+}
+
 // Behavioral scaffold for initial model→view sync (D-001). Seed the provider
 // with this feature's persistence schema, implement display* + presenter ctor
 // sync, then replace GTEST_SKIP with a real assertion (see CounterTest.cpp).
@@ -426,7 +452,7 @@ TEST_F(${NAME_TITLE}Test, LoadStateRestoresPersistedValues) {
 // NOTE: Qt auto-connect slots must be named on_<uiObjectName>_clicked to match
 // .ui object names — a mismatch is a silent no-fire. After implementing the
 // feature, replace the scaffolds above with tests that:
-//   auto *btn = view.findChild<QPushButton *>("incrementButton");
+//   auto *btn = view.findChild<QPushButton *>("<uiObjectName>");
 //   ASSERT_NE(btn, nullptr);
 //   QTest::mouseClick(btn, Qt::LeftButton);
 //   // assert model/view effect
@@ -442,8 +468,8 @@ format "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
 echo "Generated ${NAME_TITLE}."
 echo ""
 echo "Remaining composition-root wiring:"
-echo "  1. In AppMainWindow::bindFeatures, construct ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter"
-echo "     (model → widget → presenter; presenter takes model/view by reference)."
-echo "  2. Append ${NAME_TITLE}Model to m_models inside bindFeatures."
-echo "  3. Add ${NAME_TITLE}Widget to mainLayout inside bindFeatures/finishConstruction."
+echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow::constructFeatures() (model → widget → presenter; presenter takes model/view by reference)."
+echo "  2. Call registerModel(${NAME_TITLE}Model) in constructFeatures()."
+echo "  3. Add ${NAME_TITLE}Widget to mainLayout in finishConstruction()."
 echo "  4. Implement ${NAME_TITLE}Model::loadState() and fill the generated test scaffolds."
+echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects."

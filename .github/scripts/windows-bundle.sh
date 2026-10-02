@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "${SCRIPT_DIR}/../../scripts/env.sh"
+# Built-binary resolution (AUD-003/AUD-109): Ninja single-config first.
+source "${SCRIPT_DIR}/../../scripts/lib/resolve-app-path.sh"
 
 PORTABLE_APP_DIR="${DIST_DIR}/${APP_NAME}-${APP_VERSION}-Portable"
 mkdir -p "${PORTABLE_APP_DIR}"
@@ -12,17 +14,15 @@ MAKE_INSTALLER="${2:-false}"
 
 export WINDEPLOYQT=$(cygpath -w "${QT_BIN}/windeployqt.exe")
 
-# Single-config generators (Ninja) place the exe at the build root;
-# multi-config generators (Visual Studio) place it under ${BUILD_TYPE}/.
-EXE_DIR="${BUILD_DIR}/${BUILD_TYPE}"
-if [[ ! -f "${EXE_DIR}/${APP_NAME}.exe" ]]; then
-  EXE_DIR="${BUILD_DIR}"
-fi
-if [[ ! -f "${EXE_DIR}/${APP_NAME}.exe" ]]; then
-  echo "error: ${APP_NAME}.exe not found under ${BUILD_DIR} or ${BUILD_DIR}/${BUILD_TYPE}" >&2
+if [ "${APP_BIN_EXISTS}" != "1" ]; then
+  echo "error: ${APP_NAME}.exe not found (resolved: ${APP_BIN})" >&2
   exit 1
 fi
-export EXE_PATH=$(cygpath -w "${EXE_DIR}/${APP_NAME}.exe")
+
+# DLLs sit next to the exe (Conan copy_shared_libs targets the same single-
+# config layout the helper resolves).
+EXE_DIR="$(dirname "${APP_BIN}")"
+export EXE_PATH=$(cygpath -w "${APP_BIN}")
 
 cp "${EXE_PATH}" "${PORTABLE_APP_DIR}/${APP_NAME}.exe"
 
@@ -38,7 +38,16 @@ if [[ "${MAKE_INSTALLER}" == "false" ]]; then
   exit 0
 fi
 
-export ISS_PATH=$(cygpath -w "${PROJECT_ROOT}/inno.iss")
+# AUD-122: emit the generated Inno script under DIST_DIR (not PROJECT_ROOT)
+# and clean it up on exit. .gitignore already lists inno.iss at the repo
+# root — do not re-add.
+mkdir -p "${DIST_DIR}"
+ISS_PATH="${DIST_DIR}/inno.iss"
+cleanup_iss() {
+  rm -f "${ISS_PATH}"
+}
+trap cleanup_iss EXIT
+
 cat > "${ISS_PATH}" <<EOF
 [Setup]
 AppName=${APP_NAME}
@@ -58,4 +67,4 @@ Name: "{group}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
 Name: "{commondesktop}\\${APP_NAME}"; Filename: "{app}\\${APP_NAME}.exe"
 EOF
 
-iscc "${ISS_PATH}"
+iscc "$(cygpath -w "${ISS_PATH}")"

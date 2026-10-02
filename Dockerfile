@@ -1,9 +1,17 @@
-FROM ubuntu:22.04
+# Toolchain-only image (AUD-108): compiler/cmake/pipenv/build deps, no system
+# Qt — Qt still comes from the local Qt/ tree via scripts/install-qt.sh.
+# Base selected so the default toolchain matches conan/profiles/linux
+# compiler.version=15: Ubuntu 26.04 LTS ships GCC 15 as the default
+# (build-essential → gcc/g++ 15). gcc-15/g++-15 are installed explicitly so
+# the match is intentional, not incidental.
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y \
     build-essential \
+    gcc-15 \
+    g++-15 \
     cmake \
     git \
     curl \
@@ -26,7 +34,7 @@ RUN apt-get update && apt-get install -y \
     libreadline-dev \
     libsqlite3-dev \
     llvm \
-    libncursesw5-dev \
+    libncurses-dev \
     xz-utils \
     tk-dev \
     libxml2-dev \
@@ -83,7 +91,16 @@ RUN apt-get update && apt-get install -y \
     lldb \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --no-cache-dir --upgrade pip pipenv
+# Make the profile compiler the default alternatives target so plain
+# gcc/g++ (and Conan detection) see major 15, matching conan/profiles/linux.
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-15 150 \
+        --slave /usr/bin/g++ g++ /usr/bin/g++-15 \
+        --slave /usr/bin/gcov gcov /usr/bin/gcov-15 \
+    && gcc --version | head -1 \
+    && g++ --version | head -1
+
+# Ubuntu 24.04+ marks system Python as externally-managed (PEP 668).
+RUN pip3 install --no-cache-dir --upgrade --break-system-packages pip pipenv
 
 RUN groupadd -g 1000 devgroup && \
     useradd -m -u 1000 -g devgroup devuser && \

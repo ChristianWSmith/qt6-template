@@ -9,10 +9,17 @@
 /// Supports optional one-shot failure injection so model/provider error
 /// paths can be exercised without touching the filesystem.
 ///
+/// Load taxonomy parity with FilePersistenceProvider:
+///   - missing key → NotFound (first-run)
+///   - corrupt JSON (parse error) → InvalidData
+///   - valid JSON that is not an object → InvalidData
+/// This is an API-boundary double, not a storage-behavior clone
+/// (no filesystem, no QSaveFile commit semantics, no quarantine rename).
+///
 /// Fidelity notes (G-007):
-///   - Stores compact JSON objects only; cannot naturally produce
-///     FilePersistenceProvider's on-disk InvalidData for arrays written by
-///     external writers (saveState always writes a valid JSON object).
+///   - Stores compact JSON objects only via saveState; seedRaw() injects
+///     arbitrary bytes to simulate damaged or non-object storage that cannot
+///     be produced through the public QJsonObject saveState API.
 ///   - Error kinds other than NotFound are available via failNextLoad /
 ///     failNextSave injection (CommitError, IoError, InvalidData).
 ///   - Not thread-safe — matches the GUI-thread persistence contract.
@@ -20,6 +27,12 @@ class MemoryPersistenceProvider : public IPersistenceProvider {
 public:
   void failNextLoad(PersistenceError error) { nextLoadError_ = error; }
   void failNextSave(PersistenceError error) { nextSaveError_ = error; }
+
+  /// Test-only: inject raw bytes to simulate damaged or non-object storage
+  /// that cannot be produced through the public QJsonObject saveState API.
+  void seedRaw(const QString &key, const QByteArray &bytes) {
+    storage_[key] = bytes;
+  }
 
   PersistenceResult<QJsonObject> loadState(const QString &key) override {
     if (nextLoadError_.has_value()) {
@@ -31,9 +44,15 @@ public:
     if (it == storage_.end()) {
       return PersistenceResult<QJsonObject>::failure(PersistenceError::NotFound);
     }
-    QJsonDocument doc = QJsonDocument::fromJson(it.value());
-    if (doc.isNull()) {
-      return PersistenceResult<QJsonObject>::failure(PersistenceError::InvalidData);
+    QJsonParseError parseError{};
+    const QJsonDocument doc = QJsonDocument::fromJson(it.value(), &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+      return PersistenceResult<QJsonObject>::failure(
+          PersistenceError::InvalidData);
+    }
+    if (!doc.isObject()) {
+      return PersistenceResult<QJsonObject>::failure(
+          PersistenceError::InvalidData);
     }
     return PersistenceResult<QJsonObject>::success(doc.object());
   }

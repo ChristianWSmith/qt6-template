@@ -111,8 +111,7 @@ TEST_F(LifecycleTest, CloseSavesFeatureStateEndToEnd) {
     QApplication::processEvents();
 
     // Mutate counter state through the UI (widget → presenter → model).
-    auto *button =
-        window.findChild<QPushButton *>("incrementButton");
+    auto *button = window.findChild<QPushButton *>("incrementButton");
     ASSERT_NE(button, nullptr);
     QTest::mouseClick(button, Qt::LeftButton);
     QApplication::processEvents();
@@ -156,6 +155,32 @@ TEST_F(LifecycleTest, CloseContinuesWhenInjectedProviderSaveFails) {
   // Close must be accepted (not rejected/aborted) and the window hidden.
   EXPECT_TRUE(closeEvent.isAccepted());
   EXPECT_TRUE(window.isHidden());
+}
+
+// Production path (AUD-001 Option B): closeEvent must still drive the m_models
+// loop and deliver feature state to the caller-owned injected provider.
+TEST_F(LifecycleTest, InjectedProviderReceivesFeatureStateOnClose) {
+  MemoryPersistenceProvider provider;
+
+  {
+    AppMainWindow window(provider);
+    window.show();
+    QApplication::processEvents();
+
+    auto *button = window.findChild<QPushButton *>("incrementButton");
+    ASSERT_NE(button, nullptr);
+    QTest::mouseClick(button, Qt::LeftButton);
+    QApplication::processEvents();
+
+    QCloseEvent closeEvent;
+    QApplication::sendEvent(&window, &closeEvent);
+    EXPECT_TRUE(closeEvent.isAccepted());
+  }
+
+  auto loadResult = provider.loadState(QStringLiteral(APP_ID ".CounterState"));
+  ASSERT_TRUE(loadResult.hasValue())
+      << "counter state not saved to injected provider via m_models loop";
+  EXPECT_EQ(loadResult.value().value("value").toInt(), 1);
 }
 
 // QSettings restore path: ctor restoreGeometry/restoreState must apply

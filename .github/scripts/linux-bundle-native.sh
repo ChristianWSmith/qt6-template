@@ -14,11 +14,17 @@ set -euo pipefail
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/../../scripts/env.sh
+# Built-binary resolution (AUD-003/AUD-109).
+source "${SCRIPT_DIR}/../../scripts/lib/resolve-app-path.sh"
 
 mkdir -p "${DIST_DIR}"
 
 ARCHIVE_NAME="${APP_NAME}-${APP_VERSION}"
-SOURCE_BINARY_PATH="${BUILD_DIR}/${APP_NAME}"
+SOURCE_BINARY_PATH="${APP_BIN}"
+if [ ! -f "${SOURCE_BINARY_PATH}" ]; then
+    echo "error: production binary not found: ${SOURCE_BINARY_PATH}" >&2
+    exit 1
+fi
 SOURCE_ICONS_DIR="${ICONS_DIR}"
 SOURCE_LICENSE_PATH="${PROJECT_ROOT}/LICENSE"
 SOURCE_README_PATH="${PROJECT_ROOT}/README.md"

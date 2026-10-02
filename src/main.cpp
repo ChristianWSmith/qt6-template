@@ -62,11 +62,9 @@ int main(int argc, char *argv[]) {
     // same try/catch so option errors are classified separately from
     // post-register bootstrap failures.
     cxxopts::Options options(APP_NAME, APP_DESCRIPTION);
-    options.add_options()(
-        "l,log", "Log level (debug, info, warn, error, none)",
-        cxxopts::value<std::string>()->default_value("info"))(
-        "smoke-test",
-        "Run in smoke test mode (exits immediately after setup)")(
+    options.add_options()("l,log", "Log level (debug, info, warn, error, none)",
+                          cxxopts::value<std::string>()->default_value("info"))(
+        "smoke-test", "Run in smoke test mode (exits immediately after setup)")(
         "h,help", "Print help");
 
     cxxopts::ParseResult parsedArgs = options.parse(argc, argv);
@@ -82,8 +80,8 @@ int main(int argc, char *argv[]) {
     configureLogLevel(parsedArgs.operator[]("log").as<std::string>());
 
     // fmt demo (Keep list): Hello message uses fmt; logging.cpp uses fmt too.
-    qCInfo(appMain) << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION)
-                           .c_str();
+    qCInfo(appMain)
+        << fmt::format("Hello from {} {}!", APP_NAME, APP_VERSION).c_str();
 
     QApplication app(argc, argv);
 
@@ -115,11 +113,15 @@ int main(int argc, char *argv[]) {
     // are idempotent; catch paths rely on the guard alone.
     QTranslator translator;
     setupLocalization(translator);
-    const auto translatorGuard = qScopeGuard([&translator] {
-      QCoreApplication::removeTranslator(&translator);
-    });
+    const auto translatorGuard = qScopeGuard(
+        [&translator] { QCoreApplication::removeTranslator(&translator); });
 
-    AppMainWindow mainWindow;
+    // Structural provider lifetime on the production path (AUD-001 Option B):
+    // provider declared BEFORE the window so it outlives it (stack order;
+    // destruction is reverse of declaration). Injected ctor binds the
+    // caller-owned provider; the window does not reparent it.
+    FilePersistenceProvider provider;
+    AppMainWindow mainWindow(provider);
 
     setTheme();
 

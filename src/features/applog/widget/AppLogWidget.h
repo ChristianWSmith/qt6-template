@@ -2,9 +2,7 @@
 
 #include "ui_AppLogWidget.h"
 
-#include "../applogcommon.h"
 #include <memory>
-#include <QString>
 #include <QStringList>
 #include <QWidget>
 
@@ -24,10 +22,11 @@ public:
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
-  // View API convention: display* for presenter→view pushes (see AGENTS.md).
   void clear();
-  void displayLogMessages(const QStringList &messages);
-  void displayLogChanged(const LogDelta &logDelta);
+  // Full-state replacement (AUD-116): clears then adds. Name set* (not
+  // display*) because the call promises replacement semantics, not an
+  // incremental push. CounterWidget uses displayCounter for value pushes.
+  void setLogMessages(const QStringList &messages);
 
 signals:
   void clearRequested();

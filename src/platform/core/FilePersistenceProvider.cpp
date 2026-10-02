@@ -1,11 +1,13 @@
 #include "FilePersistenceProvider.h"
 #include "../../logging/logging.h"
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonDocument>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
 
 FilePersistenceProvider::FilePersistenceProvider(QObject *parent)
     : QObject(parent) {}
@@ -36,6 +38,9 @@ static void quarantineCorruptFile(const QString &key, const QString &filePath) {
 
 PersistenceResult<QJsonObject>
 FilePersistenceProvider::loadState(const QString &key) {
+  // Debug-only thread contract (AUD-115): persistence is synchronous on the
+  // GUI thread. Q_ASSERT compiles out in release builds — no runtime guard.
+  Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
   const QString filePath = getFilePath(key);
   QByteArray data;
   {
@@ -88,6 +93,9 @@ FilePersistenceProvider::loadState(const QString &key) {
 PersistenceResult<void>
 FilePersistenceProvider::saveState(const QString &key,
                                    const QJsonObject &state) {
+  // Debug-only thread contract (AUD-115): persistence is synchronous on the
+  // GUI thread. Q_ASSERT compiles out in release builds — no runtime guard.
+  Q_ASSERT(QThread::currentThread() == QCoreApplication::instance()->thread());
   const QString filePath = getFilePath(key);
   QDir dir;
   if (!dir.mkpath(QFileInfo(filePath).absolutePath())) {
