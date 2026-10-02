@@ -58,13 +58,15 @@ src/
 - **Theming**: `platform/theme/theme.hpp` loads platform QSS from `:/styles/`. Windows forces the Fusion style and ships `dark.qss`/`light.qss` selected via `QStyleHints::colorScheme()`; Linux/macOS `base.qss` and `custom.qss` may be empty — empty means **Qt default styling**. `custom.qss` is the primary application override extension point. Do not add placeholder CSS just to make files non-empty.
 - **cxxopts** is linked only to the `${APP_NAME}` executable (CLI in `main.cpp`); it is not a `${APP_NAME}_lib` dependency.
 - **`configureLogLevel`** is declared in `src/logging/logging.h` and defined in `src/logging/logging.cpp` (not `main.cpp`).
-- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Machine-enforced rules include:
+- **Architecture boundary checks** run in `scripts/build.sh` (not CI-only). The script is a **heuristic source-pattern check** (grep/find), not a C++ dependency graph — a green run is evidence, not proof of full conformance. Rule numbering matches `scripts/check-architecture-boundaries.sh`:
   1. Feature widgets and standalone `src/widgets/` must not include model headers (`model/` path segment or `*Model.h` basename; basename rule excludes `IModel.h`).
-  2. Feature models must not include widget headers or EventSystem/`events/` headers.
-  3. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`).
-  4. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
-  5. `src/core` must not include `widgets/`, `events/`, or `features/`.
-  Presenters, `src/appmainwindow/`, `src/main.cpp`, and `tests/` are exempt (wiring/bootstrap/tests). `src/events` → `src/logging` is an **allowed** direction.
+  2. `src/logging/` must not reference the EventSystem surface (`events::`, `LogEvent`, `EventSystem`, `BusRegistry`, `EventDispatcher`, `Subscription`).
+  3. Feature models must not include widget headers (`widget/` path or `*Widget.h` basename).
+  4. Feature models must not include EventSystem/`events/` headers.
+  5. Infrastructure must not depend on features: `src/{events,services,platform}` must not include `features/`.
+  6. `src/core` must not include `widgets/`, `events/`, or `features/`.
+  
+  Exemptions: presenters, `src/appmainwindow/`, `src/main.cpp`, `tests/`. Allowed directions (not violations): `src/events` → `src/logging`; `src/services` → `src/events` + `src/logging`; `src/platform` → `src/core` + `src/logging`; `src/features/*/model` → `src/core` + `src/logging`.
 - **ReusableWidget** (`src/widgets/reusable/`) is an intentional committed example of the standalone-widget convention (deleted copy/move, `std::unique_ptr<Ui::ReusableWidget>`, signal/slot placeholders). It is not instantiated by the sample app; keep it as a teaching artifact or remove it only if the generator fully replaces it.
 
 ### Build targets and facts (verified)
@@ -102,6 +104,38 @@ Name must start with an uppercase letter and be a valid C++ identifier (regex `^
 - Generated test files include a `.moc` include at the bottom. It is **required** when the test `.cpp` defines `Q_OBJECT` (e.g. `tests/events/EventsTest.cpp`); feature fixtures without `Q_OBJECT` compile an empty moc — the include is harmless convention there, not a hard requirement for every test file.
 
 **Test-mode isolation contract:** `tests/main.cpp` enables Qt test mode (`QStandardPaths::setTestModeEnabled(true)`) and redirects QSettings UserScope paths to a temp dir **before** any test constructs persistence providers or windows. New test targets must preserve this contract — tests never write real `AppDataLocation` data or the developer's organization/application settings.
+
+### Operational Recipes
+
+**Run a single CTest test** (after a normal test build):
+
+```bash
+# Via ctest (uses the build tree; needs QT_QPA_PLATFORM for GUI tests):
+QT_QPA_PLATFORM=offscreen ctest --test-dir build -R 'CounterTest\.' --output-on-failure
+
+# Or run the test binary directly:
+QT_QPA_PLATFORM=offscreen ./build/tests/UnitTests --gtest_filter='CounterTest.*'
+```
+
+`./scripts/build.sh --test ON` builds and runs the **full** suite. Direct `ctest` requires a prior successful build and assumes system `cmake` is on `PATH` (ctest is invoked outside pipenv).
+
+**Add a logging category:**
+
+1. In `src/logging/logging.h`: add `Q_DECLARE_LOGGING_CATEGORY(appMyFeature)`
+2. In `src/logging/logging.cpp`: add `Q_LOGGING_CATEGORY(appMyFeature, "app.myfeature")`
+3. Use `qCDebug(appMyFeature) << ...` from the owning layer.
+
+New categories automatically inherit wildcard filter rules from `configureLogLevel` (e.g. `*.debug=true`). Filtering is by category string rules, not by per-category CLI flags. The custom `messageHandler` does not print the category name in each line.
+
+**Inject a persistence provider into tests** (do not write real app data):
+
+```cpp
+MemoryPersistenceProvider provider;  // tests/MemoryPersistenceProvider.h
+AppMainWindow window(&provider);     // injected path: caller-owned
+// Provider must outlive the window. Not reparented. See Ownership Rules.
+```
+
+Use `failNextSave(...)` / `failNextLoad(...)` on the double for one-shot failure injection. Feature fixtures construct `Model(provider, nullptr)` directly without a window.
 
 ## Dependencies
 
@@ -334,15 +368,17 @@ Diagnostic logging uses `qC*` categories and the custom message handler — **no
 
 ### Feature Structure (MVP Convention)
 
-Each feature lives in `src/features/{name}/` with three components:
+Each feature lives in `src/features/{name}/` with these components:
 
 ```
 src/features/myfeature/
+├── myfeaturecommon.h → feature-local shared types (when needed)
 ├── model/        → data + persistence (implements IModel)
 ├── presenter/    → wiring between model and widget
 └── widget/       → UI (no business logic)
 ```
 
+- **`{name}common.h`** — always emitted by the generator. Use for cross-layer feature types (e.g. `LogDelta` in `applogcommon.h`). Reference features test via public API + `findChild` and do **not** declare `friend` test classes; the generator matches that philosophy.
 - **Model** (`model/`) — owns application state, exposes getters/setters, handles persistence via `IPersistenceProvider`. Implements `IModel` (`loadState()`, `saveState() -> PersistenceResult<void>`).
 - **Presenter** (`presenter/`) — receives model and widget via constructor, wires signals/slots between them
 - **Widget** (`widget/`) — UI only, no business logic, concrete class
@@ -451,4 +487,4 @@ See `.github/workflows/ci.yml`.
 
 ---
 
-*This documentation is part of the architecture. Treat it as the contract for how the template should be extended.*
+*This documentation describes the intended architecture and extension conventions. For load-bearing implementation details, verify against the code when the documentation and implementation disagree.*

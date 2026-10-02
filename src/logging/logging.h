@@ -11,7 +11,7 @@ Q_DECLARE_LOGGING_CATEGORY(appPersistence)
 Q_DECLARE_LOGGING_CATEGORY(appEvent)
 Q_DECLARE_LOGGING_CATEGORY(appService)
 
-// F-11: custom handler retained (see logging.cpp for full rationale).
+// Custom handler retained (see logging.cpp for full rationale).
 // Demonstrates qInstallMessageHandler + fmt; explicit fatal abort;
 // stdout/stderr sink split. Canonical alternative if formatting-only is
 // enough: qSetMessagePattern + default Qt handler. Categories +

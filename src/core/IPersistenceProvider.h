@@ -125,7 +125,9 @@ public:
   IPersistenceProvider(IPersistenceProvider &&) = delete;
   IPersistenceProvider &operator=(IPersistenceProvider &&) = delete;
 
-  virtual PersistenceResult<QJsonObject> loadState(const QString &key) = 0;
-  virtual PersistenceResult<void> saveState(const QString &key,
-                                             const QJsonObject &state) = 0;
+  /// Discarding results silently drops typed errors — always observe.
+  [[nodiscard]] virtual PersistenceResult<QJsonObject>
+  loadState(const QString &key) = 0;
+  [[nodiscard]] virtual PersistenceResult<void> saveState(const QString &key,
+                                                          const QJsonObject &state) = 0;
 };

@@ -279,7 +279,7 @@ private:
     BusRegistry &reg = instance();
     std::unique_lock lock(reg.mutex_);
 
-    // Structural lifetime guarantee (AUD-001):
+    // Structural lifetime guarantee:
     //   On first dispatcher creation, connect QCoreApplication::aboutToQuit
     //   to clear the non-owning map while QObject children (dispatchers)
     //   still exist. Qt then destroys the dispatcher objects with the

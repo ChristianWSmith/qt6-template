@@ -33,6 +33,8 @@ public:
   IModel(IModel &&) = delete;
   IModel &operator=(IModel &&) = delete;
 
+  /// Absorbs load failures at the model boundary by design (see class docs).
   virtual void loadState() = 0;
-  virtual PersistenceResult<void> saveState() const = 0;
+  /// Discarding this result silently drops typed save errors — always observe.
+  [[nodiscard]] virtual PersistenceResult<void> saveState() const = 0;
 };

@@ -84,7 +84,8 @@ private:
   AppLogPresenter *m_appLogPresenter;
 
   // Non-owning registry of feature models for polymorphic shutdown persistence
-  // (F-09). Populated after feature construction in the ctor body. Qt parent-
+  // Non-owning registry for shutdown persistence. Populated after feature
+  // construction in the ctor body. Qt parent-
   // child ownership remains with this window; these pointers do not own.
   QList<IModel *> m_models;
 };

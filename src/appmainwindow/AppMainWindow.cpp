@@ -28,7 +28,7 @@ AppMainWindow::AppMainWindow(IPersistenceProvider *provider, QWidget *parent)
 
   ui->setupUi(this);
 
-  // F-09: polymorphic IModel registry for shutdown persistence.
+  // Polymorphic IModel registry for shutdown persistence.
   // Individual pointers remain for wiring/feature access; this list drives
   // closeEvent's save loop over every feature model.
   m_models << m_counterModel << m_appLogModel;
@@ -63,7 +63,7 @@ void AppMainWindow::closeEvent(QCloseEvent *event) {
   settings.setValue("window/geometry", saveGeometry());
   settings.setValue("window/state", saveState());
 
-  // F-01/F-09: observe save results polymorphically.
+  // Observe save results polymorphically.
   // Provider logging ownership stays with FilePersistenceProvider — do not
   // duplicate qCWarning here for the same failure. Default shutdown policy
   // remains log-and-continue: do not block close on persistence failure.

@@ -22,7 +22,7 @@
 
 class LifecycleTest : public ::testing::Test {};
 
-// F-03 (Wave 3, simple test — not a framework): composition-root wiring
+// Simple test — not a framework: composition-root wiring
 // must actually construct the documented feature graph. Missing wiring
 // (model/widget/presenter/provider) is a silent-failure class this locks.
 TEST_F(LifecycleTest, CompositionRootConstructsFeatureGraph) {
@@ -87,8 +87,8 @@ TEST_F(LifecycleTest, CloseSavesWindowState) {
   EXPECT_FALSE(settings.value("window/state").toByteArray().isEmpty());
 }
 
-// F-12: closeEvent must persist feature state end-to-end via the polymorphic
-// IModel list (F-09) and PersistenceResult propagation (F-01).
+// closeEvent must persist feature state end-to-end via the polymorphic
+// IModel list and PersistenceResult propagation.
 TEST_F(LifecycleTest, CloseSavesFeatureStateEndToEnd) {
   const QString counterKey = QStringLiteral(APP_ID ".CounterState");
   const QString counterPath =
@@ -123,7 +123,7 @@ TEST_F(LifecycleTest, CloseSavesFeatureStateEndToEnd) {
   EXPECT_EQ(loadResult.value().value("value").toInt(), 1);
 }
 
-// AUD-014: external persistence provider injection seam. When the ctor is
+// external persistence provider injection seam. When the ctor is
 // given a non-null provider it must be used (non-owning; no internal
 // FilePersistenceProvider is constructed). A failing save at closeEvent must
 // be observed by the composition root and must NOT abort close — the

@@ -12,7 +12,7 @@ namespace {
 
 // Test-local probe: count app.service messages produced by
 // ConsoleLogService::handle after services::registerAll(). Keeps production
-// ConsoleLogService free of test instrumentation (F-21).
+// ConsoleLogService free of test instrumentation.
 std::atomic<int> g_serviceMessages{0};
 QtMessageHandler g_previousHandler = nullptr;
 

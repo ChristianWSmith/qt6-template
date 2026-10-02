@@ -6,7 +6,7 @@ source ${SCRIPT_DIR}/env.sh
 
 installPipenv
 
-# Safety contract (F-20):
+# Safety contract:
 #   create temporary locks
 #   perform merge/update
 #   success? → atomic mv/replace over conan.lock

@@ -4,7 +4,7 @@
 #include <QFile>
 #include <gtest/gtest.h>
 
-// AUD-019 — Theme/resources coverage for platform/theme/theme.hpp.
+// Theme/resources coverage for platform/theme/theme.hpp.
 //
 // Linux/macOS platform QSS files may be empty (Qt default styling); empty is
 // valid and must not be treated as a failure. Resource-coverage assertions
@@ -29,7 +29,7 @@ TEST(ThemeTest, StyleResourcePathsAreRegistered) {
   EXPECT_TRUE(QFile::exists(":/styles/custom.qss"));
 }
 
-// AUD-019: setTheme() must run under the offscreen test platform without
+// setTheme() must run under the offscreen test platform without
 // crashing. Re-entrant calls are safe (bootstrap is idempotent).
 TEST(ThemeTest, SetThemeDoesNotCrash) {
   setTheme();

@@ -123,7 +123,7 @@ TEST_F(AppLogTest, TrimmingPersistsOnlyRetainedState) {
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("persist_104"));
 }
 
-// F-13: loadState must re-apply MAX_LOG_SIZE even when persisted state
+// loadState must re-apply MAX_LOG_SIZE even when persisted state
 // exceeds the cap (e.g. written by a prior version or external writer).
 TEST_F(AppLogTest, LoadDoesNotExceedMaxLogSize) {
   constexpr int kMaxLogSize = 100;
@@ -148,7 +148,7 @@ TEST_F(AppLogTest, LoadDoesNotExceedMaxLogSize) {
   EXPECT_TRUE(reloaded.getLogMessages().last().contains("exceed_109"));
 }
 
-// F-13 — Failure injection through the model layer.
+// Failure injection through the model layer.
 // Mirrors CounterTest OperationalLoadErrorLeavesDefaultState / SaveFailure
 // IsForwardedToCaller against AppLogModel's PersistenceResult forwarding.
 TEST_F(AppLogTest, OperationalLoadErrorLeavesDefaultState) {
