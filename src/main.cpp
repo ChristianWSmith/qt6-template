@@ -11,6 +11,7 @@
 #include <QIcon>
 #include <QLocale>
 #include <QLoggingCategory>
+#include <QScopeGuard>
 #include <QTranslator>
 #include <cxxopts.hpp>
 #include <fmt/format.h>
@@ -48,8 +49,9 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    // F-11: custom handler retained (pedagogy + fatal/sink behavior);
-    // see logging.cpp. qSetMessagePattern is the formatting-only alternative.
+    // Custom message handler retained deliberately (pedagogy + fatal/sink
+    // behavior); see logging.cpp. qSetMessagePattern is the formatting-only
+    // alternative.
     qInstallMessageHandler(messageHandler);
     configureLogLevel(parsedArgs.operator[]("log").as<std::string>());
 
@@ -59,7 +61,13 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
+    // Visible lifecycle API remains services::registerAll()/unregisterAll().
+    // qScopeGuard is structural backup so exception unwind after registration
+    // cannot skip unregister. Explicit unregisterAll() calls below stay for
+    // readability; they are idempotent.
     services::registerAll();
+    const auto unregisterServicesGuard =
+        qScopeGuard([] { services::unregisterAll(); });
     QApplication::setApplicationName(QString::fromStdString(APP_NAME));
     QApplication::setOrganizationName(
         QString::fromStdString(ORGANIZATION_NAME));

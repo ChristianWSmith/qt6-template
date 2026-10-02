@@ -32,7 +32,7 @@ QT_END_NAMESPACE
 ///     injected, it is non-owning — the caller owns lifetime and it MUST
 ///     outlive this window. An injected provider is NOT reparented unless it
 ///     already has a suitable parent.
-///   - Presenters hold non-owning raw pointers to model and widget.
+///   - Presenters hold non-owning QPointer refs to model and widget.
 ///   - Models hold non-owning IPersistenceProvider& to the provider.
 ///
 /// Lifetime invariants:
@@ -84,7 +84,8 @@ private:
   AppLogPresenter *m_appLogPresenter;
 
   // Non-owning registry of feature models for polymorphic shutdown persistence
-  // (F-09). Populated after feature construction in the ctor body. Qt parent-
+  // Non-owning registry for shutdown persistence. Populated after feature
+  // construction in the ctor body. Qt parent-
   // child ownership remains with this window; these pointers do not own.
   QList<IModel *> m_models;
 };

@@ -307,7 +307,7 @@ Resulting icons are placed in `resources/icons/` and are automatically picked up
 
 - Use `pipenv run` for consistent tool execution. Most included helper scripts do this automatically as needed. Exception: `build.sh --test ON` runs `ctest` directly after the Conan build.
 - The `env.sh` and `app.env` combo ensures your config stays centralized and clean.
-- Want to rename the app? Just update `app.env`. No renaming needed elsewhere.
+- Want to rename the app? Update `APP_NAME` in `app.env`, then also: rename/delete `resources/i18n/*.ts` files (they are `APP_NAME`-prefixed; translations load `APP_NAME_<lang>.qm`), rerun `./scripts/configure-vscode.sh` (`.vscode` embeds `APP_NAME`), and check any other `APP_NAME`-derived generated or configuration locations. Renaming `app.env` alone does **not** rename the application end-to-end.
 - `app_icon.ico` is used for Windows, `app_icon.png` is used for Linux, `app_icon.icns` is for macOS, and `app_icon.svg` is not used, but is included for posterity.
 - Delete/rename `.ts` files in `resources/i18n/` after updating the `APP_NAME` in `app.env`.
 - You can modify which languages you want to bundle translations for in `CMakeLists.txt` here:

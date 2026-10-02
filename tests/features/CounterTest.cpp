@@ -99,7 +99,7 @@ TEST_F(CounterTest, ClickingResetButtonResetsModelAndView) {
   EXPECT_EQ(label->text(), "0");
 }
 
-// F-15 — Presenter teardown discipline.
+// Presenter teardown discipline.
 //
 // This test establishes the template's presenter destructor contract:
 // presenter destruction must not require its non-owning dependencies to
@@ -127,7 +127,7 @@ TEST(CounterTeardownTest, PresenterSurvivesDependencyDestruction) {
   SUCCEED();
 }
 
-// AUD-010 — Presenter QPointer hardening regression.
+// Presenter QPointer hardening regression.
 //
 // Destroy the model mid-session while widget + presenter remain live, then
 // click increment. Presenter slots must null-guard via QPointer: no crash,
@@ -161,7 +161,7 @@ TEST_F(CounterTest, PresenterGuardsNullModelAfterMidSessionDestruction) {
   SUCCEED();
 }
 
-// F-13 — Failure injection through the model layer.
+// Failure injection through the model layer.
 TEST_F(CounterTest, OperationalLoadErrorLeavesDefaultState) {
   model.increment();
   ASSERT_TRUE(model.saveState().hasValue());

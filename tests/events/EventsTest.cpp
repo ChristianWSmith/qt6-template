@@ -432,8 +432,8 @@ TEST_F(EventTest, RepeatedResetIsSafe) {
 TEST_F(EventTest, DispatchersAreApplicationOwned) {
   // White-box test: inspects internal dispatcher QObject parenting via
   // findChildren — not public API usage. First use creates the dispatcher
-  // via the public publish API. BusRegistry::dispatcher<T>() is private
-  // (F-10); ownership is observable through the QObject parent tree —
+  // via the public publish API. BusRegistry::dispatcher<T>() is private;
+  // ownership is observable through the QObject parent tree —
   // dispatchers are parented to QCoreApplication.
   events::publish(Event{1});
   QTest::qWait(1);

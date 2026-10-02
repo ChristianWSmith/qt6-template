@@ -99,8 +99,23 @@ check "Presenter.cpp uses Q_ASSERT for model" \
 check "Presenter.cpp uses Q_ASSERT for view" \
   "${PRESENTER_CPP}" 'Q_ASSERT\(m_view != nullptr\)'
 
+check "Presenter.cpp scaffolds initial model→view sync after connects" \
+  "${PRESENTER_CPP}" 'Initial model → view synchronization'
+
 check "Presenter.cpp does not declare a destructor" \
   "${PRESENTER_CPP}" '~[A-Za-z0-9_]*Presenter' invert
+
+check "Presenter.h does not declare friend test class" \
+  "${FEATURE_DIR}/presenter/${NAME_TITLE}Presenter.h" 'friend class' invert
+
+check "Model.h does not declare friend test class" \
+  "${MODEL_H}" 'friend class' invert
+
+check "Widget.h does not declare friend test class" \
+  "${FEATURE_DIR}/widget/${NAME_TITLE}Widget.h" 'friend class' invert
+
+check "common.h documents shared-type purpose" \
+  "${FEATURE_DIR}/${NAME_LOWER}common.h" 'shared header|shared types|Feature-local'
 
 check "Test fixture uses MemoryPersistenceProvider" \
   "${TEST_FILE}" 'MemoryPersistenceProvider provider;'

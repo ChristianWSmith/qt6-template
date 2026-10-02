@@ -159,14 +159,24 @@ if [[ "${TYPE}" == "widget" ]]; then
   exit 0
 else
   sed_inplace "s|<GEN:COMMON_H>|#include \"../${NAME_LOWER}common.h\"|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
-  sed_inplace "s|<GEN:FRIEND_TEST>|friend class ${NAME_TITLE}Test;|g" "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
+  # Align with reference features: tests use public API + findChild; no friend decls.
+  sed_inplace '/<GEN:FRIEND_TEST>/d' "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
   format "${WIDGET_DIR}/${NAME_TITLE}Widget.h"
 fi
 
 # COMMON
+# Always emitted (uniform generator output). Purpose: feature-local shared
+# types when model/presenter/widget must share them (see applogcommon.h
+# LogDelta). Not a friend-declaration dumping ground.
 mkdir -p "${TARGET_DIR}"
 cat > "${TARGET_DIR}/${NAME_LOWER}common.h" <<EOF
 #pragma once
+
+// Feature-local shared header for ${NAME_TITLE}.
+// Put cross-layer feature types here when model, presenter, and widget must
+// share them (signal payload structs, enums, constants). Keep free of
+// business logic. Reference features test via public API + findChild and do
+// not declare friend test classes.
 
 class ${NAME_TITLE}Test;
 
@@ -202,8 +212,6 @@ signals:
   // Signals emitted by this Model to be connected to ${NAME_TITLE}Presenter Slots
 
 private:
-  friend class ${NAME_TITLE}Test;
-
   IPersistenceProvider &m_provider;
   const QString m_key{APP_ID ".${NAME_TITLE}State"};
 
@@ -276,8 +284,6 @@ private slots:
   // Slots to be connected to ${NAME_TITLE}Model/${NAME_TITLE}Widget Signals
 
 private:
-  friend class ${NAME_TITLE}Test;
-
   // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
   // Slots null-guard before calling into model/widget (dependencies may be
   // destroyed mid-session; QPointer observes destruction and reports null).
@@ -308,6 +314,15 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   //         &${NAME_TITLE}Presenter::handleSomeAction);
   // connect(m_model, &${NAME_TITLE}Model::someStateChanged, this,
   //         &${NAME_TITLE}Presenter::handleSomeStateChanged);
+
+  // Initial model → view synchronization (required).
+  // Models load persisted state in their constructors BEFORE this presenter
+  // exists, so emissions during model construction have no subscribers.
+  // After connections are established, push current model state to the view once.
+  // Replace the example with the feature's real model→view update calls
+  // (see CounterPresenter.cpp / AppLogPresenter.cpp).
+  // Example:
+  // m_view->displayX(m_model->x());
 
   qCDebug(appFeature) << "${NAME_TITLE}Presenter instantiated";
 }
@@ -372,3 +387,4 @@ echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to 
 echo "  2. Append ${NAME_TITLE}Model to m_models."
 echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
 echo "  4. Implement ${NAME_TITLE}Model::loadState()."
+echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects (scaffold comment in generated Presenter.cpp)."

@@ -2,6 +2,9 @@
 #include "platform/core/FilePersistenceProvider.h"
 
 #include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QIODevice>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QStandardPaths>
@@ -136,6 +139,21 @@ TEST_F(PersistenceTest, LargePayload) {
 class PersistenceLoadTest : public ::testing::Test {
 protected:
   FilePersistenceProvider provider;
+
+  static QString writeRawStateFile(const QString &key,
+                                   const QByteArray &bytes) {
+    const QString dir =
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dir);
+    const QString path = dir + QLatin1Char('/') + key + QStringLiteral(".json");
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+      return QString();
+    }
+    file.write(bytes);
+    file.close();
+    return path;
+  }
 };
 
 TEST_F(PersistenceLoadTest, FirstRunReturnsNotFound) {
@@ -143,6 +161,34 @@ TEST_F(PersistenceLoadTest, FirstRunReturnsNotFound) {
   auto result = freshProvider.loadState("__nonexistent_key_abc123");
   ASSERT_TRUE(result.hasError());
   EXPECT_EQ(result.error(), PersistenceError::NotFound);
+}
+
+// Real on-disk corruption (not double-injected): provider must return
+// InvalidData, not NotFound. Distinguishes damaged keys from first-run.
+TEST_F(PersistenceLoadTest, CorruptJsonOnDiskReturnsInvalidData) {
+  const QString key = QStringLiteral("corrupt_json_probe");
+  const QString path =
+      writeRawStateFile(key, QByteArrayLiteral("{ this is not valid json"));
+  ASSERT_FALSE(path.isEmpty());
+
+  auto result = provider.loadState(key);
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::InvalidData);
+
+  QFile::remove(path);
+}
+
+// Valid JSON that is not a JSON object → InvalidData at the provider boundary.
+TEST_F(PersistenceLoadTest, NonObjectJsonOnDiskReturnsInvalidData) {
+  const QString key = QStringLiteral("non_object_json_probe");
+  const QString path = writeRawStateFile(key, QByteArrayLiteral("[1,2,3]"));
+  ASSERT_FALSE(path.isEmpty());
+
+  auto result = provider.loadState(key);
+  ASSERT_TRUE(result.hasError());
+  EXPECT_EQ(result.error(), PersistenceError::InvalidData);
+
+  QFile::remove(path);
 }
 
 #include "PersistenceTest.moc"

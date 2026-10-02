@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lightweight architectural boundary checks (ARCHITECTURE.md Wave 3 / AUD-002).
+# Lightweight architectural boundary checks.
 # Heuristic source-pattern checks only — not a C++ dependency graph, not a
 # static-analysis framework, not a substitute for code review.
 #
@@ -16,7 +16,7 @@
 #
 # Residual limitation: include-path and symbol greps can be evaded by
 # unconventional include layouts or by avoiding banned identifiers; this is
-# accepted for template scale (AUD-002 Alternative A).
+# accepted for template scale.
 set -euo pipefail
 
 ROOT="${ARCH_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"

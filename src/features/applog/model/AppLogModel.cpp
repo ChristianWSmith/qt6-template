@@ -61,7 +61,7 @@ void AppLogModel::loadState() {
     }
   }
 
-  // F-13: re-apply the retention cap after load so persisted state never
+  // Re-apply the retention cap after load so persisted state never
   // exceeds MAX_LOG_SIZE even if the file was written by a prior version
   // or an external writer.
   while (m_logMessages.size() > MAX_LOG_SIZE) {

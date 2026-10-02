@@ -36,9 +36,11 @@ namespace events {
 ///   - Free-function subscribe: caller must retain the Subscription
 ///   ([[nodiscard]]).
 ///   - Discarding a Subscription disconnects the handler immediately.
-///   - Subscription::reset() disconnects logical delivery; it does not depend
-///     on deleteLater() to unsubscribe and does not require a running event
-///     loop.
+///   - Subscription::reset() disconnects the connection for future delivery;
+///     it does not depend on deleteLater() to unsubscribe and does not require
+///     a running event loop. Per Qt queued-connection semantics, events already
+///     posted to a still-alive receiver's queue may still be delivered after
+///     reset(); new deliveries are prevented.
 ///   - Free-function subscriptions belong to application lifetime (connection
 ///     context = QCoreApplication). The static Subscription in ServiceRegistry
 ///     is storage only; services::unregisterAll() is the explicit lifecycle
@@ -87,6 +89,20 @@ namespace events {
 ///     copy-assignable (compile-time; EventType concept).
 ///   - Delivery checks QVariant meta-type in all builds; debug builds also
 ///     assert. Mismatch logs qCritical(appEvent) and does not deliver.
+///
+/// Qt moc constraint (do not "simplify" away QVariant transport)
+///   - EventDispatcher<T> cannot use Q_OBJECT: Qt moc does not support
+///     Q_OBJECT in class templates. The non-template EventDispatcherBase
+///     therefore carries the Qt signal using QVariant transport. A typed
+///     signal directly on EventDispatcher<T> is not viable under Qt 6 moc.
+///   - The runtime meta-type check is intentional defense-in-depth at that
+///     type-erasure boundary.
+///
+/// Exception policy
+///   - Event handlers must not throw. Delivery uses Qt queued connections;
+///     exceptions from handlers follow Qt slot semantics (undefined unless
+///     handled in the handler). The EventSystem does not define a custom
+///     exception framework.
 
 template <typename T>
 concept EventType =
@@ -263,7 +279,7 @@ private:
     BusRegistry &reg = instance();
     std::unique_lock lock(reg.mutex_);
 
-    // Structural lifetime guarantee (AUD-001):
+    // Structural lifetime guarantee:
     //   On first dispatcher creation, connect QCoreApplication::aboutToQuit
     //   to clear the non-owning map while QObject children (dispatchers)
     //   still exist. Qt then destroys the dispatcher objects with the

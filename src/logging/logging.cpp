@@ -13,7 +13,7 @@ Q_LOGGING_CATEGORY(appPersistence, "app.persistence")
 Q_LOGGING_CATEGORY(appEvent, "app.event")
 Q_LOGGING_CATEGORY(appService, "app.service")
 
-// F-11: messageHandler is RETAINED deliberately.
+// messageHandler is RETAINED deliberately.
 //
 // Why not replace with qSetMessagePattern + default Qt handler:
 // - Pedagogical demonstration of qInstallMessageHandler + fmt in a second,
