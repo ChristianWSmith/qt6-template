@@ -2,9 +2,9 @@
 #include "../../../events/system/EventSystem.hpp"
 #include "../../../logging/logging.h"
 
-AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
+AppLogPresenter::AppLogPresenter(AppLogModel &model, AppLogWidget &view,
                                  QObject *parent)
-    : QObject(parent), m_model(model), m_view(view) {
+    : QObject(parent), m_model(&model), m_view(&view) {
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 
@@ -22,7 +22,7 @@ AppLogPresenter::AppLogPresenter(AppLogModel *model, AppLogWidget *view,
   connect(m_model, &AppLogModel::logCleared, this,
           &AppLogPresenter::handleLogCleared);
 
-  m_view->setLogMessages(m_model->getLogMessages());
+  m_view->displayLogMessages(m_model->getLogMessages());
   qCDebug(appFeature) << "AppLogPresenter instantiated";
 }
 
@@ -35,7 +35,7 @@ void AppLogPresenter::onDemoLogEventReceived(const DemoLogEvent &event) {
 void AppLogPresenter::handleLogChanged(const LogDelta &logDelta) {
   if (!m_view)
     return;
-  m_view->handleLogChanged(logDelta);
+  m_view->displayLogChanged(logDelta);
 }
 
 void AppLogPresenter::handleLogCleared() {

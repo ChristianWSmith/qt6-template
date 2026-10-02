@@ -311,12 +311,7 @@ Resulting icons are placed in `resources/icons/` and are automatically picked up
 - Want to rename the app? Update `APP_NAME` in `app.env`, then also: rename/delete `resources/i18n/*.ts` files (they are `APP_NAME`-prefixed; translations load `APP_NAME_<lang>.qm`), rerun `./scripts/configure-vscode.sh` (`.vscode` embeds `APP_NAME`), and check any other `APP_NAME`-derived generated or configuration locations. Renaming `app.env` alone does **not** rename the application end-to-end.
 - `app_icon.ico` is used for Windows, `app_icon.png` is used for Linux, `app_icon.icns` is for macOS, and `app_icon.svg` is not used, but is included for posterity.
 - Delete/rename `.ts` files in `resources/i18n/` after updating the `APP_NAME` in `app.env`.
-- You can modify which languages you want to bundle translations for in `CMakeLists.txt` here:
-```cmake
-qt_standard_project_setup(
-    I18N_TRANSLATED_LANGUAGES en es de fr
-)
-```
+- You can modify which languages you want to bundle translations for in `app.env` (`I18N_TRANSLATED_LANGUAGES`, CMake list — semicolon-separated). CMake/Conan consume it via `scripts/env.sh` → `conanfile.py` → `qt_standard_project_setup`.
 
 ---
 

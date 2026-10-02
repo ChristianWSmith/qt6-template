@@ -165,6 +165,7 @@ TEST_F(PersistenceLoadTest, FirstRunReturnsNotFound) {
 
 // Real on-disk corruption (not double-injected): provider must return
 // InvalidData, not NotFound. Distinguishes damaged keys from first-run.
+// Also locks quarantine: corrupt file is renamed *.corrupt, not left in place.
 TEST_F(PersistenceLoadTest, CorruptJsonOnDiskReturnsInvalidData) {
   const QString key = QStringLiteral("corrupt_json_probe");
   const QString path =
@@ -175,10 +176,15 @@ TEST_F(PersistenceLoadTest, CorruptJsonOnDiskReturnsInvalidData) {
   ASSERT_TRUE(result.hasError());
   EXPECT_EQ(result.error(), PersistenceError::InvalidData);
 
-  QFile::remove(path);
+  // Quarantine: original path gone; *.corrupt holds the damaged bytes.
+  EXPECT_FALSE(QFile::exists(path));
+  EXPECT_TRUE(QFile::exists(path + QStringLiteral(".corrupt")));
+
+  QFile::remove(path + QStringLiteral(".corrupt"));
 }
 
 // Valid JSON that is not a JSON object → InvalidData at the provider boundary.
+// Quarantine applies the same as for parse failures.
 TEST_F(PersistenceLoadTest, NonObjectJsonOnDiskReturnsInvalidData) {
   const QString key = QStringLiteral("non_object_json_probe");
   const QString path = writeRawStateFile(key, QByteArrayLiteral("[1,2,3]"));
@@ -188,7 +194,10 @@ TEST_F(PersistenceLoadTest, NonObjectJsonOnDiskReturnsInvalidData) {
   ASSERT_TRUE(result.hasError());
   EXPECT_EQ(result.error(), PersistenceError::InvalidData);
 
-  QFile::remove(path);
+  EXPECT_FALSE(QFile::exists(path));
+  EXPECT_TRUE(QFile::exists(path + QStringLiteral(".corrupt")));
+
+  QFile::remove(path + QStringLiteral(".corrupt"));
 }
 
 #include "PersistenceTest.moc"

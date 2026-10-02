@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 # Application metadata must come from app.env via scripts/env.sh → Conan → CMake.
 # Fail fast with a clear message instead of configuring a nameless project.
-foreach(_required_var APP_NAME APP_VERSION APP_DESCRIPTION ORGANIZATION_NAME APP_ID)
+foreach(_required_var APP_NAME APP_VERSION APP_DESCRIPTION ORGANIZATION_NAME APP_ID I18N_TRANSLATED_LANGUAGES)
     if(NOT DEFINED ${_required_var} OR "${${_required_var}}" STREQUAL "")
         message(FATAL_ERROR
             "${_required_var} is missing. Configure the project through app.env/scripts "
@@ -20,13 +20,16 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(fmt REQUIRED)
 find_package(cxxopts REQUIRED)
 
+# Accept both CMake-list ("en;es;de;fr") and space-separated env values.
+string(REPLACE " " ";" I18N_TRANSLATED_LANGUAGES_LIST "${I18N_TRANSLATED_LANGUAGES}")
 qt_standard_project_setup(
-    I18N_TRANSLATED_LANGUAGES en es de fr
+    I18N_TRANSLATED_LANGUAGES ${I18N_TRANSLATED_LANGUAGES_LIST}
 )
 
-# qt_standard_project_setup enables AUTOMOC/AUTOUIC only — not AUTORCC.
-# Without AUTORCC, a .qrc listed as an executable source is a silent no-op
-# (resources are not embedded). Enable AUTORCC so resources.qrc is processed.
+# Qt behavior note: qt_standard_project_setup enables AUTOMOC/AUTOUIC only —
+# not AUTORCC. Without AUTORCC, a .qrc listed as an executable source is a
+# silent no-op (resources are not embedded). Enable AUTORCC so resources.qrc
+# is processed.
 set(CMAKE_AUTORCC ON)
 
 file(GLOB_RECURSE LIB_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h src/*.hpp src/*.ui)
@@ -59,17 +62,21 @@ target_link_libraries(${APP_NAME}_lib
         fmt::fmt
 )
 
+# Explicit AUTOGEN_BUILD_DIR: do not depend on CMake's default
+# <dir>/<target>_autogen layout (E-003).
+set(AUTOGEN_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}_lib_autogen")
+set_target_properties(${APP_NAME}_lib PROPERTIES
+    AUTOGEN_BUILD_DIR "${AUTOGEN_BUILD_DIR}"
+)
+
 # Consumers (exe, tests) inherit src/ via the library. Do not re-state it.
-# AUTOUIC generates ui_*.h under ${CMAKE_CURRENT_BINARY_DIR}/${target}_autogen/include
-# (CMake AUTOUIC layout). Expose that dir once as INTERFACE on the lib so
-# consumers inherit it by linking — not via duplicated per-consumer paths.
-# Note: $<TARGET_PROPERTY:tgt,AUTOGEN_BUILD_DIR> on the same target evaluates
-# empty at generate time; use the documented default path instead.
+# AUTOUIC generates ui_*.h under AUTOGEN_BUILD_DIR/include. Expose that dir
+# once as INTERFACE on the lib so consumers inherit it by linking.
 target_include_directories(${APP_NAME}_lib
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
     INTERFACE
-        ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}_lib_autogen/include
+        ${AUTOGEN_BUILD_DIR}/include
 )
 
 if(APPLE)
@@ -131,4 +138,3 @@ include(CTest)
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-

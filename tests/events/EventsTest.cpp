@@ -7,6 +7,7 @@
 #include <QVariant>
 #include <gtest/gtest.h>
 
+#include <thread>
 #include <vector>
 
 struct Event {
@@ -607,6 +608,32 @@ TEST_F(EventTest, PerConnectionFifoPreservesDistinctPayloadOrder) {
         << "Per-connection FIFO must preserve distinct payload order at index "
         << i;
   }
+}
+
+// G-006: wrong-thread publish/subscribe must be rejected at runtime in all
+// builds (qCCritical + no-op), not crash and not deliver.
+TEST_F(EventTest, PublishFromWorkerThreadIsRejected) {
+  int received = 0;
+  IntReceiver receiver(&received);
+  events::subscribe<Event>(&receiver, &IntReceiver::receive);
+
+  std::thread worker([] { events::publish(Event{99}); });
+  worker.join();
+  QTest::qWait(20);
+
+  EXPECT_EQ(received, 0)
+      << "Wrong-thread publish must be rejected, not delivered";
+}
+
+TEST_F(EventTest, SubscribeFromWorkerThreadReturnsEmptySubscription) {
+  events::Subscription sub;
+  std::thread worker([&sub] {
+    sub = events::subscribe<Event>([](const Event &) {});
+  });
+  worker.join();
+
+  EXPECT_FALSE(sub.isConnected())
+      << "Wrong-thread free-function subscribe must return an empty handle";
 }
 
 #include "EventsTest.moc"

@@ -10,7 +10,7 @@ AppLogWidget::AppLogWidget(QWidget *parent)
 
 AppLogWidget::~AppLogWidget() = default;
 
-void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
+void AppLogWidget::displayLogChanged(const LogDelta &logDelta) {
   QScrollBar *scrollBar = ui->logListWidget->verticalScrollBar();
   int oldMax = scrollBar->maximum();
   int oldValue = scrollBar->value();
@@ -31,7 +31,7 @@ void AppLogWidget::handleLogChanged(const LogDelta &logDelta) {
 
 void AppLogWidget::clear() { ui->logListWidget->clear(); }
 
-void AppLogWidget::setLogMessages(const QStringList &messages) {
+void AppLogWidget::displayLogMessages(const QStringList &messages) {
   ui->logListWidget->addItems(messages);
   ui->logListWidget->scrollToBottom();
 }

@@ -5,7 +5,6 @@
 #include <QThread>
 #include <QVariant>
 #include <concepts>
-#include <mutex>
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
@@ -58,6 +57,16 @@ namespace events {
 ///   - aboutToQuit also sets BusRegistry::quitFired_. Publish/subscribe after
 ///     quit refuse to recreate dispatchers (qCCritical + no-op) rather than
 ///     constructing late unparented dispatchers against a dying application.
+///   - The smoke-test path in main() may never call QApplication::exec(), so
+///     aboutToQuit may never fire. That path must call services::unregisterAll()
+///     and must not publish after teardown.
+///
+/// Single-application constraint
+///   - BusRegistry is process-global and keyed to a single QCoreApplication
+///     lifetime. A second QApplication in the same process is not supported:
+///     quitFired_ / quitHookInstalled_ are sticky and the dispatcher map is
+///     not reset for a new application. One QApplication per process is a hard
+///     requirement for this template.
 ///
 /// Threading
 ///   - Publish from the GUI thread only (template policy; no worker threads).
@@ -69,22 +78,33 @@ namespace events {
 ///   - Callbacks execute on the receiver QObject's thread via queued delivery.
 ///     Free-function handlers execute on the application thread under the
 ///     GUI-thread policy.
-///   - BusRegistry mutex protects dispatcher creation, not event delivery.
+///   - There is no BusRegistry mutex. Under the GUI-thread-only policy all
+///     registry state is already serialized by the event loop; a mutex would
+///     imply a cross-thread safety contract the bus does not provide.
 ///   - The bus is not a general cross-thread synchronization mechanism.
+///
+/// Event payload copy cost
+///   - QVariant transport copies each event once into the QVariant and once
+///     per subscriber (var.value<T>()). Choose event payload sizes
+///     accordingly; large payloads on a hot path are a design smell.
 ///
 /// Service registration lifecycle
 ///   - QApplication exists → services::registerAll() → application runs →
 ///     services::unregisterAll() → QApplication destruction.
 ///   - unregisterAll() resets retained subscriptions explicitly; it is
 ///     idempotent and independent of static destructor timing.
+///   - On C++ exception paths, qScopeGuard runs during stack unwinding before
+///     catch handlers; catch-block unregisterAll() calls are idempotent no-ops
+///     after ~QApplication. The guard is the exception-path mechanism.
 ///
 /// API boundary
-///   - events::publish and events::subscribe (free functions) are the
-///     supported public-facing entry points. BusRegistry also exposes
-///     equivalent static operations; consumers should use the free-function
-///     facade.
+///   - Application code should use events::publish and events::subscribe
+///     (free-function and QObject overloads). These are the supported
+///     public-facing entry points.
+///   - BusRegistry also exposes equivalent static publish/subscribe
+///     operations; consumers should use the free-function facade.
 ///   - BusRegistry::dispatcher<T>() is an internal implementation detail
-///     (private). Do not rely on direct dispatcher access.
+///     (private). Do not call it or treat it as public API.
 ///   - Runtime QVariant type check remains as defense-in-depth against
 ///     QVariant corruption; the primary protection is the typed public API
 ///     plus the private dispatcher boundary.
@@ -92,8 +112,8 @@ namespace events {
 /// Type safety
 ///   - Event types must be default-constructible, copy-constructible, and
 ///     copy-assignable (compile-time; EventType concept).
-///   - Delivery checks QVariant meta-type in all builds; debug builds also
-///     assert. Mismatch logs qCritical(appEvent) and does not deliver.
+///   - Delivery checks meta-type in all builds; debug builds also assert.
+///     Mismatch logs qCritical(appEvent) and does not deliver.
 ///
 /// Qt moc constraint (do not "simplify" away QVariant transport)
 ///   - EventDispatcher<T> cannot use Q_OBJECT: Qt moc does not support
@@ -150,6 +170,9 @@ template <typename T> class EventDispatcher : public EventDispatcherBase {
 public:
   using EventDispatcherBase::EventDispatcherBase;
 
+  // Inner instance/thread guards are belt-and-suspenders for white-box
+  // findChildren escape hatches; the public policy checks live in
+  // BusRegistry::{publish,subscribe}.
   void publish(const T &event) {
     if (!QCoreApplication::instance()) {
       qCCritical(appEvent)
@@ -210,14 +233,13 @@ private:
 };
 
 /// Internal event bus. Public API is events::publish / events::subscribe
-/// (thin wrappers over the static methods below). dispatcher<T>() is a
-/// private implementation detail — not a public mutable-ref escape hatch.
+/// (thin wrappers over the static methods below). dispatcher<T>() returns a
+/// pointer and is an implementation detail — not a public mutable-ref escape
+/// hatch. Returns nullptr when quitFired_ is set or no QCoreApplication
+/// exists (post-teardown / smoke path without exec()).
 class BusRegistry {
 public:
-  template <EventType T> static void publish(T event) {
-    // Pre-check before touching the dispatcher map: after application
-    // teardown the map is cleared on aboutToQuit, and a late publish must
-    // not construct an unparented dispatcher or bind a stale reference.
+  template <EventType T> static void publish(const T &event) {
     if (!QCoreApplication::instance()) {
       qCCritical(appEvent)
           << "EventSystem: publish requires a running QCoreApplication";
@@ -230,16 +252,17 @@ public:
     }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
-    {
-      BusRegistry &reg = instance();
-      std::unique_lock lock(reg.mutex_);
-      if (reg.quitFired_) {
-        qCCritical(appEvent)
-            << "EventSystem: publish after application shutdown";
-        return;
-      }
+    if (instance().quitFired_) {
+      qCCritical(appEvent) << "EventSystem: publish after application shutdown";
+      return;
     }
-    dispatcher<T>().publish(event);
+    EventDispatcher<T> *disp = dispatcher<T>();
+    if (!disp) {
+      qCCritical(appEvent)
+          << "EventSystem: publish after application shutdown";
+      return;
+    }
+    disp->publish(event);
   }
 
   /// QObject-receiver subscribe. Connection lifetime follows the receiver.
@@ -260,17 +283,19 @@ public:
     }
     Q_ASSERT(QThread::currentThread() ==
              QCoreApplication::instance()->thread());
-    {
-      BusRegistry &reg = instance();
-      std::unique_lock lock(reg.mutex_);
-      if (reg.quitFired_) {
-        qCCritical(appEvent)
-            << "EventSystem: subscribe after application shutdown";
-        return;
-      }
+    if (instance().quitFired_) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe after application shutdown";
+      return;
+    }
+    EventDispatcher<T> *disp = dispatcher<T>();
+    if (!disp) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe after application shutdown";
+      return;
     }
     QObject::connect(
-        &dispatcher<T>(), &EventDispatcherBase::eventPublished, receiver,
+        disp, &EventDispatcherBase::eventPublished, receiver,
         [receiver, method](const QVariant &var) {
           T event{};
           if (!detail::checkedEventValue(var, event)) {
@@ -301,17 +326,19 @@ public:
       return Subscription{};
     }
     Q_ASSERT(QThread::currentThread() == context->thread());
-    {
-      BusRegistry &reg = instance();
-      std::unique_lock lock(reg.mutex_);
-      if (reg.quitFired_) {
-        qCCritical(appEvent)
-            << "EventSystem: subscribe after application shutdown";
-        return Subscription{};
-      }
+    if (instance().quitFired_) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe after application shutdown";
+      return Subscription{};
+    }
+    EventDispatcher<T> *disp = dispatcher<T>();
+    if (!disp) {
+      qCCritical(appEvent)
+          << "EventSystem: subscribe after application shutdown";
+      return Subscription{};
     }
     auto conn = QObject::connect(
-        &dispatcher<T>(), &EventDispatcherBase::eventPublished, context,
+        disp, &EventDispatcherBase::eventPublished, context,
         [func](const QVariant &var) {
           T event{};
           if (!detail::checkedEventValue(var, event)) {
@@ -326,10 +353,13 @@ public:
 private:
   /// Internal implementation detail. Do not expose; use the free-function
   /// events::publish / events::subscribe facade.
-  template <EventType T> static EventDispatcher<T> &dispatcher() {
-    const std::type_index type = typeid(T);
+  /// Returns nullptr when quitFired_ is set or no QCoreApplication exists —
+  /// callers must treat that as shutdown refusal (no dispatcher recreation).
+  template <EventType T> static EventDispatcher<T> *dispatcher() {
     BusRegistry &reg = instance();
-    std::unique_lock lock(reg.mutex_);
+    if (reg.quitFired_) {
+      return nullptr;
+    }
 
     // Structural lifetime guarantee:
     //   On first dispatcher creation, connect QCoreApplication::aboutToQuit
@@ -343,26 +373,30 @@ private:
         QObject::connect(
             app, &QCoreApplication::aboutToQuit, app, []() {
               BusRegistry &r = instance();
-              std::unique_lock clearLock(r.mutex_);
               r.quitFired_ = true;
               r.dispatchers_.clear();
             });
         reg.quitHookInstalled_ = true;
+      } else {
+        return nullptr;
       }
     }
 
     // Non-owning: QObject parent (QCoreApplication) owns the dispatcher when
     // one exists. Raw pointer avoids double-delete against Qt parent/child.
-    EventDispatcherBase *&basePtr = reg.dispatchers_[type];
+    EventDispatcherBase *&basePtr = reg.dispatchers_[typeid(T)];
     if (!basePtr) {
-      // Parented to QCoreApplication when present (application-owned).
+      auto *app = QCoreApplication::instance();
+      if (!app || reg.quitFired_) {
+        return nullptr;
+      }
       // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-      auto *typed = new EventDispatcher<T>(QCoreApplication::instance());
+      auto *typed = new EventDispatcher<T>(app);
       basePtr = typed;
       qRegisterMetaType<T>();
     }
 
-    return *static_cast<EventDispatcher<T> *>(basePtr);
+    return static_cast<EventDispatcher<T> *>(basePtr);
   }
 
   static BusRegistry &instance() {
@@ -371,11 +405,10 @@ private:
   }
 
   std::unordered_map<std::type_index, EventDispatcherBase *> dispatchers_;
-  std::mutex mutex_;
   bool quitHookInstalled_ = false;
-  // Set under mutex_ when aboutToQuit clears dispatchers_. Publish/subscribe
-  // check quitFired_ (under the same mutex) before calling dispatcher<T>(),
-  // so a post-quit call cannot recreate dispatchers against a dying app.
+  // Set on aboutToQuit when the map is cleared. Plain bool: GUI-thread-only
+  // policy means no concurrent writer. Publish/subscribe check this before
+  // dispatcher<T>(), which also refuses to create when set.
   bool quitFired_ = false;
 };
 
@@ -403,8 +436,8 @@ template <EventType T>
 }
 
 /// Thin wrapper over BusRegistry::publish.
-template <EventType T> void publish(T event) {
-  BusRegistry::publish<T>(std::move(event));
+template <EventType T> void publish(const T &event) {
+  BusRegistry::publish<T>(event);
 }
 
 } // namespace events

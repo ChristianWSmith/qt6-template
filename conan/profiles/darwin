@@ -1,12 +1,15 @@
 [settings]
-arch=x86_64
+# macos-latest = macOS 26 arm64 + Xcode 26.x → AppleClang 21.
+# arch=armv8 matches the runner (was x86_64 — real drift, not timeline).
+arch=armv8
 build_type=Release
 compiler=apple-clang
 compiler.cppstd=gnu20
 compiler.libcxx=libc++
-compiler.version=15
+compiler.version=21
 os=Macos
 
 [conf]
 tools.system.package_manager:mode=install
 tools.system.package_manager:sudo=True
+tools.cmake.cmaketoolchain:generator=Ninja

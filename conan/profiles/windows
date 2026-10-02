@@ -4,6 +4,10 @@ build_type=Release
 compiler=msvc
 compiler.cppstd=20
 compiler.runtime=dynamic
+# msvc 194 = v143/14.4X compat toolset on VS 2026 images (windows-latest
+# default is 195/v145). Deliberate workaround for CMake 3.31 + VS 18
+# generator support; Ninja is selected below. Revisit when tool_requires
+# CMake >= 4.x supports the VS 18 generator cleanly.
 compiler.version=194
 os=Windows
 

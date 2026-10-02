@@ -7,9 +7,11 @@ name = "pip_conf_index_global"
 # Pinned to a specific commit, not floating master and not PyPI 3.3.0.
 # PyPI 3.3.0 cannot install Qt 6.11+ on Windows: Qt moved Windows x64
 # packages under arch-specific folders (qt6_6111/qt6_6111_msvc2022_64/).
-# aqt PR #1000 ("Support Qt 6.11+ for Windows x64") is required.
+# aqt PR #1000 ("Support Qt 6.11+ for Windows x64") is required and merged
+# 2026-03-24; it is still unreleased on PyPI as of 2026-10-02 (latest=3.3.0).
 # Commit 076e1659 is aqt master after that fix (2026-09-11).
-# When aqtinstall >= 3.4.0 is published to PyPI, switch to a release pin.
+# Switch to a PyPI release pin when a published release CONTAINS PR #1000
+# (version number may be 3.3.1+ rather than 3.4.0 — check the changelog).
 aqtinstall = {git = "https://github.com/miurahr/aqtinstall.git", ref = "076e1659807d0b362a3ed684d54c2e9c775eb9c7"}
 conan = "*"
 icnsutil = "*"

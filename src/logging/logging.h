@@ -16,6 +16,10 @@ Q_DECLARE_LOGGING_CATEGORY(appService)
 // stdout/stderr sink split. Canonical alternative if formatting-only is
 // enough: qSetMessagePattern + default Qt handler. Categories +
 // configureLogLevel remain the canonical filtering layer either way.
+//
+// Do not log from static destructors after this translation unit's
+// QLoggingCategory objects may already be destroyed — the leaked handler
+// mutex does not protect the category layer.
 void messageHandler(QtMsgType type, const QMessageLogContext &context,
                     const QString &msg);
 

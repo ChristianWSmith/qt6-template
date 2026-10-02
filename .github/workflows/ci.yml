@@ -77,6 +77,13 @@ jobs:
           "${CXX:-g++}" --version | head -1
           python --version
 
+      - name: Conan profile pin check
+        shell: bash
+        # Non-fatal while linux pin intentionally targets incoming ubuntu-26.04.
+        # Flip continue-on-error to false once runner migration is validated.
+        continue-on-error: true
+        run: bash scripts/check-conan-profile-toolchain.sh
+
       # Production binary --smoke-test runs inside build.sh --test ON (after ctest).
       # No separate CI step: the script invokes the built app headless on the same
       # platform paths used by run.sh/packaging; a missing target warns locally.

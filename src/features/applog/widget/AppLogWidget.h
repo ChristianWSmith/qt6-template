@@ -24,9 +24,10 @@ public:
   AppLogWidget(AppLogWidget &&) = delete;
   AppLogWidget &operator=(AppLogWidget &&) = delete;
 
+  // View API convention: display* for presenter→view pushes (see AGENTS.md).
   void clear();
-  void setLogMessages(const QStringList &messages);
-  void handleLogChanged(const LogDelta &logDelta);
+  void displayLogMessages(const QStringList &messages);
+  void displayLogChanged(const LogDelta &logDelta);
 
 signals:
   void clearRequested();

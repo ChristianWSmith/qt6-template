@@ -13,9 +13,22 @@ export APP_BIN="${BIN_DIR}/${APP_NAME}"
 
 export APP_PLUGINS_DIR="${APP_DIR}/usr/plugins"
 
-if [ ! -f "${PROJECT_ROOT}/appimagetool" ]; then
-    wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O "${PROJECT_ROOT}/appimagetool"
-    chmod +x "${PROJECT_ROOT}/appimagetool"
+# appimagetool pin (E-018): default pins the continuous x86_64 build
+# published 2025-12-04 (sha256 from GitHub release assets). Override
+# APPIMAGETOOL_URL / APPIMAGETOOL_SHA256 for a newer or private build.
+APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage}"
+APPIMAGETOOL_SHA256="${APPIMAGETOOL_SHA256:-a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0}"
+APPIMAGETOOL_PATH="${PROJECT_ROOT}/appimagetool"
+
+if [ ! -f "${APPIMAGETOOL_PATH}" ]; then
+    wget "${APPIMAGETOOL_URL}" -O "${APPIMAGETOOL_PATH}"
+    chmod +x "${APPIMAGETOOL_PATH}"
+fi
+
+if [ -n "${APPIMAGETOOL_SHA256}" ]; then
+    echo "${APPIMAGETOOL_SHA256}  ${APPIMAGETOOL_PATH}" | sha256sum -c -
+else
+    echo "WARNING: APPIMAGETOOL_SHA256 unset — appimagetool is not checksum-verified (E-018)." >&2
 fi
 
 mkdir -p "${BIN_DIR}"
@@ -50,7 +63,18 @@ gather_deps() {
 gather_deps "${APP_BIN}"
 
 EXCLUDELIST_PATH="$(mktemp)"
-wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist
+# Excludelist fetch failure must be fatal (E-018) — empty blacklist would
+# copy blacklisted libs into the AppImage.
+if ! wget -qO "${EXCLUDELIST_PATH}" https://raw.githubusercontent.com/AppImage/pkg2appimage/master/excludelist; then
+    echo "ERROR: failed to fetch pkg2appimage excludelist" >&2
+    rm -f "${EXCLUDELIST_PATH}"
+    exit 1
+fi
+if [ ! -s "${EXCLUDELIST_PATH}" ]; then
+    echo "ERROR: pkg2appimage excludelist download was empty" >&2
+    rm -f "${EXCLUDELIST_PATH}"
+    exit 1
+fi
 BLACKLIST_REGEX=$(grep -vE '^\s*#|^\s*$' "${EXCLUDELIST_PATH}" | \
     cut -d'#' -f1 | \
     sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | \
@@ -98,7 +122,7 @@ fi
 
 rm -rf "${APP_NAME}-x86_64.AppImage"
 rm -rf "${APP_NAME}.AppImage"
-"${PROJECT_ROOT}/appimagetool" "${APP_DIR}"
+"${APPIMAGETOOL_PATH}" "${APP_DIR}"
 rm -rf "${APP_DIR}"
 mv "${PROJECT_ROOT}/${APP_NAME}-x86_64.AppImage" "${DIST_DIR}/${APP_NAME}-${APP_VERSION}.AppImage"
 

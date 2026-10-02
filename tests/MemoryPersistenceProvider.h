@@ -8,6 +8,14 @@
 /// In-memory IPersistenceProvider test double.
 /// Supports optional one-shot failure injection so model/provider error
 /// paths can be exercised without touching the filesystem.
+///
+/// Fidelity notes (G-007):
+///   - Stores compact JSON objects only; cannot naturally produce
+///     FilePersistenceProvider's on-disk InvalidData for arrays written by
+///     external writers (saveState always writes a valid JSON object).
+///   - Error kinds other than NotFound are available via failNextLoad /
+///     failNextSave injection (CommitError, IoError, InvalidData).
+///   - Not thread-safe — matches the GUI-thread persistence contract.
 class MemoryPersistenceProvider : public IPersistenceProvider {
 public:
   void failNextLoad(PersistenceError error) { nextLoadError_ = error; }
