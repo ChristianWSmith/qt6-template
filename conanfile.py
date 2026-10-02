@@ -35,14 +35,18 @@ class MyConanApp(ConanFile):
         self.folders.build = os.environ.get("BUILD_DIR", "build")
 
     def build(self):
+        # Qt root (not .../lib/cmake/Qt6): find_package searches <prefix>/lib/cmake.
+        # Fail fast like APP_* — no silent "./Qt" default (E-017).
+        qt_root = _env_required("QT_ROOT")
         cmake = CMake(self)
         cmake.configure(variables={
-            "CMAKE_PREFIX_PATH": os.environ.get("QT_CMAKE_DIR", "./Qt"),
+            "CMAKE_PREFIX_PATH": qt_root,
             "APP_NAME": _env_required("APP_NAME"),
             "APP_DESCRIPTION": _env_required("APP_DESCRIPTION"),
             "APP_VERSION": _env_required("APP_VERSION"),
             "ORGANIZATION_NAME": _env_required("ORGANIZATION_NAME"),
             "APP_ID": _env_required("APP_ID"),
+            "I18N_TRANSLATED_LANGUAGES": _env_required("I18N_TRANSLATED_LANGUAGES"),
             "BUILD_TESTING": os.environ.get("BUILD_TESTING", "ON"),
         })
         cmake.build()

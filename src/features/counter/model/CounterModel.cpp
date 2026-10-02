@@ -1,6 +1,8 @@
 #include "CounterModel.h"
 #include "logging/logging.h"
 #include <QJsonObject>
+#include <QThread>
+#include <QCoreApplication>
 
 namespace {
 constexpr auto KEY_VALUE = "value";
@@ -15,11 +17,13 @@ CounterModel::CounterModel(IPersistenceProvider &provider, QObject *parent)
 int CounterModel::value() const { return m_value; }
 
 void CounterModel::increment() {
+  Q_ASSERT(QThread::currentThread() == qApp->thread());
   m_value++;
   emit valueChanged(m_value);
 }
 
 void CounterModel::reset() {
+  Q_ASSERT(QThread::currentThread() == qApp->thread());
   m_value = 0;
   emit valueChanged(m_value);
 }
@@ -31,6 +35,7 @@ void CounterModel::loadState() {
       return;
     }
     // Operational errors are logged by the provider; model only branches.
+    // InvalidData is quarantined at the provider (file renamed *.corrupt).
     return;
   }
   const QJsonObject &obj = result.value();

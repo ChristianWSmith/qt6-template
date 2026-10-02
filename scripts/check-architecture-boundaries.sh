@@ -13,10 +13,11 @@
 #   src/services/** -> events/ + logging
 #   src/platform/** -> core/ + logging
 #   src/features/*/model/** -> core/ + logging
+#   src/features/*/widget/** -> logging  (reference widgets include it)
 #
 # Residual limitation: include-path and symbol greps can be evaded by
 # unconventional include layouts or by avoiding banned identifiers; this is
-# accepted for template scale.
+# accepted for template scale. Green run is evidence, not proof.
 set -euo pipefail
 
 ROOT="${ARCH_CHECK_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
@@ -88,6 +89,25 @@ check_layer_includes "${ROOT}/src/widgets" '*' 'model/' \
 check_basename_includes "${ROOT}/src/widgets" '*' \
   "${MODEL_HDR_BASENAME}" 'standalone widget includes *Model.h'
 
+# --- Rule 1e/1p/1c: widgets must not include events/platform/core ------------
+# Feature widgets and standalone widgets stay UI-only (logging is allowed).
+check_layer_includes "${ROOT}/src/features" '*/widget/*' 'events/' \
+  'feature widget includes events/'
+check_layer_includes "${ROOT}/src/features" '*/widget/*' 'EventSystem' \
+  'feature widget includes EventSystem'
+check_layer_includes "${ROOT}/src/features" '*/widget/*' 'platform/' \
+  'feature widget includes platform/'
+check_layer_includes "${ROOT}/src/features" '*/widget/*' 'core/' \
+  'feature widget includes core/'
+check_layer_includes "${ROOT}/src/widgets" '*' 'events/' \
+  'standalone widget includes events/'
+check_layer_includes "${ROOT}/src/widgets" '*' 'EventSystem' \
+  'standalone widget includes EventSystem'
+check_layer_includes "${ROOT}/src/widgets" '*' 'platform/' \
+  'standalone widget includes platform/'
+check_layer_includes "${ROOT}/src/widgets" '*' 'core/' \
+  'standalone widget includes core/'
+
 # --- Rule 2: logging must not reference the EventSystem surface --------------
 LOGGING_DIR="${ROOT}/src/logging"
 if [ -d "${LOGGING_DIR}" ]; then
@@ -123,10 +143,11 @@ for infra in events services platform; do
     "${infra} includes features/"
 done
 
-# --- Rule 6: core must not depend on UI / events / features ------------------
+# --- Rule 6: core must not depend on UI / events / features / platform ------
 check_layer_includes "${ROOT}/src/core" '*' 'widgets/' 'core includes widgets/'
 check_layer_includes "${ROOT}/src/core" '*' 'events/' 'core includes events/'
 check_layer_includes "${ROOT}/src/core" '*' 'features/' 'core includes features/'
+check_layer_includes "${ROOT}/src/core" '*' 'platform/' 'core includes platform/'
 
 # --- Result -----------------------------------------------------------------
 if [ "${fail}" -ne 0 ]; then

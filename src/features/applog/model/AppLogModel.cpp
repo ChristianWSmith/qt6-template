@@ -1,8 +1,10 @@
 #include "AppLogModel.h"
 #include "logging/logging.h"
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QThread>
 
 namespace {
 constexpr auto KEY_LOG_MESSAGES = "logMessages";
@@ -15,6 +17,7 @@ AppLogModel::AppLogModel(IPersistenceProvider &provider, QObject *parent)
 }
 
 void AppLogModel::addLogMessage(const QString &message) {
+  Q_ASSERT(QThread::currentThread() == qApp->thread());
 
   QString timestampedMessage =
       QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz") + " - " +
@@ -32,6 +35,7 @@ void AppLogModel::addLogMessage(const QString &message) {
 }
 
 void AppLogModel::clear() {
+  Q_ASSERT(QThread::currentThread() == qApp->thread());
   m_logMessages.clear();
   emit logCleared();
 }
@@ -47,6 +51,7 @@ void AppLogModel::loadState() {
       return;
     }
     // Operational errors are logged by the provider; model only branches.
+    // InvalidData is quarantined at the provider (file renamed *.corrupt).
     return;
   }
 
@@ -62,9 +67,9 @@ void AppLogModel::loadState() {
 
   // Re-apply the retention cap after load so persisted state never
   // exceeds kMaxLogSize even if the file was written by a prior version
-  // or an external writer.
-  while (m_logMessages.size() > kMaxLogSize) {
-    m_logMessages.removeFirst();
+  // or an external writer. Single mid() suffix take — O(n), not O(n·excess).
+  if (m_logMessages.size() > kMaxLogSize) {
+    m_logMessages = m_logMessages.mid(m_logMessages.size() - kMaxLogSize);
   }
 
   qCInfo(appPersistence) << "Loaded" << m_logMessages.size() << "log messages";

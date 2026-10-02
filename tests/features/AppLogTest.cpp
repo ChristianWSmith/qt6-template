@@ -24,7 +24,7 @@ protected:
   AppLogPresenter presenter;
 
   AppLogTest()
-      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
+      : model(provider, nullptr), view(nullptr), presenter(model, view) {}
 };
 
 TEST_F(AppLogTest, ModelEmitsLogChanged) {
@@ -139,7 +139,7 @@ TEST_F(AppLogTest, PresenterRestoresPersistedStateIntoViewWithoutInteraction) {
   ASSERT_EQ(restored.getLogMessages().size(), 2);
 
   AppLogWidget view(nullptr);
-  AppLogPresenter presenter(&restored, &view);
+  AppLogPresenter presenter(restored, view);
 
   auto *list = view.findChild<QListWidget *>("logListWidget");
   ASSERT_NE(list, nullptr);
@@ -199,7 +199,7 @@ TEST_F(AppLogTest, SaveFailureIsForwardedToCaller) {
 TEST_F(AppLogTest, PresenterGuardsNullModelAfterMidSessionDestruction) {
   auto *liveModel = new AppLogModel(provider, nullptr);
   auto *liveView = new AppLogWidget(nullptr);
-  auto *livePresenter = new AppLogPresenter(liveModel, liveView, nullptr);
+  auto *livePresenter = new AppLogPresenter(*liveModel, *liveView, nullptr);
 
   liveModel->addLogMessage("before destroy");
   auto *list = liveView->findChild<QListWidget *>("logListWidget");

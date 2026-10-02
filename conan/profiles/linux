@@ -4,9 +4,14 @@ build_type=Release
 compiler=gcc
 compiler.cppstd=gnu20
 compiler.libcxx=libstdc++11
+# gcc 15 targets ubuntu-26.04 runners (ubuntu-latest migrates ~2026-11).
+# Today's ubuntu-24.04 image ships gcc 12/13/14 — the pin is intentionally
+# ahead of the current -latest image. Do not "fix" it backward to chase
+# host gcc 16 on developer machines. See scripts/check-conan-profile-toolchain.sh.
 compiler.version=15
 os=Linux
 
 [conf]
 tools.system.package_manager:mode=install
 tools.system.package_manager:sudo=True
+tools.cmake.cmaketoolchain:generator=Ninja

@@ -69,6 +69,14 @@ if [[ -e "${TARGET_DIR}" ]]; then
   exit 1
 fi
 
+if [[ "${TYPE}" == "widget" ]]; then
+  WIDGET_SIGNAL_COMMENT="Signals emitted by this standalone Widget (wire to whatever consumes them; this artifact is not instantiated by the sample app)"
+  WIDGET_SLOT_COMMENT="Slots for UI events. Name them on_<uiObjectName>_... (Qt auto-connect); the name must match the .ui object name or the slot will never fire."
+else
+  WIDGET_SIGNAL_COMMENT="Signals emitted by this Widget to be connected to ${PRESENTER_STRING} Slots"
+  WIDGET_SLOT_COMMENT="Slots for UI events. Name them on_<uiObjectName>_... (Qt auto-connect); the name must match the .ui object name or the slot will never fire."
+fi
+
 # WIDGET HEADER
 mkdir -p "${WIDGET_DIR}"
 cat > "${WIDGET_DIR}/${NAME_TITLE}Widget.h" <<EOF
@@ -94,12 +102,14 @@ public:
   ${NAME_TITLE}Widget(${NAME_TITLE}Widget &&) = delete;
   ${NAME_TITLE}Widget &operator=(${NAME_TITLE}Widget &&) = delete;
 
+  // View API convention: display* for presenter→view state pushes
+  // (see AGENTS.md). Add methods the Presenter calls, e.g. displayX(...).
+
 signals:
-  // Signals emitted by this Widget to be connected to ${PRESENTER_STRING} Slots
+  // ${WIDGET_SIGNAL_COMMENT}
 
 private slots:
-  // Slots for UI events. Name them on_<uiObjectName>_... (Qt auto-connect);
-  // the name must match the .ui object name or the slot will never fire.
+  // ${WIDGET_SLOT_COMMENT}
 
 private:
   <GEN:FRIEND_TEST>
@@ -204,6 +214,10 @@ public:
   PersistenceResult<void> saveState() const override;
   void loadState() override;
 
+  // Model destructors and teardown code must NOT call the persistence
+  // provider. Persistence I/O is only valid during loadState (ctor) and
+  // saveState() while the provider is guaranteed alive.
+
   // Methods to be called by ${NAME_TITLE}Presenter
 
 signals:
@@ -274,8 +288,11 @@ class ${NAME_TITLE}Presenter : public QObject {
   Q_OBJECT
 
 public:
-  explicit ${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
-                                   ${NAME_TITLE}Widget *view,
+  // Ctor-by-reference encodes required non-null dependencies (matches models
+  // and AppMainWindow.bindFeatures). QPointer members observe mid-session
+  // destruction; slots null-guard as belt-and-suspenders.
+  explicit ${NAME_TITLE}Presenter(${NAME_TITLE}Model &model,
+                                   ${NAME_TITLE}Widget &view,
                                    QObject *parent = nullptr);
 
 private slots:
@@ -283,8 +300,6 @@ private slots:
 
 private:
   // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
-  // Slots null-guard before calling into model/widget (dependencies may be
-  // destroyed mid-session; QPointer observes destruction and reports null).
   // Presenter destructors must not dereference these pointers.
   // Connections auto-disconnect when either QObject is destroyed.
   QPointer<${NAME_TITLE}Model> m_model;
@@ -299,10 +314,10 @@ cat > "${PRESENTER_DIR}/${NAME_TITLE}Presenter.cpp" <<EOF
 #include "${NAME_TITLE}Presenter.h"
 #include "../../../logging/logging.h"
 
-${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
-                                                ${NAME_TITLE}Widget *view,
-                                                QObject *parent)
-    : QObject(parent), m_model(model), m_view(view) {
+${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model &model,
+                                                 ${NAME_TITLE}Widget &view,
+                                                 QObject *parent)
+    : QObject(parent), m_model(&model), m_view(&view) {
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 
@@ -317,8 +332,7 @@ ${NAME_TITLE}Presenter::${NAME_TITLE}Presenter(${NAME_TITLE}Model *model,
   // Models load persisted state in their constructors BEFORE this presenter
   // exists, so emissions during model construction have no subscribers.
   // After connections are established, push current model state to the view once.
-  // Replace the example with the feature's real model→view update calls
-  // (see CounterPresenter.cpp / AppLogPresenter.cpp).
+  // View API convention: display* methods (see AGENTS.md / CounterPresenter.cpp).
   // Example:
   // m_view->displayX(m_model->x());
 
@@ -354,6 +368,8 @@ cat > "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp" <<EOF
 #include "features/${NAME_LOWER}/presenter/${NAME_TITLE}Presenter.h"
 #include "features/${NAME_LOWER}/widget/${NAME_TITLE}Widget.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
 #include <gtest/gtest.h>
 
 class ${NAME_TITLE}Test : public ::testing::Test {
@@ -364,16 +380,52 @@ protected:
   ${NAME_TITLE}Presenter presenter;
 
   ${NAME_TITLE}Test()
-      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
+      : model(provider, nullptr), view(nullptr), presenter(model, view) {}
 };
 
-TEST_F(${NAME_TITLE}Test, Placeholder) {
-  EXPECT_TRUE(true);
+// Behavioral scaffold for initial model→view sync (D-001). Seed the provider
+// with this feature's persistence schema, implement display* + presenter ctor
+// sync, then replace GTEST_SKIP with a real assertion (see CounterTest.cpp).
+TEST_F(${NAME_TITLE}Test, RestoredStateVisibleWithoutInteraction) {
+  MemoryPersistenceProvider seedProvider;
+  {
+    ${NAME_TITLE}Model seed(seedProvider, nullptr);
+    // TODO: mutate seed to a non-default state and saveState(), e.g.:
+    // seed.increment();
+    // ASSERT_TRUE(seed.saveState().hasValue());
+    Q_UNUSED(seed);
+  }
+
+  ${NAME_TITLE}Model restored(seedProvider, nullptr);
+  ${NAME_TITLE}Widget restoredView;
+  ${NAME_TITLE}Presenter restoredPresenter(restored, restoredView);
+
+  // TODO: assert restoredView reflects restored model state via findChild.
+  // GTEST_SKIP() << "Implement initial model→view sync + this assertion";
+  Q_UNUSED(restoredPresenter);
+  SUCCEED();
+}
+
+// Behavioral scaffold for loadState restore (D-019). Generated loadState is
+// a commented TODO — implement it, seed state, then assert restore.
+TEST_F(${NAME_TITLE}Test, LoadStateRestoresPersistedValues) {
+  MemoryPersistenceProvider seedProvider;
+  {
+    ${NAME_TITLE}Model seed(seedProvider, nullptr);
+    // TODO: save non-default state once loadState is implemented.
+    Q_UNUSED(seed);
+  }
+
+  ${NAME_TITLE}Model reloaded(seedProvider, nullptr);
+  // TODO: assert reloaded state matches what seed persisted.
+  // GTEST_SKIP() << "Implement loadState + this assertion";
+  Q_UNUSED(reloaded);
+  SUCCEED();
 }
 
 // NOTE: Qt auto-connect slots must be named on_<uiObjectName>_clicked to match
 // .ui object names — a mismatch is a silent no-fire. After implementing the
-// feature, replace this placeholder with tests that:
+// feature, replace the scaffolds above with tests that:
 //   auto *btn = view.findChild<QPushButton *>("incrementButton");
 //   ASSERT_NE(btn, nullptr);
 //   QTest::mouseClick(btn, Qt::LeftButton);
@@ -390,8 +442,8 @@ format "${TESTS_FEATURES_DIR}/${NAME_TITLE}Test.cpp"
 echo "Generated ${NAME_TITLE}."
 echo ""
 echo "Remaining composition-root wiring:"
-echo "  1. Add ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter to AppMainWindow's initializer list."
-echo "  2. Append ${NAME_TITLE}Model to m_models."
-echo "  3. Add ${NAME_TITLE}Widget to mainLayout."
-echo "  4. Implement ${NAME_TITLE}Model::loadState()."
-echo "  5. In ${NAME_TITLE}Presenter ctor, perform initial model→view synchronization after connects (scaffold comment in generated Presenter.cpp)."
+echo "  1. In AppMainWindow::bindFeatures, construct ${NAME_TITLE}Model/${NAME_TITLE}Widget/${NAME_TITLE}Presenter"
+echo "     (model → widget → presenter; presenter takes model/view by reference)."
+echo "  2. Append ${NAME_TITLE}Model to m_models inside bindFeatures."
+echo "  3. Add ${NAME_TITLE}Widget to mainLayout inside bindFeatures/finishConstruction."
+echo "  4. Implement ${NAME_TITLE}Model::loadState() and fill the generated test scaffolds."

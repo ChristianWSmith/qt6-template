@@ -19,7 +19,7 @@ protected:
   CounterPresenter presenter;
 
   CounterTest()
-      : model(provider, nullptr), view(nullptr), presenter(&model, &view) {}
+      : model(provider, nullptr), view(nullptr), presenter(model, view) {}
 };
 
 TEST_F(CounterTest, ModelStartsAtZero) { EXPECT_EQ(model.value(), 0); }
@@ -52,7 +52,7 @@ TEST_F(CounterTest, PresenterRestoresPersistedStateIntoViewWithoutInteraction) {
   ASSERT_EQ(restored.value(), 5);
 
   CounterWidget view(nullptr);
-  CounterPresenter presenter(&restored, &view);
+  CounterPresenter presenter(restored, view);
 
   auto *label = view.findChild<QLabel *>("counterLabel");
   ASSERT_NE(label, nullptr);
@@ -139,7 +139,7 @@ TEST(CounterTeardownTest, PresenterSurvivesDependencyDestruction) {
   MemoryPersistenceProvider provider;
   auto *model = new CounterModel(provider, nullptr);
   auto *view = new CounterWidget(nullptr);
-  auto *presenter = new CounterPresenter(model, view, nullptr);
+  auto *presenter = new CounterPresenter(*model, *view, nullptr);
 
   // Establish live signal/slot connections so destruction has something to
   // tear down.
@@ -161,7 +161,7 @@ TEST(CounterTeardownTest, PresenterSurvivesDependencyDestruction) {
 TEST_F(CounterTest, PresenterGuardsNullModelAfterMidSessionDestruction) {
   auto *liveModel = new CounterModel(provider, nullptr);
   auto *liveView = new CounterWidget(nullptr);
-  auto *livePresenter = new CounterPresenter(liveModel, liveView, nullptr);
+  auto *livePresenter = new CounterPresenter(*liveModel, *liveView, nullptr);
 
   liveModel->increment();
   ASSERT_EQ(liveModel->value(), 1);

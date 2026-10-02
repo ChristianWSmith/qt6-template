@@ -12,6 +12,11 @@
 // Empty platform QSS files mean Qt default styling; custom.qss is the
 // primary application override extension point.
 // Windows also forces the Fusion style before applying platform QSS.
+//
+// colorScheme() is sampled once at setTheme() call time. There is no
+// QStyleHints::colorSchemeChanged connection — runtime OS dark/light
+// switches do not re-apply QSS until the app restarts. Linux/macOS paths
+// never consult colorScheme() (static platform QSS only).
 
 inline bool isDarkMode() {
     return QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;

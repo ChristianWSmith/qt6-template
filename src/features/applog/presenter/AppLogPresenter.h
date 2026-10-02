@@ -14,7 +14,8 @@ class AppLogPresenter : public QObject {
   Q_OBJECT
 
 public:
-  explicit AppLogPresenter(AppLogModel *model, AppLogWidget *view,
+  // Ctor-by-reference encodes required non-null dependencies (matches models).
+  explicit AppLogPresenter(AppLogModel &model, AppLogWidget &view,
                            QObject *parent = nullptr);
 
 private slots:
@@ -26,10 +27,8 @@ private slots:
 
 private:
   // Non-owning QPointer refs. Owned via Qt parent-child under AppMainWindow.
-  // Slots null-guard before calling into model/widget (dependencies may be
-  // destroyed mid-session; QPointer observes destruction and reports null).
-  // Presenter destructors must not dereference these pointers.
-  // Connections auto-disconnect when either QObject is destroyed.
+  // Slots null-guard as belt-and-suspenders (EventSystem path + partial-
+  // destruction tests). Presenter destructors must not dereference these.
   QPointer<AppLogModel> m_model;
   QPointer<AppLogWidget> m_view;
 };

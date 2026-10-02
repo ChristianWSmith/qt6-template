@@ -1,9 +1,9 @@
 #include "CounterPresenter.h"
 #include "../../../logging/logging.h"
 
-CounterPresenter::CounterPresenter(CounterModel *model, CounterWidget *view,
+CounterPresenter::CounterPresenter(CounterModel &model, CounterWidget &view,
                                    QObject *parent)
-    : QObject(parent), m_model(model), m_view(view) {
+    : QObject(parent), m_model(&model), m_view(&view) {
   Q_ASSERT(m_model != nullptr);
   Q_ASSERT(m_view != nullptr);
 

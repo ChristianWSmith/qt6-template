@@ -15,9 +15,29 @@ static QString getFilePath(const QString &key) {
          "/" + key + ".json";
 }
 
+// Quarantine a corrupt state file so the next save does not silently
+// overwrite user data with defaults (B-003). Best-effort rename; failure to
+// quarantine is logged and load still returns InvalidData.
+static void quarantineCorruptFile(const QString &key, const QString &filePath) {
+  const QString quarantinePath = filePath + ".corrupt";
+  if (QFile::exists(quarantinePath)) {
+    QFile::remove(quarantinePath);
+  }
+  if (!QFile::rename(filePath, quarantinePath)) {
+    qCWarning(appPersistence)
+        << "Persistence quarantine failed for key:" << key
+        << "- could not rename corrupt file to" << quarantinePath;
+  } else {
+    qCWarning(appPersistence)
+        << "Persistence quarantine: corrupt state for key:" << key
+        << "renamed to" << quarantinePath;
+  }
+}
+
 PersistenceResult<QJsonObject>
 FilePersistenceProvider::loadState(const QString &key) {
-  QFile file(getFilePath(key));
+  const QString filePath = getFilePath(key);
+  QFile file(filePath);
   if (!file.open(QIODevice::ReadOnly)) {
     if (file.exists()) {
       qCWarning(appPersistence)
@@ -42,6 +62,7 @@ FilePersistenceProvider::loadState(const QString &key) {
         << "Persistence load failed for key:" << key << "-"
         << toString(PersistenceError::InvalidData)
         << "- JSON parse error:" << parseError.errorString();
+    quarantineCorruptFile(key, filePath);
     return PersistenceResult<QJsonObject>::failure(
         PersistenceError::InvalidData);
   }
@@ -51,6 +72,7 @@ FilePersistenceProvider::loadState(const QString &key) {
         << "Persistence load failed for key:" << key << "-"
         << toString(PersistenceError::InvalidData)
         << "- JSON is not an object";
+    quarantineCorruptFile(key, filePath);
     return PersistenceResult<QJsonObject>::failure(
         PersistenceError::InvalidData);
   }
