@@ -150,6 +150,28 @@ TEST_F(LifecycleTest, CloseContinuesWhenInjectedProviderSaveFails) {
   EXPECT_TRUE(window.isHidden());
 }
 
+// QSettings restore path: ctor restoreGeometry/restoreState must apply
+// chrome saved by a prior close (save-side is covered by CloseSavesGeometry).
+TEST_F(LifecycleTest, CtorRestoresGeometryFromQSettings) {
+  const QSize targetSize(640, 480);
+  {
+    AppMainWindow window;
+    window.resize(targetSize);
+    window.show();
+    QApplication::processEvents();
+
+    QSettings settings(ORGANIZATION_NAME, APP_NAME);
+    settings.setValue("window/geometry", window.saveGeometry());
+    settings.setValue("window/state", window.saveState());
+  }
+
+  AppMainWindow restored;
+  restored.show();
+  QApplication::processEvents();
+
+  EXPECT_EQ(restored.size(), targetSize);
+}
+
 #include "LifecycleTest.moc"
 
 // NOLINTEND

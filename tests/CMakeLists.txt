@@ -30,10 +30,10 @@ target_link_libraries(UnitTests PRIVATE
 )
 
 # Embed style resources into UnitTests so theme tests can access :/styles/
-# QSS files used by platform/theme/theme.hpp. qt_standard_project_setup does
-# not enable AUTORCC (only AUTOMOC/AUTOUIC), so a bare .qrc source is a no-op.
-# Explicit qt_add_resources embeds only the style files — not exe packaging
-# extras (icons, .rc) — via rcc into this target.
+# QSS files used by platform/theme/theme.hpp. The production executable embeds
+# resources.qrc via CMAKE_AUTORCC ON (root CMakeLists.txt). UnitTests does not
+# link the exe, so this target embeds style files independently via
+# qt_add_resources (belt-and-suspenders for the test binary only).
 qt_add_resources(UnitTests "unit_test_theme_resources"
     PREFIX "/"
     BASE "${CMAKE_SOURCE_DIR}/resources"
@@ -43,6 +43,14 @@ qt_add_resources(UnitTests "unit_test_theme_resources"
         "${CMAKE_SOURCE_DIR}/resources/styles/macos/base.qss"
         "${CMAKE_SOURCE_DIR}/resources/styles/windows/dark.qss"
         "${CMAKE_SOURCE_DIR}/resources/styles/windows/light.qss"
+)
+
+# Production-binary resource embedding regression check (Wave 3).
+# Fails if resources.qrc content is not present in the shipped executable.
+add_test(NAME ProductionResourcesEmbedded
+    COMMAND ${CMAKE_COMMAND}
+        -DAPP_EXE=$<TARGET_FILE:${APP_NAME}>
+        -P "${CMAKE_SOURCE_DIR}/cmake/VerifyProductionResources.cmake"
 )
 
 include(GoogleTest)

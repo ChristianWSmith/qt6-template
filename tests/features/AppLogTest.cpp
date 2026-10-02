@@ -10,6 +10,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QListWidget>
+#include <QPointer>
 #include <QPushButton>
 #include <QSignalSpy>
 #include <QTest>
@@ -165,6 +166,37 @@ TEST_F(AppLogTest, SaveFailureIsForwardedToCaller) {
   const auto result = model.saveState();
   ASSERT_TRUE(result.hasError());
   EXPECT_EQ(result.error(), PersistenceError::CommitError);
+}
+
+// Presenter QPointer hardening regression (AppLog analog of CounterTest).
+//
+// Destroy the model mid-session while widget + presenter remain live, then
+// click clear. Presenter slots must null-guard via QPointer: no crash, no
+// model path, view keeps last known state.
+TEST_F(AppLogTest, PresenterGuardsNullModelAfterMidSessionDestruction) {
+  auto *liveModel = new AppLogModel(provider, nullptr);
+  auto *liveView = new AppLogWidget(nullptr);
+  auto *livePresenter = new AppLogPresenter(liveModel, liveView, nullptr);
+
+  liveModel->addLogMessage("before destroy");
+  auto *list = liveView->findChild<QListWidget *>("logListWidget");
+  ASSERT_NE(list, nullptr);
+  ASSERT_EQ(list->count(), 1);
+
+  auto *clearButton = liveView->findChild<QPushButton *>("clearButton");
+  ASSERT_NE(clearButton, nullptr);
+
+  QPointer<AppLogModel> observed(liveModel);
+  delete liveModel;
+  ASSERT_TRUE(observed.isNull());
+
+  // Presenter slot must null-guard; model path must not run; view unchanged.
+  QTest::mouseClick(clearButton, Qt::LeftButton);
+  EXPECT_EQ(list->count(), 1);
+
+  delete livePresenter;
+  delete liveView;
+  SUCCEED();
 }
 
 #include "AppLogTest.moc"
