@@ -23,10 +23,34 @@
 # Packaging scripts that need a DIST-specific copy path may keep their own
 # layouts; they should still resolve the *built* binary via this helper.
 
-: "${PLATFORM:?resolve-app-path.sh requires PLATFORM (source scripts/env.sh first)}"
 : "${BUILD_DIR:?resolve-app-path.sh requires BUILD_DIR (source scripts/env.sh first)}"
 : "${APP_NAME:?resolve-app-path.sh requires APP_NAME (source scripts/env.sh first)}"
 : "${PROJECT_ROOT:?resolve-app-path.sh requires PROJECT_ROOT (source scripts/env.sh first)}"
+
+# Normalize PLATFORM aliases (Windows CI/MSVC may export PLATFORM=x64).
+# Canonical names: linux | windows | darwin.
+if [ -z "${PLATFORM:-}" ]; then
+  case "$(uname -s 2>/dev/null || true)" in
+    MINGW*|MSYS*|CYGWIN*|Windows_NT) PLATFORM=windows ;;
+    Darwin) PLATFORM=darwin ;;
+    Linux) PLATFORM=linux ;;
+    *) PLATFORM=linux ;;
+  esac
+else
+  case "$(printf '%s' "${PLATFORM}" | tr '[:upper:]' '[:lower:]')" in
+    windows|win64|win|x64|amd64) PLATFORM=windows ;;
+    darwin|mac|macos) PLATFORM=darwin ;;
+    linux|x86_64|linux-gnu) PLATFORM=linux ;;
+    *)
+      case "$(uname -s 2>/dev/null || true)" in
+        MINGW*|MSYS*|CYGWIN*|Windows_NT) PLATFORM=windows ;;
+        Darwin) PLATFORM=darwin ;;
+        Linux) PLATFORM=linux ;;
+      esac
+      ;;
+  esac
+fi
+export PLATFORM
 
 CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
 

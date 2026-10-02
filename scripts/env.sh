@@ -13,8 +13,38 @@ installPipenv() {
   pipenv install --dev --deploy
 }
 
+# Normalize OS aliases. Windows CI/MSVC sometimes export PLATFORM=x64 (or
+# Win64/amd64) instead of the env.sh canonical name. Always canonicalize to
+# linux|windows|darwin before consumers branch on PLATFORM.
+normalize_os_platform() {
+  local raw
+  raw="$(printf '%s' "${PLATFORM:-}" | tr '[:upper:]' '[:lower:]')"
+  case "${raw}" in
+    windows|win64|win|x64|amd64)
+      PLATFORM=windows
+      ;;
+    darwin|mac|macos)
+      PLATFORM=darwin
+      ;;
+    linux|x86_64|linux-gnu)
+      PLATFORM=linux
+      ;;
+    *)
+      case "$(uname -s 2>/dev/null || true)" in
+        MINGW*|MSYS*|CYGWIN*|Windows_NT) PLATFORM=windows ;;
+        Darwin) PLATFORM=darwin ;;
+        Linux) PLATFORM=linux ;;
+        *) PLATFORM="${raw}" ;;
+      esac
+      ;;
+  esac
+  export PLATFORM
+}
+
 ENV_SOURCED="${ENV_SOURCED:-}"
-if [ ! -z "${ENV_SOURCED}" ]; then 
+if [ ! -z "${ENV_SOURCED}" ]; then
+  # Re-normalize even when already sourced (caller may have exported x64).
+  normalize_os_platform
   return 0
 fi
 export ENV_SOURCED=1
@@ -31,10 +61,11 @@ export LLDB_PORT="${LLDB_PORT:-12345}"
 
 # --- OS DETECTION ---
 if command -v python3 >/dev/null 2>&1; then
-  export PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
+  PLATFORM="$(python3 -c 'import platform; print(platform.system().lower())')"
 else
-  export PLATFORM="$(python -c 'import platform; print(platform.system().lower())')"
+  PLATFORM="$(python -c 'import platform; print(platform.system().lower())')"
 fi
+normalize_os_platform
 
 case "${PLATFORM}" in
   linux)
